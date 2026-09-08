@@ -38,7 +38,7 @@ def get_app_paths() -> AppPaths:
     return AppPaths(data_dir=data_dir)
 
 
-def ensure_app_dir_exists() -> AppPaths:
+def ensure_app_directories() -> AppPaths:
     paths = get_app_paths()
 
     paths.data_dir.mkdir(parents=True, exist_ok=True)

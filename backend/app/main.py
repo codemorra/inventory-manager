@@ -6,12 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.health import router as health_router
 from app.core.logging import configure_logging
-from app.core.paths import ensure_app_dir_exists
+from app.core.paths import ensure_app_directories
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
-    paths = ensure_app_dir_exists()
+    paths = ensure_app_directories()
     logger = configure_logging(paths)
 
     logger.info("Application started")
