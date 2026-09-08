@@ -10,7 +10,7 @@ from app.core.paths import ensure_app_directories
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
     paths = ensure_app_directories()
     logger = configure_logging(paths)
 

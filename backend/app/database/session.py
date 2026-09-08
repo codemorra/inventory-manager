@@ -30,6 +30,6 @@ def enable_sqlite_foreign_keys(
     cursor.close()
 
 
-def get_session() -> Generator[Session, None, None]:
+def get_session() -> Generator[Session]:
     with SessionLocal() as session:
         yield session
