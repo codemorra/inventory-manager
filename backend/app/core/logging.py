@@ -23,7 +23,7 @@ def configure_logging(app_paths: AppPaths) -> logging.Logger:
         encoding="utf-8",
     )
     file_handler.setFormatter(
-        logging.Formatter("%(asctime)s %(levelame)s %(name)s %(message)s"),
+        logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"),
     )
 
     logger.addHandler(file_handler)
