@@ -1,3 +1,5 @@
+"""Create and configure the FastAPI application."""
+
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -11,6 +13,14 @@ from app.core.paths import ensure_app_directories
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
+    """Initialize and shut down application resources.
+
+    Args:
+        _: FastAPI application instance managed by the lifespan hook.
+
+    Yields:
+        None: Control while the application is running.
+    """
     paths = ensure_app_directories()
     logger = configure_logging(paths)
 
@@ -22,6 +32,11 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
 
 
 def create_app() -> FastAPI:
+    """Build the configured FastAPI application.
+
+    Returns:
+        FastAPI: Configured application instance.
+    """
     app = FastAPI(
         title="Inventory Manager API",
         version="0.1.0",

@@ -1,3 +1,5 @@
+"""Configure Alembic database migrations."""
+
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
@@ -22,6 +24,11 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
+    """Run migrations without a live database connection.
+
+    Returns:
+        None.
+    """
     url = config.get_main_option("sqlalchemy.url")
 
     context.configure(
@@ -36,6 +43,11 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+    """Run migrations with a live database connection.
+
+    Returns:
+        None.
+    """
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",

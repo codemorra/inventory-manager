@@ -4,6 +4,7 @@ from app.main import create_app
 
 
 def test_health_check() -> None:
+    """Verify that the health endpoint returns a successful status."""
     client = TestClient(create_app())
 
     response = client.get("/health")
