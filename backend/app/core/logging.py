@@ -1,3 +1,5 @@
+"""Configure local application logging."""
+
 import logging
 import os
 from logging.handlers import RotatingFileHandler
@@ -8,6 +10,14 @@ LOGGER_NAME = "inventory_manager"
 
 
 def configure_logging(app_paths: AppPaths) -> logging.Logger:
+    """Configure the rotating application file logger.
+
+    Args:
+        app_paths: Resolved paths for local application data.
+
+    Returns:
+        logging.Logger: Configured application logger.
+    """
     logger = logging.getLogger(LOGGER_NAME)
     logger.setLevel(os.getenv("INVENTORY_LOG_LEVEL", "INFO").upper())
     logger.propagate = False
