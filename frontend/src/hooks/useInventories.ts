@@ -1,7 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { createInventory, getInventories } from "../services/inventories";
-import type { CreateInventoryInput } from "../types/inventory";
+import {
+  createInventory,
+  deleteInventory,
+  getInventories,
+  updateInventory,
+} from "../services/inventories";
+import type {
+  CreateInventoryInput,
+  UpdateInventoryInput,
+} from "../types/inventory";
+
+interface UpdateInventoryVariables {
+  inventoryId: string;
+  data: UpdateInventoryInput;
+}
 
 export function useInventories() {
   return useQuery({
@@ -15,6 +28,33 @@ export function useCreateInventory() {
 
   return useMutation({
     mutationFn: (data: CreateInventoryInput) => createInventory(data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["inventories"],
+      });
+    },
+  });
+}
+
+export function useUpdateInventory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ inventoryId, data }: UpdateInventoryVariables) =>
+      updateInventory(inventoryId, data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["inventories"],
+      });
+    },
+  });
+}
+
+export function useDeleteInventory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (inventoryId: string) => deleteInventory(inventoryId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ["inventories"],

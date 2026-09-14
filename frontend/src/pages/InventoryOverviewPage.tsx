@@ -1,6 +1,7 @@
-import { ApiError } from "../services/api";
-import { useInventories } from "../hooks/useInventories";
+import { InventoryCard } from "../components/InventoryCard";
 import { InventoryCreateForm } from "../components/InventoryCreateForm";
+import { useInventories } from "../hooks/useInventories";
+import { ApiError } from "../services/api";
 
 export function InventoryOverviewPage() {
   const { data: inventories, error, isError, isPending } = useInventories();
@@ -42,17 +43,8 @@ export function InventoryOverviewPage() {
         {!isPending && !isError && inventories && inventories.length > 0 && (
           <ul className="grid gap-4 sm:grid-cols-2">
             {inventories.map((inventory) => (
-              <li
-                key={inventory.id}
-                className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-              >
-                <h2 className="text-lg font-medium">{inventory.name}</h2>
-
-                {inventory.description && (
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                    {inventory.description}
-                  </p>
-                )}
+              <li key={inventory.id}>
+                <InventoryCard inventory={inventory} />
               </li>
             ))}
           </ul>
