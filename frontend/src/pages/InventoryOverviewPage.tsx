@@ -3,6 +3,7 @@ import { InventoryCreateForm } from "../components/InventoryCreateForm";
 import { useInventories } from "../hooks/useInventories";
 import { ApiError } from "../services/api";
 
+/** Render the inventory overview and creation interface. */
 export function InventoryOverviewPage() {
   const { data: inventories, error, isError, isPending } = useInventories();
 

@@ -14,6 +14,7 @@ vi.mock("../services/inventories", () => ({
 
 const mockedCreateInventory = vi.mocked(createInventory);
 
+/** Render the creation form with an isolated query client. */
 function renderInventoryCreateForm() {
   const queryClient = new QueryClient({
     defaultOptions: {

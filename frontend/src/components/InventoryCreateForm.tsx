@@ -3,6 +3,7 @@ import { type FormEvent, useState } from "react";
 import { useCreateInventory } from "../hooks/useInventories";
 import { ApiError } from "../services/api";
 
+/** Render a form for creating a new inventory. */
 export function InventoryCreateForm() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
