@@ -7,10 +7,17 @@ import {
 import { ApiError } from "../services/api";
 import type { Inventory } from "../types/inventory";
 
+/** Define properties for an inventory card. */
 interface InventoryCardProps {
   inventory: Inventory;
 }
 
+/**
+ * Render inventory details and management actions.
+ *
+ * @param props - Inventory card properties.
+ * @returns Inventory management card.
+ */
 export function InventoryCard({ inventory }: InventoryCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(inventory.name);

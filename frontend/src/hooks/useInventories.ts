@@ -11,11 +11,13 @@ import type {
   UpdateInventoryInput,
 } from "../types/inventory";
 
+/** Define mutation variables for an inventory update. */
 interface UpdateInventoryVariables {
   inventoryId: string;
   data: UpdateInventoryInput;
 }
 
+/** Retrieve the active inventory list. */
 export function useInventories() {
   return useQuery({
     queryKey: ["inventories"],
@@ -23,6 +25,7 @@ export function useInventories() {
   });
 }
 
+/** Create an inventory and refresh the inventory list. */
 export function useCreateInventory() {
   const queryClient = useQueryClient();
 
@@ -36,6 +39,7 @@ export function useCreateInventory() {
   });
 }
 
+/** Update an inventory and refresh the inventory list. */
 export function useUpdateInventory() {
   const queryClient = useQueryClient();
 
@@ -50,6 +54,7 @@ export function useUpdateInventory() {
   });
 }
 
+/** Delete an inventory and refresh the inventory list. */
 export function useDeleteInventory() {
   const queryClient = useQueryClient();
 

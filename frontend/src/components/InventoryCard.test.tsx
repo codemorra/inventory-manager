@@ -25,6 +25,7 @@ const inventory = {
   updated_at: "2026-09-14T10:00:00Z",
 };
 
+/** Render an inventory card with an isolated query client. */
 function renderInventoryCard() {
   const queryClient = new QueryClient({
     defaultOptions: {

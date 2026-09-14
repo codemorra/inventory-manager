@@ -14,6 +14,7 @@ vi.mock("../services/inventories", () => ({
 }));
 const mockedGetInventories = vi.mocked(getInventories);
 
+/** Render the overview page with an isolated query client. */
 function renderInventoryOverviewPage() {
   const queryClient = new QueryClient({
     defaultOptions: {
