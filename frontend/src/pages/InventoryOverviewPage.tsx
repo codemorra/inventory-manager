@@ -1,5 +1,6 @@
 import { ApiError } from "../services/api";
 import { useInventories } from "../hooks/useInventories";
+import { InventoryCreateForm } from "../components/InventoryCreateForm";
 
 export function InventoryOverviewPage() {
   const { data: inventories, error, isError, isPending } = useInventories();
@@ -10,6 +11,10 @@ export function InventoryOverviewPage() {
         <header className="mb-8">
           <h1 className="text-3xl font-semibold">Inventories</h1>
         </header>
+
+        <div className="mb-8">
+          <InventoryCreateForm />
+        </div>
 
         {isPending && (
           <p className="text-slate-600 dark:text-slate-400" role="status">
