@@ -20,6 +20,11 @@ from app.services.inventories import (
 
 @pytest.fixture
 def session() -> Generator[Session]:
+    """Provide an isolated in-memory database session.
+
+    Yields:
+        Session: Active test database session.
+    """
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
 
@@ -30,6 +35,11 @@ def session() -> Generator[Session]:
 
 
 def test_create_inventory_normalizes_name(session: Session) -> None:
+    """Verify that created inventory names are normalized.
+
+    Args:
+        session: Active test database session.
+    """
     inventory = create_inventory(
         session,
         InventoryCreate(
@@ -46,11 +56,17 @@ def test_create_inventory_normalizes_name(session: Session) -> None:
 
 
 def test_create_inventory_rejects_whitespace_only_name() -> None:
+    """Verify that whitespace-only inventory names are rejected."""
     with pytest.raises(ValidationError):
         InventoryCreate(name="   ")
 
 
 def test_list_inventories_excludes_deleted_inventories(session: Session) -> None:
+    """Verify that deleted inventories are excluded from lists.
+
+    Args:
+        session: Active test database session.
+    """
     active_inventory = create_inventory(session, InventoryCreate(name="Cables"))
     deleted_inventory = create_inventory(session, InventoryCreate(name="Tools"))
 
@@ -62,6 +78,11 @@ def test_list_inventories_excludes_deleted_inventories(session: Session) -> None
 
 
 def test_update_inventory_changes_only_supplied_fields(session: Session) -> None:
+    """Verify that updates preserve fields not supplied by the request.
+
+    Args:
+        session: Active test database session.
+    """
     inventory = create_inventory(
         session,
         InventoryCreate(
@@ -83,6 +104,11 @@ def test_update_inventory_changes_only_supplied_fields(session: Session) -> None
 def test_delete_inventory_clears_content_and_creates_tombstone(
     session: Session,
 ) -> None:
+    """Verify that deletion clears content and records a tombstone.
+
+    Args:
+        session: Active test database session.
+    """
     inventory = create_inventory(
         session,
         InventoryCreate(
@@ -104,6 +130,11 @@ def test_delete_inventory_clears_content_and_creates_tombstone(
 def test_get_inventory_rejects_deleted_and_unknown_inventories(
     session: Session,
 ) -> None:
+    """Verify that deleted and unknown inventories cannot be retrieved.
+
+    Args:
+        session: Active test database session.
+    """
     inventory = create_inventory(session, InventoryCreate(name="Cables"))
     delete_inventory(session, inventory.id)
 

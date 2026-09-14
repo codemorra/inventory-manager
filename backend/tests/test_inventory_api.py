@@ -13,6 +13,11 @@ from app.main import create_app
 
 @pytest.fixture
 def client() -> Generator[TestClient]:
+    """Provide an API client backed by an isolated database.
+
+    Yields:
+        TestClient: Configured FastAPI test client.
+    """
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -35,6 +40,11 @@ def client() -> Generator[TestClient]:
 
 
 def test_create_and_get_inventory(client: TestClient) -> None:
+    """Verify that an inventory can be created and retrieved.
+
+    Args:
+        client: Configured FastAPI test client.
+    """
     create_response = client.post(
         "/inventories",
         json={
@@ -54,6 +64,11 @@ def test_create_and_get_inventory(client: TestClient) -> None:
 
 
 def test_list_inventories(client: TestClient) -> None:
+    """Verify that active inventories are listed by name.
+
+    Args:
+        client: Configured FastAPI test client.
+    """
     client.post("/inventories", json={"name": "Cables"})
     client.post("/inventories", json={"name": "Tools"})
 
@@ -67,6 +82,11 @@ def test_list_inventories(client: TestClient) -> None:
 
 
 def test_update_inventory(client: TestClient) -> None:
+    """Verify that an inventory can be updated.
+
+    Args:
+        client: Configured FastAPI test client.
+    """
     create_response = client.post("/inventories", json={"name": "Cables"})
     inventory_id = create_response.json()["id"]
 
@@ -81,6 +101,11 @@ def test_update_inventory(client: TestClient) -> None:
 
 
 def test_delete_inventory_creates_not_found_response(client: TestClient) -> None:
+    """Verify that deleted inventories return the standard not-found response.
+
+    Args:
+        client: Configured FastAPI test client.
+    """
     create_response = client.post("/inventories", json={"name": "Cables"})
     inventory_id = create_response.json()["id"]
 

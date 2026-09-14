@@ -1,3 +1,5 @@
+"""Define the inventory database model."""
+
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -8,10 +10,17 @@ from app.database.base import Base
 
 
 def utc_now() -> datetime:
+    """Return the current UTC timestamp.
+
+    Returns:
+        datetime: Current UTC timestamp.
+    """
     return datetime.now(UTC)
 
 
 class Inventory(Base):
+    """Store a user-defined inventory and its lifecycle metadata."""
+
     __tablename__ = "inventories"
 
     id: Mapped[str] = mapped_column(
