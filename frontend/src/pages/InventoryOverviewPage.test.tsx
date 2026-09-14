@@ -8,9 +8,10 @@ import { InventoryOverviewPage } from "./InventoryOverviewPage";
 
 vi.mock("../services/inventories", () => ({
   createInventory: vi.fn(),
+  deleteInventory: vi.fn(),
   getInventories: vi.fn(),
+  updateInventory: vi.fn(),
 }));
-
 const mockedGetInventories = vi.mocked(getInventories);
 
 function renderInventoryOverviewPage() {
