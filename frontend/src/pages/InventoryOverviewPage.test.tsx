@@ -7,6 +7,7 @@ import { getInventories } from "../services/inventories";
 import { InventoryOverviewPage } from "./InventoryOverviewPage";
 
 vi.mock("../services/inventories", () => ({
+  createInventory: vi.fn(),
   getInventories: vi.fn(),
 }));
 
@@ -35,9 +36,7 @@ afterEach(() => {
 
 describe("InventoryOverviewPage", () => {
   it("displays a loading message while inventories are loading", () => {
-    mockedGetInventories.mockImplementation(
-      () => new Promise<never>(() => {}),
-    );
+    mockedGetInventories.mockImplementation(() => new Promise<never>(() => {}));
 
     renderInventoryOverviewPage();
 
@@ -86,7 +85,9 @@ describe("InventoryOverviewPage", () => {
 
     renderInventoryOverviewPage();
 
-    expect(await screen.findByRole("heading", { name: "Cables" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Cables" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Cable collection")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Tools" })).toBeInTheDocument();
   });
