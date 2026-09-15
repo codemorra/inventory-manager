@@ -2,6 +2,8 @@ import { Link, useParams } from "react-router-dom";
 
 import { useInventoryFields } from "../hooks/useInventoryFields";
 import { ApiError } from "../services/api";
+import { InventoryFieldCard } from "../components/InventoryFieldCard";
+import { InventoryFieldCreateForm } from "../components/InventoryFieldCreateForm";
 
 export function InventoryFieldsPage() {
   const { inventoryId } = useParams();
@@ -20,6 +22,8 @@ export function InventoryFieldsPage() {
     <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <div className="mx-auto max-w-3xl">
         <header className="mb-8">
+          <InventoryFieldCreateForm inventoryId={inventoryId} />
+
           <Link
             className="text-sm font-medium text-blue-700 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
             to="/"
@@ -62,14 +66,11 @@ export function InventoryFieldsPage() {
           inventoryFields.length > 0 && (
             <ul className="space-y-3">
               {inventoryFields.map((inventoryField) => (
-                <li
-                  className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-                  key={inventoryField.id}
-                >
-                  <span className="font-medium">{inventoryField.name}</span>
-                  <span className="rounded bg-slate-100 px-2 py-1 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                    {inventoryField.field_type}
-                  </span>
+                <li key={inventoryField.id}>
+                  <InventoryFieldCard
+                    inventoryField={inventoryField}
+                    inventoryId={inventoryId}
+                  />
                 </li>
               ))}
             </ul>
