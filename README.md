@@ -1,12 +1,13 @@
 # inventory-manager
 
-`inventory-manager` is a local desktop application for flexible management of personal inventories.
+`inventory-manager` is a local application for flexible management of personal inventories.
 
 The application is being developed with a React/TypeScript frontend, a local FastAPI backend, and SQLite.
 
 ## Current features
 
 - Create, view, edit, and delete inventory lists
+- Define, rename, and delete text fields for inventory lists
 - Local SQLite storage with Alembic database migrations
 - Local application logging
 - Responsive light and dark UI styles based on Tailwind CSS
