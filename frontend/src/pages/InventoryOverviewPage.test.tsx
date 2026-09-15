@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 
 import { ApiError } from "../services/api";
 import { getInventories } from "../services/inventories";
@@ -26,7 +27,9 @@ function renderInventoryOverviewPage() {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <InventoryOverviewPage />
+      <MemoryRouter>
+        <InventoryOverviewPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
