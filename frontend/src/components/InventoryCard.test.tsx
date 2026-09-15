@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 
 import { ApiError } from "../services/api";
 import { deleteInventory, updateInventory } from "../services/inventories";
@@ -37,7 +38,9 @@ function renderInventoryCard() {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <InventoryCard inventory={inventory} />
+      <MemoryRouter>
+        <InventoryCard inventory={inventory} />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
