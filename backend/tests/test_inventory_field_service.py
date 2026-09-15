@@ -1,3 +1,5 @@
+"""Test inventory field business logic."""
+
 from collections.abc import Generator
 
 import pytest
@@ -22,6 +24,11 @@ from app.services.inventory_fields import (
 
 @pytest.fixture
 def session() -> Generator[Session]:
+    """Provide an isolated in-memory database session.
+
+    Yields:
+        Session: Active test database session.
+    """
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
 
@@ -34,6 +41,11 @@ def session() -> Generator[Session]:
 def test_create_inventory_field_uses_text_type_and_next_position(
     session: Session,
 ) -> None:
+    """Verify that created fields use the text type and next position.
+
+    Args:
+        session: Active test database session.
+    """
     inventory = create_inventory(session, InventoryCreate(name="Cables"))
 
     first_field = create_inventory_field(
@@ -54,6 +66,7 @@ def test_create_inventory_field_uses_text_type_and_next_position(
 
 
 def test_create_inventory_field_rejects_whitespace_only_name() -> None:
+    """Verify that whitespace-only inventory field names are rejected."""
     with pytest.raises(ValidationError):
         InventoryFieldCreate(name="   ")
 
@@ -61,6 +74,11 @@ def test_create_inventory_field_rejects_whitespace_only_name() -> None:
 def test_list_inventory_fields_returns_active_fields_in_position_order(
     session: Session,
 ) -> None:
+    """Verify that active fields are listed in position order.
+
+    Args:
+        session: Active test database session.
+    """
     inventory = create_inventory(session, InventoryCreate(name="Cables"))
     first_field = create_inventory_field(
         session,
@@ -79,6 +97,11 @@ def test_list_inventory_fields_returns_active_fields_in_position_order(
 
 
 def test_update_inventory_field_changes_supplied_values(session: Session) -> None:
+    """Verify that supplied inventory field values can be updated.
+
+    Args:
+        session: Active test database session.
+    """
     inventory = create_inventory(session, InventoryCreate(name="Cables"))
     inventory_field = create_inventory_field(
         session,
@@ -101,6 +124,11 @@ def test_update_inventory_field_changes_supplied_values(session: Session) -> Non
 def test_delete_inventory_field_clears_content_and_creates_tombstone(
     session: Session,
 ) -> None:
+    """Verify that deletion clears content and records a tombstone.
+
+    Args:
+        session: Active test database session.
+    """
     inventory = create_inventory(session, InventoryCreate(name="Cables"))
     inventory_field = create_inventory_field(
         session,
@@ -121,6 +149,11 @@ def test_delete_inventory_field_clears_content_and_creates_tombstone(
 def test_get_inventory_field_rejects_deleted_and_unknown_fields(
     session: Session,
 ) -> None:
+    """Verify that deleted and unknown fields cannot be retrieved.
+
+    Args:
+        session: Active test database session.
+    """
     inventory = create_inventory(session, InventoryCreate(name="Cables"))
     inventory_field = create_inventory_field(
         session,

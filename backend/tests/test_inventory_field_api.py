@@ -1,3 +1,5 @@
+"""Test inventory field API endpoints."""
+
 from collections.abc import Generator
 
 import pytest
@@ -13,6 +15,11 @@ from app.main import create_app
 
 @pytest.fixture
 def client() -> Generator[TestClient]:
+    """Provide an API client backed by an isolated database.
+
+    Yields:
+        TestClient: Configured FastAPI test client.
+    """
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -35,6 +42,14 @@ def client() -> Generator[TestClient]:
 
 
 def create_inventory(client: TestClient) -> str:
+    """Create an inventory for field endpoint tests.
+
+    Args:
+        client: Configured FastAPI test client.
+
+    Returns:
+        str: Created inventory UUID.
+    """
     response = client.post("/inventories", json={"name": "Cables"})
 
     assert response.status_code == 201
@@ -46,6 +61,11 @@ def create_inventory(client: TestClient) -> str:
 
 
 def test_create_and_get_inventory_field(client: TestClient) -> None:
+    """Verify that an inventory field can be created and retrieved.
+
+    Args:
+        client: Configured FastAPI test client.
+    """
     inventory_id = create_inventory(client)
 
     create_response = client.post(
@@ -70,6 +90,11 @@ def test_create_and_get_inventory_field(client: TestClient) -> None:
 
 
 def test_list_inventory_fields(client: TestClient) -> None:
+    """Verify that active inventory fields are listed.
+
+    Args:
+        client: Configured FastAPI test client.
+    """
     inventory_id = create_inventory(client)
 
     client.post(
@@ -91,6 +116,11 @@ def test_list_inventory_fields(client: TestClient) -> None:
 
 
 def test_update_inventory_field(client: TestClient) -> None:
+    """Verify that an inventory field can be updated.
+
+    Args:
+        client: Configured FastAPI test client.
+    """
     inventory_id = create_inventory(client)
     create_response = client.post(
         f"/inventories/{inventory_id}/fields",
@@ -112,6 +142,11 @@ def test_update_inventory_field(client: TestClient) -> None:
 def test_delete_inventory_field_returns_not_found_afterwards(
     client: TestClient,
 ) -> None:
+    """Verify that deleted inventory fields return a not-found response.
+
+    Args:
+        client: Configured FastAPI test client.
+    """
     inventory_id = create_inventory(client)
     create_response = client.post(
         f"/inventories/{inventory_id}/fields",
@@ -134,6 +169,11 @@ def test_delete_inventory_field_returns_not_found_afterwards(
 def test_inventory_field_endpoints_reject_unknown_inventory(
     client: TestClient,
 ) -> None:
+    """Verify that field endpoints reject an unknown inventory.
+
+    Args:
+        client: Configured FastAPI test client.
+    """
     response = client.get("/inventories/unknown-inventory-id/fields")
 
     assert response.status_code == 404

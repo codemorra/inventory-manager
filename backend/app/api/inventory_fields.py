@@ -1,3 +1,5 @@
+"""Expose inventory field API endpoints."""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -21,6 +23,11 @@ SessionDependency = Annotated[Session, Depends(get_session)]
 
 
 def _raise_inventory_not_found() -> None:
+    """Raise the standard inventory-not-found HTTP response.
+
+    Returns:
+        None.
+    """
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail={
@@ -31,6 +38,11 @@ def _raise_inventory_not_found() -> None:
 
 
 def _raise_inventory_field_not_found() -> None:
+    """Raise the standard inventory-field-not-found HTTP response.
+
+    Returns:
+        None.
+    """
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail={
@@ -50,6 +62,16 @@ def create_inventory_field(
     data: InventoryFieldCreate,
     session: SessionDependency,
 ) -> InventoryFieldRead:
+    """Create an inventory field.
+
+    Args:
+        inventory_id: Parent inventory UUID.
+        data: Validated inventory field creation data.
+        session: Active database session.
+
+    Returns:
+        InventoryFieldRead: Created inventory field response.
+    """
     try:
         inventory_field = inventory_field_service.create_inventory_field(
             session,
@@ -67,6 +89,15 @@ def list_inventory_fields(
     inventory_id: str,
     session: SessionDependency,
 ) -> list[InventoryFieldRead]:
+    """List active inventory fields.
+
+    Args:
+        inventory_id: Parent inventory UUID.
+        session: Active database session.
+
+    Returns:
+        list[InventoryFieldRead]: Active inventory field responses.
+    """
     try:
         inventory_fields = inventory_field_service.list_inventory_fields(
             session,
@@ -86,6 +117,16 @@ def get_inventory_field(
     field_id: str,
     session: SessionDependency,
 ) -> InventoryFieldRead:
+    """Retrieve an inventory field by identifier.
+
+    Args:
+        inventory_id: Parent inventory UUID.
+        field_id: Inventory field UUID.
+        session: Active database session.
+
+    Returns:
+        InventoryFieldRead: Matching inventory field response.
+    """
     try:
         inventory_field = inventory_field_service.get_inventory_field(
             session,
@@ -107,6 +148,17 @@ def update_inventory_field(
     data: InventoryFieldUpdate,
     session: SessionDependency,
 ) -> InventoryFieldRead:
+    """Update an inventory field.
+
+    Args:
+        inventory_id: Parent inventory UUID.
+        field_id: Inventory field UUID.
+        data: Validated inventory field update data.
+        session: Active database session.
+
+    Returns:
+        InventoryFieldRead: Updated inventory field response.
+    """
     try:
         inventory_field = inventory_field_service.update_inventory_field(
             session,
@@ -131,6 +183,16 @@ def delete_inventory_field(
     field_id: str,
     session: SessionDependency,
 ) -> None:
+    """Delete an inventory field using a tombstone.
+
+    Args:
+        inventory_id: Parent inventory UUID.
+        field_id: Inventory field UUID.
+        session: Active database session.
+
+    Returns:
+        None.
+    """
     try:
         inventory_field_service.delete_inventory_field(
             session,
