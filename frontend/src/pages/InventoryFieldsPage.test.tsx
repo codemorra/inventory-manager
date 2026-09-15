@@ -8,7 +8,10 @@ import { getInventoryFields } from "../services/inventoryFields";
 import { InventoryFieldsPage } from "./InventoryFieldsPage";
 
 vi.mock("../services/inventoryFields", () => ({
+  createInventoryField: vi.fn(),
+  deleteInventoryField: vi.fn(),
   getInventoryFields: vi.fn(),
+  updateInventoryField: vi.fn(),
 }));
 
 const mockedGetInventoryFields = vi.mocked(getInventoryFields);
