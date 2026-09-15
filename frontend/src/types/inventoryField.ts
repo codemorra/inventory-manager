@@ -1,3 +1,4 @@
+/** Represent an inventory field returned by the API. */
 export interface InventoryField {
   id: string;
   inventory_id: string;
@@ -8,10 +9,12 @@ export interface InventoryField {
   updated_at: string;
 }
 
+/** Define data accepted when creating an inventory field. */
 export interface CreateInventoryFieldInput {
   name: string;
 }
 
+/** Define optional data accepted when updating an inventory field. */
 export interface UpdateInventoryFieldInput {
   name?: string;
   position?: number;

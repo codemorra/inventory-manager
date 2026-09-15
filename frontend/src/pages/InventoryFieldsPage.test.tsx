@@ -1,3 +1,4 @@
+/** Test the inventory field overview page. */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -16,6 +17,7 @@ vi.mock("../services/inventoryFields", () => ({
 
 const mockedGetInventoryFields = vi.mocked(getInventoryFields);
 
+/** Render the inventory field page with an isolated query client. */
 function renderInventoryFieldsPage() {
   const queryClient = new QueryClient({
     defaultOptions: {

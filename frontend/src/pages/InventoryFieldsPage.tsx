@@ -5,6 +5,7 @@ import { ApiError } from "../services/api";
 import { InventoryFieldCard } from "../components/InventoryFieldCard";
 import { InventoryFieldCreateForm } from "../components/InventoryFieldCreateForm";
 
+/** Render the inventory field overview and management interface. */
 export function InventoryFieldsPage() {
   const { inventoryId } = useParams();
   const {
