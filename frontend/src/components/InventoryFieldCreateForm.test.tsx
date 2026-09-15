@@ -1,3 +1,4 @@
+/** Test the inventory field creation form. */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -16,6 +17,7 @@ vi.mock("../services/inventoryFields", () => ({
 
 const mockedCreateInventoryField = vi.mocked(createInventoryField);
 
+/** Render the inventory field creation form with an isolated query client. */
 function renderInventoryFieldCreateForm() {
   const queryClient = new QueryClient({
     defaultOptions: {

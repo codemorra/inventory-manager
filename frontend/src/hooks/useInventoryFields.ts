@@ -1,3 +1,4 @@
+/** Manage inventory field queries and mutations. */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -11,26 +12,31 @@ import type {
   UpdateInventoryFieldInput,
 } from "../types/inventoryField";
 
+/** Define mutation variables for inventory field creation. */
 interface CreateInventoryFieldVariables {
   inventoryId: string;
   data: CreateInventoryFieldInput;
 }
 
+/** Define mutation variables for inventory field updates. */
 interface UpdateInventoryFieldVariables {
   inventoryId: string;
   fieldId: string;
   data: UpdateInventoryFieldInput;
 }
 
+/** Define mutation variables for inventory field deletion. */
 interface DeleteInventoryFieldVariables {
   inventoryId: string;
   fieldId: string;
 }
 
+/** Return the query key scoped to a single inventory. */
 function getInventoryFieldsQueryKey(inventoryId: string) {
   return ["inventories", inventoryId, "fields"];
 }
 
+/** Retrieve active fields for an inventory. */
 export function useInventoryFields(inventoryId: string) {
   return useQuery({
     queryKey: getInventoryFieldsQueryKey(inventoryId),
@@ -39,6 +45,7 @@ export function useInventoryFields(inventoryId: string) {
   });
 }
 
+/** Create an inventory field and refresh its field list. */
 export function useCreateInventoryField() {
   const queryClient = useQueryClient();
 
@@ -46,6 +53,7 @@ export function useCreateInventoryField() {
     mutationFn: ({ inventoryId, data }: CreateInventoryFieldVariables) =>
       createInventoryField(inventoryId, data),
     onSuccess: async (_, variables) => {
+      // Only the affected inventory field list needs to be refreshed.
       await queryClient.invalidateQueries({
         queryKey: getInventoryFieldsQueryKey(variables.inventoryId),
       });
@@ -53,6 +61,7 @@ export function useCreateInventoryField() {
   });
 }
 
+/** Update an inventory field and refresh its field list. */
 export function useUpdateInventoryField() {
   const queryClient = useQueryClient();
 
@@ -71,6 +80,7 @@ export function useUpdateInventoryField() {
   });
 }
 
+/** Delete an inventory field and refresh its field list. */
 export function useDeleteInventoryField() {
   const queryClient = useQueryClient();
 

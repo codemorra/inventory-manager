@@ -1,3 +1,4 @@
+/** Test the inventory field management card. */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -30,6 +31,7 @@ const inventoryField = {
   updated_at: "2026-09-15T10:00:00Z",
 };
 
+/** Render an inventory field card with an isolated query client. */
 function renderInventoryFieldCard() {
   const queryClient = new QueryClient({
     defaultOptions: {

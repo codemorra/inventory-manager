@@ -3,10 +3,12 @@ import { type FormEvent, useState } from "react";
 import { useCreateInventoryField } from "../hooks/useInventoryFields";
 import { ApiError } from "../services/api";
 
+/** Define properties for an inventory field creation form. */
 interface InventoryFieldCreateFormProps {
   inventoryId: string;
 }
 
+/** Render a form that creates an inventory field. */
 export function InventoryFieldCreateForm({
   inventoryId,
 }: InventoryFieldCreateFormProps) {
