@@ -76,6 +76,7 @@ export function deleteInventoryField(
   });
 }
 
+/** Retrieve active options for an inventory field. */
 export function getInventoryFieldOptions(
   inventoryId: string,
   fieldId: string,
@@ -85,6 +86,7 @@ export function getInventoryFieldOptions(
   );
 }
 
+/** Create an option for a selectable inventory field. */
 export function createInventoryFieldOption(
   inventoryId: string,
   fieldId: string,
@@ -99,6 +101,7 @@ export function createInventoryFieldOption(
   );
 }
 
+/** Update an inventory field option. */
 export function updateInventoryFieldOption(
   inventoryId: string,
   fieldId: string,
@@ -114,6 +117,7 @@ export function updateInventoryFieldOption(
   );
 }
 
+/** Delete an inventory field option by identifier. */
 export function deleteInventoryFieldOption(
   inventoryId: string,
   fieldId: string,

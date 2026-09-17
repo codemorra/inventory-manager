@@ -4,6 +4,7 @@ import { useCreateInventoryField } from "../hooks/useInventoryFields";
 import { ApiError } from "../services/api";
 import type { InventoryFieldType } from "../types/inventoryField";
 
+/** Define properties for an inventory field creation form. */
 interface InventoryFieldCreateFormProps {
   inventoryId: string;
 }
@@ -24,6 +25,7 @@ function supportsOptions(fieldType: InventoryFieldType) {
   return fieldType === "select" || fieldType === "multiselect";
 }
 
+/** Render a form that creates a configured inventory field. */
 export function InventoryFieldCreateForm({
   inventoryId,
 }: InventoryFieldCreateFormProps) {
