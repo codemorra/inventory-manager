@@ -8,12 +8,14 @@ import {
 import { ApiError } from "../services/api";
 import type { InventoryFieldOption } from "../types/inventoryField";
 
+/** Define properties for selectable inventory field options. */
 interface InventoryFieldOptionsProps {
   inventoryId: string;
   fieldId: string;
   options: InventoryFieldOption[];
 }
 
+/** Render selectable field options and their management controls. */
 export function InventoryFieldOptions({
   inventoryId,
   fieldId,

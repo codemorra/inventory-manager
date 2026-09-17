@@ -119,6 +119,7 @@ export function useDeleteInventoryField() {
   });
 }
 
+/** Create an inventory field option and refresh its field list. */
 export function useCreateInventoryFieldOption() {
   const queryClient = useQueryClient();
 
@@ -137,6 +138,7 @@ export function useCreateInventoryFieldOption() {
   });
 }
 
+/** Update an inventory field option and refresh its field list. */
 export function useUpdateInventoryFieldOption() {
   const queryClient = useQueryClient();
 
@@ -156,6 +158,7 @@ export function useUpdateInventoryFieldOption() {
   });
 }
 
+/** Delete an inventory field option and refresh its field list. */
 export function useDeleteInventoryFieldOption() {
   const queryClient = useQueryClient();
 

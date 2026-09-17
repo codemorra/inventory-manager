@@ -1,3 +1,4 @@
+/** Define supported inventory field types. */
 export type InventoryFieldType =
   | "text"
   | "number"
@@ -9,6 +10,7 @@ export type InventoryFieldType =
   | "select"
   | "multiselect";
 
+/** Represent a selectable option returned by the API. */
 export interface InventoryFieldOption {
   id: string;
   field_id: string;
@@ -45,10 +47,12 @@ export interface UpdateInventoryFieldInput {
   position?: number;
 }
 
+/** Define data accepted when creating an inventory field option. */
 export interface CreateInventoryFieldOptionInput {
   name: string;
 }
 
+/** Define optional data accepted when updating an inventory field option. */
 export interface UpdateInventoryFieldOptionInput {
   name?: string;
 }
