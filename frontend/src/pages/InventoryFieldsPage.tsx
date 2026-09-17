@@ -23,8 +23,6 @@ export function InventoryFieldsPage() {
     <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <div className="mx-auto max-w-3xl">
         <header className="mb-8">
-          <InventoryFieldCreateForm inventoryId={inventoryId} />
-
           <Link
             className="text-sm font-medium text-blue-700 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
             to="/"
@@ -37,6 +35,10 @@ export function InventoryFieldsPage() {
             Configure the fields that will be available for this inventory.
           </p>
         </header>
+
+        <div className="mb-6">
+          <InventoryFieldCreateForm inventoryId={inventoryId} />
+        </div>
 
         {isPending && (
           <p className="text-slate-600 dark:text-slate-400" role="status">
