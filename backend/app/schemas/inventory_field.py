@@ -1,3 +1,5 @@
+"""Define API schemas for inventory field data."""
+
 from datetime import datetime
 from typing import Self
 
@@ -7,6 +9,7 @@ from app.core.field_types import InventoryFieldType
 
 
 def _normalize_name(value: str) -> str:
+    """Trim and validate a user-defined name."""
     normalized_value = value.strip()
 
     if not normalized_value:
@@ -16,6 +19,8 @@ def _normalize_name(value: str) -> str:
 
 
 class InventoryFieldOptionCreate(BaseModel):
+    """Validate data required to create an inventory field option."""
+
     name: str = Field(min_length=1, max_length=255)
 
     @field_validator("name")
@@ -25,6 +30,8 @@ class InventoryFieldOptionCreate(BaseModel):
 
 
 class InventoryFieldOptionUpdate(BaseModel):
+    """Validate optional values used to update an inventory field option."""
+
     name: str | None = Field(default=None, min_length=1, max_length=255)
 
     @field_validator("name")
@@ -37,6 +44,8 @@ class InventoryFieldOptionUpdate(BaseModel):
 
 
 class InventoryFieldCreate(BaseModel):
+    """Validate data required to create a configured inventory field."""
+
     name: str = Field(min_length=1, max_length=255)
     field_type: InventoryFieldType = InventoryFieldType.TEXT
     max_length: int | None = Field(default=None, ge=1, le=10_000)
@@ -52,6 +61,7 @@ class InventoryFieldCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_configuration(self) -> Self:
+        """Validate configuration that depends on the selected field type."""
         selectable_types = {
             InventoryFieldType.SELECT,
             InventoryFieldType.MULTISELECT,
@@ -81,6 +91,8 @@ class InventoryFieldCreate(BaseModel):
 
 
 class InventoryFieldUpdate(BaseModel):
+    """Validate optional values used to update an inventory field."""
+
     name: str | None = Field(default=None, min_length=1, max_length=255)
     position: int | None = Field(default=None, ge=0)
 
@@ -94,6 +106,8 @@ class InventoryFieldUpdate(BaseModel):
 
 
 class InventoryFieldOptionRead(BaseModel):
+    """Represent an active inventory field option in API responses."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: str
@@ -105,6 +119,8 @@ class InventoryFieldOptionRead(BaseModel):
 
 
 class InventoryFieldRead(BaseModel):
+    """Represent an active configured inventory field in API responses."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: str

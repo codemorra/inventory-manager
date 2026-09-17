@@ -20,6 +20,7 @@ def create_inventory_field(
     inventory_id: str,
     data: InventoryFieldCreate,
 ) -> InventoryField:
+    """Create an inventory field and its initial selection options."""
     get_inventory(session, inventory_id)
 
     position_statement = (
@@ -41,6 +42,7 @@ def create_inventory_field(
     )
 
     session.add(inventory_field)
+    # Obtain the generated field ID before creating dependent option records.
     session.flush()
 
     for option_position, option in enumerate(data.options):

@@ -1,3 +1,5 @@
+"""Define the inventory field option database model."""
+
 from datetime import datetime
 from uuid import uuid4
 
@@ -9,6 +11,8 @@ from app.models.inventory import utc_now
 
 
 class InventoryFieldOption(Base):
+    """Store a selectable option belonging to an inventory field."""
+
     __tablename__ = "inventory_field_options"
 
     id: Mapped[str] = mapped_column(

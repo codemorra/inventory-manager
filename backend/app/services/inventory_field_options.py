@@ -1,3 +1,5 @@
+"""Provide inventory field option business logic."""
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -13,14 +15,19 @@ from app.services.inventory_fields import get_inventory_field
 
 
 class InventoryFieldOptionNotFoundError(Exception):
+    """Indicate that an active inventory field option could not be found."""
+
     pass
 
 
 class InventoryFieldOptionsNotSupportedError(Exception):
+    """Indicate that a field type does not support selectable options."""
+
     pass
 
 
 def _field_supports_options(inventory_field: InventoryField) -> bool:
+    """Return whether an inventory field supports options."""
     return inventory_field.field_type in {
         InventoryFieldType.SELECT,
         InventoryFieldType.MULTISELECT,
@@ -28,6 +35,7 @@ def _field_supports_options(inventory_field: InventoryField) -> bool:
 
 
 def _require_options_supported(inventory_field: InventoryField) -> None:
+    """Raise when an inventory field does not support options."""
     if not _field_supports_options(inventory_field):
         raise InventoryFieldOptionsNotSupportedError(inventory_field.id)
 
@@ -38,6 +46,7 @@ def create_inventory_field_option(
     field_id: str,
     data: InventoryFieldOptionCreate,
 ) -> InventoryFieldOption:
+    """Create and persist an option for a selectable inventory field."""
     inventory_field = get_inventory_field(session, inventory_id, field_id)
     _require_options_supported(inventory_field)
 
@@ -69,6 +78,7 @@ def list_inventory_field_options(
     inventory_id: str,
     field_id: str,
 ) -> list[InventoryFieldOption]:
+    """Return active options ordered by position for an inventory field."""
     get_inventory_field(session, inventory_id, field_id)
 
     statement = (
@@ -89,6 +99,7 @@ def get_inventory_field_option(
     field_id: str,
     option_id: str,
 ) -> InventoryFieldOption:
+    """Retrieve an active inventory field option by identifier."""
     inventory_field = get_inventory_field(session, inventory_id, field_id)
     _require_options_supported(inventory_field)
 
@@ -112,6 +123,7 @@ def update_inventory_field_option(
     option_id: str,
     data: InventoryFieldOptionUpdate,
 ) -> InventoryFieldOption:
+    """Update supplied values of an active inventory field option."""
     inventory_field_option = get_inventory_field_option(
         session,
         inventory_id,
@@ -134,6 +146,7 @@ def delete_inventory_field_option(
     field_id: str,
     option_id: str,
 ) -> None:
+    """Clear an option name and create a deletion tombstone."""
     inventory_field_option = get_inventory_field_option(
         session,
         inventory_id,
@@ -142,6 +155,7 @@ def delete_inventory_field_option(
     )
 
     inventory_field_option.name = ""
+    # Preserve the record only as a synchronization tombstone.
     inventory_field_option.deleted_at = utc_now()
 
     session.commit()
