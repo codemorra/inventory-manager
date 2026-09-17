@@ -7,7 +7,9 @@ The application is being developed with a React/TypeScript frontend, a local Fas
 ## Current features
 
 - Create, view, edit, and delete inventory lists
-- Define, rename, and delete text fields for inventory lists
+- Define, rename, and delete configurable fields for inventory lists
+- Configure text limits and select or multiselect options per field
+- Support text, number, boolean, date, time, datetime, duration, select, and multiselect field types
 - Local SQLite storage with Alembic database migrations
 - Local application logging
 - Responsive light and dark UI styles based on Tailwind CSS
