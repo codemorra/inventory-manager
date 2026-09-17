@@ -70,17 +70,28 @@ def test_create_and_get_inventory_field(client: TestClient) -> None:
 
     create_response = client.post(
         f"/inventories/{inventory_id}/fields",
-        json={"name": "Brand"},
+        json={
+            "name": "Played",
+            "field_type": "select",
+            "options": [
+                {"name": "Not started"},
+                {"name": "Completed"},
+            ],
+        },
     )
 
     assert create_response.status_code == 201
 
     created_field = create_response.json()
 
-    assert created_field["name"] == "Brand"
-    assert created_field["field_type"] == "text"
+    assert created_field["name"] == "Played"
     assert created_field["position"] == 0
-
+    assert created_field["field_type"] == "select"
+    assert created_field["max_length"] is None
+    assert [option["name"] for option in created_field["options"]] == [
+        "Not started",
+        "Completed",
+    ]
     get_response = client.get(
         f"/inventories/{inventory_id}/fields/{created_field['id']}",
     )
@@ -178,3 +189,82 @@ def test_inventory_field_endpoints_reject_unknown_inventory(
 
     assert response.status_code == 404
     assert response.json()["detail"]["code"] == "inventory_not_found"
+
+
+def test_inventory_field_options_can_be_managed(client: TestClient) -> None:
+    inventory_id = create_inventory(client)
+    field_response = client.post(
+        f"/inventories/{inventory_id}/fields",
+        json={
+            "name": "Genre",
+            "field_type": "multiselect",
+            "options": [{"name": "RPG"}],
+        },
+    )
+    field_id = field_response.json()["id"]
+
+    create_response = client.post(
+        f"/inventories/{inventory_id}/fields/{field_id}/options",
+        json={"name": "Strategy"},
+    )
+    option_id = create_response.json()["id"]
+
+    update_response = client.patch(
+        f"/inventories/{inventory_id}/fields/{field_id}/options/{option_id}",
+        json={"name": "Turn-based"},
+    )
+    list_response = client.get(
+        f"/inventories/{inventory_id}/fields/{field_id}/options",
+    )
+    delete_response = client.delete(
+        f"/inventories/{inventory_id}/fields/{field_id}/options/{option_id}",
+    )
+
+    assert create_response.status_code == 201
+    assert update_response.json()["name"] == "Turn-based"
+    assert [option["name"] for option in list_response.json()] == [
+        "RPG",
+        "Turn-based",
+    ]
+    assert delete_response.status_code == 204
+
+
+def test_text_field_option_creation_is_rejected(client: TestClient) -> None:
+    inventory_id = create_inventory(client)
+    field_response = client.post(
+        f"/inventories/{inventory_id}/fields",
+        json={"name": "Title"},
+    )
+    field_id = field_response.json()["id"]
+
+    response = client.post(
+        f"/inventories/{inventory_id}/fields/{field_id}/options",
+        json={"name": "Invalid"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == ("inventory_field_options_not_supported")
+
+
+def test_deleted_inventory_field_option_is_not_listed(client: TestClient) -> None:
+    inventory_id = create_inventory(client)
+    field_response = client.post(
+        f"/inventories/{inventory_id}/fields",
+        json={
+            "name": "Played",
+            "field_type": "select",
+            "options": [{"name": "Not started"}],
+        },
+    )
+    field_id = field_response.json()["id"]
+    option_id = field_response.json()["options"][0]["id"]
+
+    client.delete(
+        f"/inventories/{inventory_id}/fields/{field_id}/options/{option_id}",
+    )
+    response = client.get(
+        f"/inventories/{inventory_id}/fields/{field_id}/options",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []

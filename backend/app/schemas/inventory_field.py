@@ -24,6 +24,18 @@ class InventoryFieldOptionCreate(BaseModel):
         return _normalize_name(value)
 
 
+class InventoryFieldOptionUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+
+        return _normalize_name(value)
+
+
 class InventoryFieldCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     field_type: InventoryFieldType = InventoryFieldType.TEXT
@@ -100,6 +112,7 @@ class InventoryFieldRead(BaseModel):
     name: str
     field_type: InventoryFieldType
     max_length: int | None
+    options: list[InventoryFieldOptionRead] = Field(default_factory=list)
     position: int
     created_at: datetime
     updated_at: datetime
