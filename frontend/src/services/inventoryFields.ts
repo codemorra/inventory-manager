@@ -2,8 +2,11 @@
 import { request } from "./api";
 import type {
   CreateInventoryFieldInput,
+  CreateInventoryFieldOptionInput,
   InventoryField,
+  InventoryFieldOption,
   UpdateInventoryFieldInput,
+  UpdateInventoryFieldOptionInput,
 } from "../types/inventoryField";
 
 /**
@@ -71,4 +74,55 @@ export function deleteInventoryField(
   return request<void>(`/inventories/${inventoryId}/fields/${fieldId}`, {
     method: "DELETE",
   });
+}
+
+export function getInventoryFieldOptions(
+  inventoryId: string,
+  fieldId: string,
+): Promise<InventoryFieldOption[]> {
+  return request<InventoryFieldOption[]>(
+    `/inventories/${inventoryId}/fields/${fieldId}/options`,
+  );
+}
+
+export function createInventoryFieldOption(
+  inventoryId: string,
+  fieldId: string,
+  data: CreateInventoryFieldOptionInput,
+): Promise<InventoryFieldOption> {
+  return request<InventoryFieldOption>(
+    `/inventories/${inventoryId}/fields/${fieldId}/options`,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+  );
+}
+
+export function updateInventoryFieldOption(
+  inventoryId: string,
+  fieldId: string,
+  optionId: string,
+  data: UpdateInventoryFieldOptionInput,
+): Promise<InventoryFieldOption> {
+  return request<InventoryFieldOption>(
+    `/inventories/${inventoryId}/fields/${fieldId}/options/${optionId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    },
+  );
+}
+
+export function deleteInventoryFieldOption(
+  inventoryId: string,
+  fieldId: string,
+  optionId: string,
+): Promise<void> {
+  return request<void>(
+    `/inventories/${inventoryId}/fields/${fieldId}/options/${optionId}`,
+    {
+      method: "DELETE",
+    },
+  );
 }

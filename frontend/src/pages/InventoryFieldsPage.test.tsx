@@ -86,6 +86,8 @@ describe("InventoryFieldsPage", () => {
         inventory_id: "inventory-1",
         name: "Brand",
         field_type: "text",
+        max_length: 255,
+        options: [],
         position: 0,
         created_at: "2026-09-15T10:00:00Z",
         updated_at: "2026-09-15T10:00:00Z",
