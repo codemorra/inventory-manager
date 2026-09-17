@@ -118,6 +118,17 @@ export function InventoryFieldCard({
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               {inventoryField.field_type}
             </p>
+            {inventoryField.max_length !== null && (
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                Maximum length: {inventoryField.max_length}
+              </p>
+            )}
+            {inventoryField.options.length > 0 && (
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                Options:{" "}
+                {inventoryField.options.map((option) => option.name).join(", ")}
+              </p>
+            )}
           </div>
 
           <div className="flex shrink-0 gap-2">

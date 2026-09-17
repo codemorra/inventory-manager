@@ -62,6 +62,8 @@ describe("InventoryFieldCreateForm", () => {
     await waitFor(() => {
       expect(mockedCreateInventoryField).toHaveBeenCalledWith("inventory-1", {
         name: "Brand",
+        field_type: "text",
+        max_length: 255,
       });
     });
   });
@@ -106,5 +108,34 @@ describe("InventoryFieldCreateForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Unable to reach the backend.",
     );
+  });
+
+  it("submits select options", async () => {
+    const user = userEvent.setup();
+    mockedCreateInventoryField.mockResolvedValue({
+      id: "field-1",
+      inventory_id: "inventory-1",
+      name: "Played",
+      field_type: "select",
+      max_length: null,
+      options: [],
+      position: 0,
+      created_at: "2026-09-17T10:00:00Z",
+      updated_at: "2026-09-17T10:00:00Z",
+    });
+    renderInventoryFieldCreateForm();
+    await user.type(screen.getByLabelText("Field name"), "Played");
+    await user.selectOptions(screen.getByLabelText("Field type"), "select");
+    await user.type(screen.getByLabelText("Option 1"), "Not started");
+    await user.click(screen.getByRole("button", { name: "Add option" }));
+    await user.type(screen.getByLabelText("Option 2"), "Completed");
+    await user.click(screen.getByRole("button", { name: "Add field" }));
+    await waitFor(() => {
+      expect(mockedCreateInventoryField).toHaveBeenCalledWith("inventory-1", {
+        name: "Played",
+        field_type: "select",
+        options: [{ name: "Not started" }, { name: "Completed" }],
+      });
+    });
   });
 });
