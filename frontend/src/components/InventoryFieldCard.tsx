@@ -6,6 +6,7 @@ import {
 } from "../hooks/useInventoryFields";
 import { ApiError } from "../services/api";
 import type { InventoryField } from "../types/inventoryField";
+import { InventoryFieldOptions } from "./InventoryFieldOptions";
 
 /** Define properties for an inventory field card. */
 interface InventoryFieldCardProps {
@@ -159,6 +160,15 @@ export function InventoryFieldCard({
             ? mutationError.message
             : "Unable to manage inventory field."}
         </p>
+      )}
+
+      {(inventoryField.field_type === "select" ||
+        inventoryField.field_type === "multiselect") && (
+        <InventoryFieldOptions
+          fieldId={inventoryField.id}
+          inventoryId={inventoryId}
+          options={inventoryField.options}
+        />
       )}
     </article>
   );
