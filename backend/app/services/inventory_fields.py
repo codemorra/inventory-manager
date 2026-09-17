@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.inventory_field import InventoryField
+from app.models.inventory_field_option import InventoryFieldOption
 from app.schemas.inventory_field import InventoryFieldCreate, InventoryFieldUpdate
 from app.services.inventories import get_inventory, utc_now
 
@@ -19,22 +20,8 @@ def create_inventory_field(
     inventory_id: str,
     data: InventoryFieldCreate,
 ) -> InventoryField:
-    """Create and persist an inventory field with the default text type.
-
-    Args:
-        session: Active database session.
-        inventory_id: Parent inventory UUID.
-        data: Validated inventory field creation data.
-
-    Returns:
-        InventoryField: Persisted inventory field.
-
-    Raises:
-        InventoryNotFoundError: If no active inventory matches the identifier.
-    """
     get_inventory(session, inventory_id)
 
-    # New fields are appended after all active fields in the same inventory.
     position_statement = (
         select(func.count())
         .select_from(InventoryField)
@@ -45,15 +32,26 @@ def create_inventory_field(
     )
     position = session.scalar(position_statement) or 0
 
-    # Additional field types will be introduced in a later feature.
     inventory_field = InventoryField(
         inventory_id=inventory_id,
         name=data.name,
-        field_type="text",
+        field_type=data.field_type,
+        max_length=data.max_length,
         position=position,
     )
 
     session.add(inventory_field)
+    session.flush()
+
+    for option_position, option in enumerate(data.options):
+        session.add(
+            InventoryFieldOption(
+                field_id=inventory_field.id,
+                name=option.name,
+                position=option_position,
+            ),
+        )
+
     session.commit()
     session.refresh(inventory_field)
 
