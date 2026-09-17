@@ -1,5 +1,3 @@
-"""Define the inventory field database model."""
-
 from datetime import datetime
 from uuid import uuid4
 
@@ -10,27 +8,20 @@ from app.database.base import Base
 from app.models.inventory import utc_now
 
 
-class InventoryField(Base):
-    """Store a configurable field definition for an inventory."""
-
-    __tablename__ = "inventory_fields"
+class InventoryFieldOption(Base):
+    __tablename__ = "inventory_field_options"
 
     id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid4()),
     )
-    inventory_id: Mapped[str] = mapped_column(
+    field_id: Mapped[str] = mapped_column(
         String(36),
-        ForeignKey("inventories.id"),
+        ForeignKey("inventory_fields.id"),
         nullable=False,
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    field_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    max_length: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-    )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
