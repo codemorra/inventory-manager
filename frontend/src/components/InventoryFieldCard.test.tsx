@@ -9,6 +9,7 @@ import {
   deleteInventoryField,
   updateInventoryField,
 } from "../services/inventoryFields";
+import type { InventoryField } from "../types/inventoryField";
 import { InventoryFieldCard } from "./InventoryFieldCard";
 
 vi.mock("../services/inventoryFields", () => ({
@@ -21,11 +22,13 @@ vi.mock("../services/inventoryFields", () => ({
 const mockedDeleteInventoryField = vi.mocked(deleteInventoryField);
 const mockedUpdateInventoryField = vi.mocked(updateInventoryField);
 
-const inventoryField = {
+const inventoryField: InventoryField = {
   id: "field-1",
   inventory_id: "inventory-1",
   name: "Brand",
   field_type: "text",
+  max_length: 255,
+  options: [],
   position: 0,
   created_at: "2026-09-15T10:00:00Z",
   updated_at: "2026-09-15T10:00:00Z",

@@ -3,13 +3,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   createInventoryField,
+  createInventoryFieldOption,
   deleteInventoryField,
+  deleteInventoryFieldOption,
   getInventoryFields,
   updateInventoryField,
+  updateInventoryFieldOption,
 } from "../services/inventoryFields";
 import type {
   CreateInventoryFieldInput,
+  CreateInventoryFieldOptionInput,
   UpdateInventoryFieldInput,
+  UpdateInventoryFieldOptionInput,
 } from "../types/inventoryField";
 
 /** Define mutation variables for inventory field creation. */
@@ -29,6 +34,25 @@ interface UpdateInventoryFieldVariables {
 interface DeleteInventoryFieldVariables {
   inventoryId: string;
   fieldId: string;
+}
+
+interface CreateInventoryFieldOptionVariables {
+  inventoryId: string;
+  fieldId: string;
+  data: CreateInventoryFieldOptionInput;
+}
+
+interface UpdateInventoryFieldOptionVariables {
+  inventoryId: string;
+  fieldId: string;
+  optionId: string;
+  data: UpdateInventoryFieldOptionInput;
+}
+
+interface DeleteInventoryFieldOptionVariables {
+  inventoryId: string;
+  fieldId: string;
+  optionId: string;
 }
 
 /** Return the query key scoped to a single inventory. */
@@ -87,6 +111,61 @@ export function useDeleteInventoryField() {
   return useMutation({
     mutationFn: ({ inventoryId, fieldId }: DeleteInventoryFieldVariables) =>
       deleteInventoryField(inventoryId, fieldId),
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: getInventoryFieldsQueryKey(variables.inventoryId),
+      });
+    },
+  });
+}
+
+export function useCreateInventoryFieldOption() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      inventoryId,
+      fieldId,
+      data,
+    }: CreateInventoryFieldOptionVariables) =>
+      createInventoryFieldOption(inventoryId, fieldId, data),
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: getInventoryFieldsQueryKey(variables.inventoryId),
+      });
+    },
+  });
+}
+
+export function useUpdateInventoryFieldOption() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      inventoryId,
+      fieldId,
+      optionId,
+      data,
+    }: UpdateInventoryFieldOptionVariables) =>
+      updateInventoryFieldOption(inventoryId, fieldId, optionId, data),
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: getInventoryFieldsQueryKey(variables.inventoryId),
+      });
+    },
+  });
+}
+
+export function useDeleteInventoryFieldOption() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      inventoryId,
+      fieldId,
+      optionId,
+    }: DeleteInventoryFieldOptionVariables) =>
+      deleteInventoryFieldOption(inventoryId, fieldId, optionId),
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({
         queryKey: getInventoryFieldsQueryKey(variables.inventoryId),
