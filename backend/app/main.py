@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.health import router as health_router
 from app.api.inventories import router as inventories_router
 from app.api.inventory_fields import router as inventory_fields_router
+from app.api.inventory_items import router as inventory_items_router
 from app.core.logging import configure_logging
 from app.core.paths import ensure_app_directories
 
@@ -59,6 +60,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
 
     app.include_router(inventories_router)
+    app.include_router(inventory_items_router)
 
     app.include_router(inventory_fields_router)
 

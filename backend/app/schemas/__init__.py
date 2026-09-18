@@ -7,6 +7,13 @@ from app.schemas.inventory_field import (
     InventoryFieldRead,
     InventoryFieldUpdate,
 )
+from app.schemas.inventory_item import (
+    InventoryItemCreate,
+    InventoryItemRead,
+    InventoryItemUpdate,
+    InventoryItemValueInput,
+    InventoryItemValueRead,
+)
 
 __all__ = [
     "InventoryCreate",
@@ -15,6 +22,11 @@ __all__ = [
     "InventoryFieldOptionRead",
     "InventoryFieldRead",
     "InventoryFieldUpdate",
+    "InventoryItemCreate",
+    "InventoryItemRead",
+    "InventoryItemUpdate",
+    "InventoryItemValueInput",
+    "InventoryItemValueRead",
     "InventoryFieldOptionUpdate",
     "InventoryRead",
     "InventoryUpdate",
