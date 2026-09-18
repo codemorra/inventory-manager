@@ -138,6 +138,12 @@ export function InventoryCard({ inventory }: InventoryCardProps) {
             <div className="flex shrink-0 gap-2">
               <Link
                 className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+                to={`/inventories/${inventory.id}/items`}
+              >
+                Items
+              </Link>
+              <Link
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
                 to={`/inventories/${inventory.id}/fields`}
               >
                 Fields
