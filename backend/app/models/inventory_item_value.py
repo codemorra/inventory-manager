@@ -1,3 +1,5 @@
+"""Define the inventory item value database model."""
+
 from datetime import datetime
 from typing import Any
 from uuid import uuid4
@@ -10,6 +12,8 @@ from app.models.inventory import utc_now
 
 
 class InventoryItemValue(Base):
+    """Store a typed value assigned to an inventory item field."""
+
     __tablename__ = "inventory_item_values"
 
     id: Mapped[str] = mapped_column(

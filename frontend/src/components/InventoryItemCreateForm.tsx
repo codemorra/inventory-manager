@@ -1,3 +1,5 @@
+/** Render a dynamic form that creates inventory items. */
+
 import { useState } from "react";
 import { useCreateInventoryItem } from "../hooks/useInventoryItems";
 import type { InventoryField } from "../types/inventoryField";

@@ -1,3 +1,5 @@
+"""Test inventory item API endpoints."""
+
 from collections.abc import Generator
 
 from fastapi.testclient import TestClient
@@ -11,6 +13,7 @@ from app.main import create_app
 
 
 def test_inventory_items_can_be_created_updated_and_deleted() -> None:
+    """Verify that inventory items can be created, updated, and deleted."""
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},

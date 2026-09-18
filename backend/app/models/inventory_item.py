@@ -1,3 +1,5 @@
+"""Define the inventory item database model."""
+
 from datetime import datetime
 from uuid import uuid4
 
@@ -9,6 +11,8 @@ from app.models.inventory import utc_now
 
 
 class InventoryItem(Base):
+    """Store an inventory entry and its lifecycle metadata."""
+
     __tablename__ = "inventory_items"
 
     id: Mapped[str] = mapped_column(

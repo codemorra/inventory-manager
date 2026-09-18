@@ -1,8 +1,11 @@
+"""Test inventory item database models."""
+
 from app.models.inventory_item import InventoryItem
 from app.models.inventory_item_value import InventoryItemValue
 
 
 def test_inventory_item_model_defines_expected_columns() -> None:
+    """Verify that the inventory item model defines required columns."""
     assert InventoryItem.__tablename__ == "inventory_items"
     assert set(InventoryItem.__table__.columns.keys()) == {
         "id",
@@ -14,6 +17,7 @@ def test_inventory_item_model_defines_expected_columns() -> None:
 
 
 def test_inventory_item_value_model_defines_expected_columns() -> None:
+    """Verify that the inventory item value model defines required columns."""
     assert InventoryItemValue.__tablename__ == "inventory_item_values"
     assert set(InventoryItemValue.__table__.columns.keys()) == {
         "id",
