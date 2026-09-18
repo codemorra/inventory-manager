@@ -1,3 +1,4 @@
+/** Render active inventory items and their stored values. */
 import type { InventoryItem } from "../types/inventoryItem";
 
 export function InventoryItemList({ items }: { items: InventoryItem[] }) {

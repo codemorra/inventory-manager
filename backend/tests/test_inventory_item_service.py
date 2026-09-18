@@ -1,3 +1,5 @@
+"""Test inventory item business logic."""
+
 from collections.abc import Generator
 
 import pytest
@@ -21,6 +23,11 @@ from app.services.inventory_items import (
 
 @pytest.fixture
 def session() -> Generator[Session]:
+    """Provide an isolated in-memory database session.
+
+    Yields:
+        Session: Active test database session.
+    """
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
     with Session(engine) as database_session:
@@ -29,6 +36,11 @@ def session() -> Generator[Session]:
 
 
 def test_inventory_item_values_are_created_replaced_and_tombstoned(session: Session) -> None:
+    """Verify complete replacement and tombstone deletion of item values.
+
+    Args:
+        session: Active test database session.
+    """
     inventory = create_inventory(session, InventoryCreate(name="Games"))
     title = create_inventory_field(
         session, inventory.id, InventoryFieldCreate(name="Title", max_length=120)
@@ -58,6 +70,11 @@ def test_inventory_item_values_are_created_replaced_and_tombstoned(session: Sess
 
 
 def test_inventory_item_rejects_invalid_values(session: Session) -> None:
+    """Verify that values violating field constraints are rejected.
+
+    Args:
+        session: Active test database session.
+    """
     inventory = create_inventory(session, InventoryCreate(name="Games"))
     title = create_inventory_field(
         session, inventory.id, InventoryFieldCreate(name="Title", max_length=3)

@@ -1,3 +1,4 @@
+/** Manage inventory item queries and mutations. */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createInventoryItem, deleteInventoryItem, getInventoryItems, updateInventoryItem } from "../services/inventoryItems";
 import type { InventoryItemInput } from "../types/inventoryItem";

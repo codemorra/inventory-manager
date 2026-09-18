@@ -1,3 +1,4 @@
+/** Render the inventory item overview and creation interface. */
 import { Link, useParams } from "react-router-dom";
 
 import { useInventoryItems } from "../hooks/useInventoryItems";

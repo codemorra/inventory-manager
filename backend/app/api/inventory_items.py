@@ -1,3 +1,5 @@
+"""Expose inventory item API endpoints."""
+
 from typing import Annotated, NoReturn
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -21,10 +23,28 @@ SessionDependency = Annotated[Session, Depends(get_session)]
 
 
 def _not_found(code: str, message: str) -> NoReturn:
+    """Raise a structured not-found HTTP response.
+
+    Args:
+        code: Stable error code returned to the API client.
+        message: Human-readable error message returned to the API client.
+
+    Raises:
+        HTTPException: Always, with a 404 response.
+    """
     raise HTTPException(status_code=404, detail={"code": code, "message": message})
 
 
 def _serialize(session: Session, item: object) -> InventoryItemRead:
+    """Serialize an item together with its active values.
+
+    Args:
+        session: Active database session.
+        item: Inventory item database model.
+
+    Returns:
+        InventoryItemRead: Serialized item response.
+    """
     response = InventoryItemRead.model_validate(item)
     statement = select(InventoryItemValue).where(
         InventoryItemValue.item_id == response.id, InventoryItemValue.deleted_at.is_(None)
@@ -42,6 +62,16 @@ def _serialize(session: Session, item: object) -> InventoryItemRead:
 def create_item(
     inventory_id: str, data: InventoryItemCreate, session: SessionDependency
 ) -> InventoryItemRead:
+    """Create an inventory item.
+
+    Args:
+        inventory_id: Parent inventory UUID.
+        data: Validated item values.
+        session: Active database session.
+
+    Returns:
+        InventoryItemRead: Created inventory item response.
+    """
     try:
         return _serialize(session, item_service.create_inventory_item(session, inventory_id, data))
     except inventory_service.InventoryNotFoundError:
@@ -58,6 +88,15 @@ def create_item(
 
 @router.get("", response_model=list[InventoryItemRead])
 def list_items(inventory_id: str, session: SessionDependency) -> list[InventoryItemRead]:
+    """List active items for an inventory.
+
+    Args:
+        inventory_id: Parent inventory UUID.
+        session: Active database session.
+
+    Returns:
+        list[InventoryItemRead]: Active inventory item responses.
+    """
     try:
         inventory_service.get_inventory(session, inventory_id)
     except inventory_service.InventoryNotFoundError:
@@ -72,6 +111,16 @@ def list_items(inventory_id: str, session: SessionDependency) -> list[InventoryI
 
 @router.get("/{item_id}", response_model=InventoryItemRead)
 def get_item(inventory_id: str, item_id: str, session: SessionDependency) -> InventoryItemRead:
+    """Retrieve an active inventory item by identifier.
+
+    Args:
+        inventory_id: Parent inventory UUID.
+        item_id: Inventory item UUID.
+        session: Active database session.
+
+    Returns:
+        InventoryItemRead: Matching inventory item response.
+    """
     try:
         return _serialize(session, item_service.get_inventory_item(session, inventory_id, item_id))
     except inventory_service.InventoryNotFoundError:
@@ -84,6 +133,17 @@ def get_item(inventory_id: str, item_id: str, session: SessionDependency) -> Inv
 def update_item(
     inventory_id: str, item_id: str, data: InventoryItemUpdate, session: SessionDependency
 ) -> InventoryItemRead:
+    """Replace all values of an active inventory item.
+
+    Args:
+        inventory_id: Parent inventory UUID.
+        item_id: Inventory item UUID.
+        data: Validated replacement values.
+        session: Active database session.
+
+    Returns:
+        InventoryItemRead: Updated inventory item response.
+    """
     try:
         return _serialize(
             session, item_service.update_inventory_item(session, inventory_id, item_id, data)
@@ -104,6 +164,16 @@ def update_item(
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_item(inventory_id: str, item_id: str, session: SessionDependency) -> None:
+    """Delete an inventory item and tombstone its values.
+
+    Args:
+        inventory_id: Parent inventory UUID.
+        item_id: Inventory item UUID.
+        session: Active database session.
+
+    Returns:
+        None.
+    """
     try:
         item_service.delete_inventory_item(session, inventory_id, item_id)
     except inventory_service.InventoryNotFoundError:

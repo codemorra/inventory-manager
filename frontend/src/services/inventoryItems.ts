@@ -1,3 +1,4 @@
+/** Send requests for inventory item data. */
 import { request } from "./api";
 import type { InventoryItem, InventoryItemInput } from "../types/inventoryItem";
 
