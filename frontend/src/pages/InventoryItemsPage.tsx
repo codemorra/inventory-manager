@@ -25,8 +25,8 @@ export function InventoryItemsPage() {
           <p className="mt-6" role="status">
             Loading items…
           </p>
-        ) : items?.length ? (
-          <InventoryItemList items={items} />
+        ) : items?.length && fields ? (
+          <InventoryItemList fields={fields} items={items} />
         ) : (
           <p className="mt-6 text-slate-600 dark:text-slate-400">
             No items yet.
