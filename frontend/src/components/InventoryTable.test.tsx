@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 
 import { ApiError } from "../services/api";
 import { deleteInventory, updateInventory } from "../services/inventories";
-import { InventoryCard } from "./InventoryCard";
+import { InventoryTable } from "./InventoryTable";
 
 vi.mock("../services/inventories", () => ({
   createInventory: vi.fn(),
@@ -26,8 +26,8 @@ const inventory = {
   updated_at: "2026-09-14T10:00:00Z",
 };
 
-/** Render an inventory card with an isolated query client. */
-function renderInventoryCard() {
+/** Render an inventory table with an isolated query client. */
+function renderInventoryTable() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -39,7 +39,7 @@ function renderInventoryCard() {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <InventoryCard inventory={inventory} />
+        <InventoryTable inventories={[inventory]} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -51,7 +51,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("InventoryCard", () => {
+describe("InventoryTable", () => {
   it("submits changed inventory values", async () => {
     const user = userEvent.setup();
     mockedUpdateInventory.mockResolvedValue({
@@ -60,7 +60,7 @@ describe("InventoryCard", () => {
       description: "Updated description",
     });
 
-    renderInventoryCard();
+    renderInventoryTable();
 
     await user.click(screen.getByRole("button", { name: "Edit" }));
     await user.clear(screen.getByLabelText("Name"));
@@ -83,7 +83,7 @@ describe("InventoryCard", () => {
   it("cancels editing without submitting changes", async () => {
     const user = userEvent.setup();
 
-    renderInventoryCard();
+    renderInventoryTable();
 
     await user.click(screen.getByRole("button", { name: "Edit" }));
     await user.click(screen.getByRole("button", { name: "Cancel" }));
@@ -99,7 +99,7 @@ describe("InventoryCard", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     mockedDeleteInventory.mockResolvedValue();
 
-    renderInventoryCard();
+    renderInventoryTable();
 
     await user.click(screen.getByRole("button", { name: "Delete" }));
 
@@ -114,7 +114,7 @@ describe("InventoryCard", () => {
     const user = userEvent.setup();
     vi.spyOn(window, "confirm").mockReturnValue(false);
 
-    renderInventoryCard();
+    renderInventoryTable();
 
     await user.click(screen.getByRole("button", { name: "Delete" }));
 
@@ -127,7 +127,7 @@ describe("InventoryCard", () => {
       new ApiError(500, "Unable to reach the backend."),
     );
 
-    renderInventoryCard();
+    renderInventoryTable();
 
     await user.click(screen.getByRole("button", { name: "Edit" }));
     await user.click(screen.getByRole("button", { name: "Save changes" }));

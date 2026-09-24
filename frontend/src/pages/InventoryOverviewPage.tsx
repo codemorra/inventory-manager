@@ -1,4 +1,4 @@
-import { InventoryCard } from "../components/InventoryCard";
+import { InventoryTable } from "../components/InventoryTable";
 import { InventoryCreateForm } from "../components/InventoryCreateForm";
 import { useInventories } from "../hooks/useInventories";
 import { ApiError } from "../services/api";
@@ -42,13 +42,7 @@ export function InventoryOverviewPage() {
         )}
 
         {!isPending && !isError && inventories && inventories.length > 0 && (
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {inventories.map((inventory) => (
-              <li key={inventory.id}>
-                <InventoryCard inventory={inventory} />
-              </li>
-            ))}
-          </ul>
+          <InventoryTable inventories={inventories} />
         )}
       </div>
     </main>
