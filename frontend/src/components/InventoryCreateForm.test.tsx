@@ -49,6 +49,8 @@ describe("InventoryCreateForm", () => {
 
     renderInventoryCreateForm();
 
+    await user.click(screen.getByRole("button", { name: "New inventory" }));
+
     await user.type(screen.getByLabelText("Name"), "Cables");
     await user.type(
       screen.getByLabelText("Description"),
@@ -76,6 +78,8 @@ describe("InventoryCreateForm", () => {
 
     renderInventoryCreateForm();
 
+    await user.click(screen.getByRole("button", { name: "New inventory" }));
+
     const nameInput = screen.getByLabelText("Name");
     const descriptionInput = screen.getByLabelText("Description");
 
@@ -83,10 +87,13 @@ describe("InventoryCreateForm", () => {
     await user.type(descriptionInput, "Cable collection");
     await user.click(screen.getByRole("button", { name: "Create inventory" }));
 
-    await waitFor(() => {
-      expect(nameInput).toHaveValue("");
-      expect(descriptionInput).toHaveValue("");
-    });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: "New inventory" }));
+
+    expect(screen.getByLabelText("Name")).toHaveValue("");
+    expect(screen.getByLabelText("Description")).toHaveValue("");
   });
 
   it("displays an API error message after a failed submission", async () => {
@@ -96,6 +103,8 @@ describe("InventoryCreateForm", () => {
     );
 
     renderInventoryCreateForm();
+
+    await user.click(screen.getByRole("button", { name: "New inventory" }));
 
     await user.type(screen.getByLabelText("Name"), "Cables");
     await user.click(screen.getByRole("button", { name: "Create inventory" }));
@@ -112,6 +121,8 @@ describe("InventoryCreateForm", () => {
     );
 
     renderInventoryCreateForm();
+
+    await user.click(screen.getByRole("button", { name: "New inventory" }));
 
     await user.type(screen.getByLabelText("Name"), "Cables");
     await user.click(screen.getByRole("button", { name: "Create inventory" }));
