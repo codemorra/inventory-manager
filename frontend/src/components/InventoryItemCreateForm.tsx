@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 
 import { useCreateInventoryItem } from "../hooks/useInventoryItems";
 import { ApiError } from "../services/api";
+import { Modal } from "./Modal";
 import type { InventoryField } from "../types/inventoryField";
 import {
   createValueInput,
@@ -141,15 +142,22 @@ export function InventoryItemFieldInput({
   );
 }
 
-/** Render a dynamic form that creates inventory items. */
+/** Render a modal form that creates inventory items. */
 export function InventoryItemCreateForm({
   inventoryId,
   fields,
 }: InventoryItemCreateFormProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [values, setValues] = useState<Record<string, InventoryItemFormValue>>(
     {},
   );
   const createItem = useCreateInventoryItem();
+
+  function closeModal() {
+    if (!createItem.isPending) {
+      setIsOpen(false);
+    }
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -167,63 +175,86 @@ export function InventoryItemCreateForm({
         data: { values: itemValues },
       },
       {
-        onSuccess: () => setValues({}),
+        onSuccess: () => {
+          setValues({});
+          setIsOpen(false);
+        },
       },
     );
   }
 
   return (
-    <form
-      className="mt-8 rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-      onSubmit={handleSubmit}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-semibold">Add item</h2>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Enter the values you want to store in this inventory.
-          </p>
-        </div>
-        <button
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400"
-          disabled={createItem.isPending || fields.length === 0}
-          type="submit"
-        >
-          {createItem.isPending ? "Adding…" : "Add item"}
-        </button>
-      </div>
+    <>
+      <button
+        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400"
+        disabled={fields.length === 0}
+        onClick={() => setIsOpen(true)}
+        type="button"
+      >
+        New item
+      </button>
 
-      {fields.length > 0 ? (
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          {fields.map((field) => (
-            <InventoryItemFieldInput
-              idPrefix="create-inventory-item"
-              disabled={createItem.isPending}
-              field={field}
-              key={field.id}
-              onChange={(value) =>
-                setValues((currentValues) => ({
-                  ...currentValues,
-                  [field.id]: value,
-                }))
-              }
-              value={values[field.id] ?? getInitialValue(field)}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+      {fields.length === 0 && (
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
           Configure at least one field before adding items.
         </p>
       )}
 
-      {createItem.error && (
-        <p className="mt-4 text-sm text-red-700 dark:text-red-300" role="alert">
-          {createItem.error instanceof ApiError
-            ? createItem.error.message
-            : "Unable to add inventory item."}
-        </p>
+      {isOpen && (
+        <Modal onClose={closeModal} title="Add inventory item">
+          <form onSubmit={handleSubmit}>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Enter the values you want to store in this inventory.
+            </p>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              {fields.map((field) => (
+                <InventoryItemFieldInput
+                  disabled={createItem.isPending}
+                  field={field}
+                  idPrefix="create-inventory-item"
+                  key={field.id}
+                  onChange={(value) =>
+                    setValues((currentValues) => ({
+                      ...currentValues,
+                      [field.id]: value,
+                    }))
+                  }
+                  value={values[field.id] ?? getInitialValue(field)}
+                />
+              ))}
+            </div>
+
+            {createItem.error && (
+              <p
+                className="mt-4 text-sm text-red-700 dark:text-red-300"
+                role="alert"
+              >
+                {createItem.error instanceof ApiError
+                  ? createItem.error.message
+                  : "Unable to add inventory item."}
+              </p>
+            )}
+
+            <div className="mt-5 flex gap-3">
+              <button
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400"
+                disabled={createItem.isPending}
+                type="submit"
+              >
+                {createItem.isPending ? "Adding…" : "Add item"}
+              </button>
+              <button
+                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
+                disabled={createItem.isPending}
+                onClick={closeModal}
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
-    </form>
+    </>
   );
 }

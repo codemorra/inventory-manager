@@ -132,6 +132,7 @@ describe("InventoryItemCreateForm", () => {
     });
 
     renderInventoryItemCreateForm();
+    await user.click(screen.getByRole("button", { name: "New item" }));
 
     await user.type(screen.getByLabelText("Title"), "Baldur's Gate 3");
     await user.type(screen.getByLabelText("Rating"), "9.5");
@@ -170,12 +171,18 @@ describe("InventoryItemCreateForm", () => {
     });
 
     renderInventoryItemCreateForm();
+    await user.click(screen.getByRole("button", { name: "New item" }));
     const titleInput = screen.getByLabelText("Title");
 
     await user.type(titleInput, "Catan");
     await user.click(screen.getByRole("button", { name: "Add item" }));
 
-    await waitFor(() => expect(titleInput).toHaveValue(""));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: "New item" }));
+
+    expect(screen.getByLabelText("Title")).toHaveValue("");
   });
 
   it("displays an API error after failed creation", async () => {
@@ -185,6 +192,7 @@ describe("InventoryItemCreateForm", () => {
     );
 
     renderInventoryItemCreateForm();
+    await user.click(screen.getByRole("button", { name: "New item" }));
     await user.click(screen.getByRole("button", { name: "Add item" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -195,7 +203,7 @@ describe("InventoryItemCreateForm", () => {
   it("disables creation when no fields are configured", () => {
     renderInventoryItemCreateForm([]);
 
-    expect(screen.getByRole("button", { name: "Add item" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "New item" })).toBeDisabled();
     expect(
       screen.getByText("Configure at least one field before adding items."),
     ).toBeInTheDocument();

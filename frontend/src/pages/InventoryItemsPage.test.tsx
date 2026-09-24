@@ -112,7 +112,7 @@ describe("InventoryItemsPage", () => {
     renderInventoryItemsPage();
 
     expect(await screen.findByText("No items yet.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Add item" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "New item" })).toBeEnabled();
   });
 
   it("displays returned items in the field table", async () => {
