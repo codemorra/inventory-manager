@@ -3,11 +3,11 @@ import { type FormEvent, useState } from "react";
 import { useCreateInventoryItem } from "../hooks/useInventoryItems";
 import { ApiError } from "../services/api";
 import type { InventoryField } from "../types/inventoryField";
-import type { InventoryItemValueInput } from "../types/inventoryItem";
-
-/** Define values held by inventory item form controls. */
-type InventoryItemFormValue = string | boolean | string[];
-
+import {
+  createValueInput,
+  getInitialValue,
+  type InventoryItemFormValue,
+} from "./inventoryItemForm";
 /** Define properties for the inventory item creation form. */
 interface InventoryItemCreateFormProps {
   inventoryId: string;
@@ -16,57 +16,22 @@ interface InventoryItemCreateFormProps {
 
 /** Define properties for a field-specific form control. */
 interface InventoryItemFieldInputProps {
+  idPrefix: string;
   disabled: boolean;
   field: InventoryField;
   onChange: (value: InventoryItemFormValue) => void;
   value: InventoryItemFormValue;
 }
 
-/** Return the initial form value for an inventory field. */
-function getInitialValue(field: InventoryField): InventoryItemFormValue {
-  if (field.field_type === "boolean") {
-    return false;
-  }
-
-  if (field.field_type === "multiselect") {
-    return [];
-  }
-
-  return "";
-}
-
-/** Convert a non-empty form value into its API representation. */
-function createValueInput(
-  field: InventoryField,
-  value: InventoryItemFormValue,
-): InventoryItemValueInput | null {
-  if (field.field_type === "boolean") {
-    return { field_id: field.id, value };
-  }
-
-  if (Array.isArray(value)) {
-    return value.length ? { field_id: field.id, value } : null;
-  }
-
-  if (!value) {
-    return null;
-  }
-
-  if (field.field_type === "number" || field.field_type === "duration") {
-    return { field_id: field.id, value: Number(value) };
-  }
-
-  return { field_id: field.id, value };
-}
-
 /** Render the input control matching an inventory field type. */
-function InventoryItemFieldInput({
+export function InventoryItemFieldInput({
+  idPrefix,
   disabled,
   field,
   onChange,
   value,
 }: InventoryItemFieldInputProps) {
-  const inputId = `inventory-item-field-${field.id}`;
+  const inputId = `${idPrefix}-${field.id}`;
   const inputClassName =
     "mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100";
 
@@ -232,6 +197,7 @@ export function InventoryItemCreateForm({
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {fields.map((field) => (
             <InventoryItemFieldInput
+              idPrefix="create-inventory-item"
               disabled={createItem.isPending}
               field={field}
               key={field.id}
