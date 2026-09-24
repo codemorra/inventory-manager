@@ -151,6 +151,9 @@ describe("InventoryItemList", () => {
     renderInventoryItemList();
 
     await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(
+      screen.getByRole("dialog", { name: "Edit inventory item" }),
+    ).toBeInTheDocument();
     const titleInput = screen.getByLabelText("Title");
     await user.clear(titleInput);
     await user.type(titleInput, "Divinity: Original Sin 2");
@@ -176,6 +179,9 @@ describe("InventoryItemList", () => {
     renderInventoryItemList();
 
     await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(
+      screen.getByRole("dialog", { name: "Edit inventory item" }),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(mockedUpdateInventoryItem).not.toHaveBeenCalled();
@@ -219,6 +225,9 @@ describe("InventoryItemList", () => {
     renderInventoryItemList();
 
     await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(
+      screen.getByRole("dialog", { name: "Edit inventory item" }),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(

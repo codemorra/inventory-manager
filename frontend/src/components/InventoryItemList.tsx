@@ -1,4 +1,4 @@
-import { Fragment, type FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 
 import {
   useDeleteInventoryItem,
@@ -11,6 +11,7 @@ import type {
 } from "../types/inventoryField";
 import type { InventoryItem, InventoryItemValue } from "../types/inventoryItem";
 import { InventoryItemFieldInput } from "./InventoryItemCreateForm";
+import { Modal } from "./Modal";
 import {
   createValueInput,
   getInitialValue,
@@ -105,7 +106,7 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
   const updateItem = useUpdateInventoryItem();
   const deleteItem = useDeleteInventoryItem();
   const isMutating = updateItem.isPending || deleteItem.isPending;
-  const mutationError = updateItem.error ?? deleteItem.error;
+  const editingItem = items.find((item) => item.id === editingItemId);
 
   function startEditing(item: InventoryItem) {
     setEditValues(getEditableValues(fields, item));
@@ -117,11 +118,12 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
     setEditValues({});
   }
 
-  function handleUpdate(
-    event: FormEvent<HTMLFormElement>,
-    item: InventoryItem,
-  ) {
+  function handleUpdate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!editingItem) {
+      return;
+    }
 
     const values = fields.flatMap((field) => {
       const input = createValueInput(
@@ -134,8 +136,8 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
 
     updateItem.mutate(
       {
-        inventoryId: item.inventory_id,
-        itemId: item.id,
+        inventoryId: editingItem.inventory_id,
+        itemId: editingItem.id,
         data: { values },
       },
       { onSuccess: cancelEditing },
@@ -154,38 +156,40 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
   }
 
   return (
-    <div className="mt-8 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse text-left text-sm">
-          <thead className="bg-slate-100 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800/80 dark:text-slate-300">
-            <tr>
-              {fields.map((field) => (
+    <>
+      <div className="mt-8 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-collapse text-left text-sm">
+            <thead className="bg-slate-100 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800/80 dark:text-slate-300">
+              <tr>
+                {fields.map((field) => (
+                  <th
+                    className="whitespace-nowrap border-b border-slate-200 px-4 py-3 dark:border-slate-700"
+                    key={field.id}
+                    scope="col"
+                  >
+                    {field.name}
+                  </th>
+                ))}
                 <th
-                  className="whitespace-nowrap border-b border-slate-200 px-4 py-3 dark:border-slate-700"
-                  key={field.id}
+                  className="border-b border-slate-200 px-4 py-3 text-right dark:border-slate-700"
                   scope="col"
                 >
-                  {field.name}
+                  Actions
                 </th>
-              ))}
-              <th
-                className="border-b border-slate-200 px-4 py-3 text-right dark:border-slate-700"
-                scope="col"
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-            {items.map((item) => {
-              const valuesByField = new Map(
-                item.values.map((value) => [value.field_id, value]),
-              );
-              const isEditing = editingItemId === item.id;
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              {items.map((item) => {
+                const valuesByField = new Map(
+                  item.values.map((value) => [value.field_id, value]),
+                );
 
-              return (
-                <Fragment key={item.id}>
-                  <tr className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                return (
+                  <tr
+                    className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    key={item.id}
+                  >
                     {fields.map((field) => (
                       <td
                         className="max-w-80 px-4 py-3 align-top text-slate-700 dark:text-slate-200"
@@ -217,73 +221,81 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
                       </div>
                     </td>
                   </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-                  {isEditing && (
-                    <tr>
-                      <td
-                        className="bg-slate-50 p-4 dark:bg-slate-950/50"
-                        colSpan={fields.length + 1}
-                      >
-                        <form onSubmit={(event) => handleUpdate(event, item)}>
-                          <div className="grid gap-4 md:grid-cols-2">
-                            {fields.map((field) => (
-                              <InventoryItemFieldInput
-                                disabled={isMutating}
-                                field={field}
-                                idPrefix={`edit-inventory-item-${item.id}`}
-                                key={field.id}
-                                onChange={(value) =>
-                                  setEditValues((currentValues) => ({
-                                    ...currentValues,
-                                    [field.id]: value,
-                                  }))
-                                }
-                                value={
-                                  editValues[field.id] ?? getInitialValue(field)
-                                }
-                              />
-                            ))}
-                          </div>
-                          <div className="mt-4 flex gap-3">
-                            <button
-                              className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400"
-                              disabled={isMutating}
-                              type="submit"
-                            >
-                              {updateItem.isPending
-                                ? "Saving…"
-                                : "Save changes"}
-                            </button>
-                            <button
-                              className="rounded-md border border-slate-300 px-4 py-2 font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
-                              disabled={isMutating}
-                              onClick={cancelEditing}
-                              type="button"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </form>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+        {deleteItem.error && (
+          <p
+            className="border-t border-slate-200 px-4 py-3 text-sm text-red-700 dark:border-slate-800 dark:text-red-300"
+            role="alert"
+          >
+            {deleteItem.error instanceof ApiError
+              ? deleteItem.error.message
+              : "Unable to delete inventory item."}
+          </p>
+        )}
       </div>
 
-      {mutationError && (
-        <p
-          className="border-t border-slate-200 px-4 py-3 text-sm text-red-700 dark:border-slate-800 dark:text-red-300"
-          role="alert"
+      {editingItem && (
+        <Modal
+          onClose={() => {
+            if (!isMutating) cancelEditing();
+          }}
+          title="Edit inventory item"
         >
-          {mutationError instanceof ApiError
-            ? mutationError.message
-            : "Unable to update inventory item."}
-        </p>
+          <form onSubmit={handleUpdate}>
+            <div className="grid gap-4 md:grid-cols-2">
+              {fields.map((field) => (
+                <InventoryItemFieldInput
+                  disabled={isMutating}
+                  field={field}
+                  idPrefix={`edit-inventory-item-${editingItem.id}`}
+                  key={field.id}
+                  onChange={(value) =>
+                    setEditValues((currentValues) => ({
+                      ...currentValues,
+                      [field.id]: value,
+                    }))
+                  }
+                  value={editValues[field.id] ?? getInitialValue(field)}
+                />
+              ))}
+            </div>
+
+            {updateItem.error && (
+              <p
+                className="mt-4 text-sm text-red-700 dark:text-red-300"
+                role="alert"
+              >
+                {updateItem.error instanceof ApiError
+                  ? updateItem.error.message
+                  : "Unable to update inventory item."}
+              </p>
+            )}
+
+            <div className="mt-5 flex gap-3">
+              <button
+                className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400"
+                disabled={isMutating}
+                type="submit"
+              >
+                {updateItem.isPending ? "Saving…" : "Save changes"}
+              </button>
+              <button
+                className="rounded-md border border-slate-300 px-4 py-2 font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
+                disabled={isMutating}
+                onClick={cancelEditing}
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
-    </div>
+    </>
   );
 }

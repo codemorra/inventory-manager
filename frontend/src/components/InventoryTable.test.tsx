@@ -63,6 +63,9 @@ describe("InventoryTable", () => {
     renderInventoryTable();
 
     await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(
+      screen.getByRole("dialog", { name: "Edit inventory" }),
+    ).toBeInTheDocument();
     await user.clear(screen.getByLabelText("Name"));
     await user.type(screen.getByLabelText("Name"), "Tools");
     await user.clear(screen.getByLabelText("Description"));
@@ -86,6 +89,9 @@ describe("InventoryTable", () => {
     renderInventoryTable();
 
     await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(
+      screen.getByRole("dialog", { name: "Edit inventory" }),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(mockedUpdateInventory).not.toHaveBeenCalled();
@@ -130,6 +136,9 @@ describe("InventoryTable", () => {
     renderInventoryTable();
 
     await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(
+      screen.getByRole("dialog", { name: "Edit inventory" }),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
