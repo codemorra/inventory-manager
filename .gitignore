@@ -1,3 +1,6 @@
+# Local development files
+.local/
+
 # Frontend
 frontend/node_modules/
 frontend/dist/
