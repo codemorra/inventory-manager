@@ -1,0 +1,1405 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Inventory Manager API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check endpoint",
+        "description": "Return the current application health status.\n\nReturns:\n    dict[str, str]: Health status response.",
+        "operationId": "get_health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Get Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventories": {
+      "get": {
+        "tags": ["inventories"],
+        "summary": "List Inventories",
+        "description": "List active inventories.\n\nArgs:\n    session: Active database session.\n\nReturns:\n    list[InventoryRead]: Active inventory responses.",
+        "operationId": "list_inventories_inventories_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Inventories Inventories Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["inventories"],
+        "summary": "Create Inventory",
+        "description": "Create an inventory.\n\nArgs:\n    data: Validated inventory creation data.\n    session: Active database session.\n\nReturns:\n    InventoryRead: Created inventory response.",
+        "operationId": "create_inventory_inventories_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}": {
+      "get": {
+        "tags": ["inventories"],
+        "summary": "Get Inventory",
+        "description": "Retrieve an inventory by identifier.\n\nArgs:\n    inventory_id: Inventory UUID.\n    session: Active database session.\n\nReturns:\n    InventoryRead: Matching inventory response.",
+        "operationId": "get_inventory_inventories__inventory_id__get",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["inventories"],
+        "summary": "Update Inventory",
+        "description": "Update an inventory.\n\nArgs:\n    inventory_id: Inventory UUID.\n    data: Validated inventory update data.\n    session: Active database session.\n\nReturns:\n    InventoryRead: Updated inventory response.",
+        "operationId": "update_inventory_inventories__inventory_id__patch",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["inventories"],
+        "summary": "Delete Inventory",
+        "description": "Delete an inventory using a tombstone.\n\nArgs:\n    inventory_id: Inventory UUID.\n    session: Active database session.\n\nReturns:\n    None.",
+        "operationId": "delete_inventory_inventories__inventory_id__delete",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}/items": {
+      "post": {
+        "tags": ["inventory items"],
+        "summary": "Create Item",
+        "description": "Create an inventory item.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    data: Validated item values.\n    session: Active database session.\n\nReturns:\n    InventoryItemRead: Created inventory item response.",
+        "operationId": "create_item_inventories__inventory_id__items_post",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryItemCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryItemRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["inventory items"],
+        "summary": "List Items",
+        "description": "List active items for an inventory.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    session: Active database session.\n\nReturns:\n    list[InventoryItemRead]: Active inventory item responses.",
+        "operationId": "list_items_inventories__inventory_id__items_get",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryItemRead"
+                  },
+                  "title": "Response List Items Inventories  Inventory Id  Items Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}/items/{item_id}": {
+      "get": {
+        "tags": ["inventory items"],
+        "summary": "Get Item",
+        "description": "Retrieve an active inventory item by identifier.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    item_id: Inventory item UUID.\n    session: Active database session.\n\nReturns:\n    InventoryItemRead: Matching inventory item response.",
+        "operationId": "get_item_inventories__inventory_id__items__item_id__get",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryItemRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["inventory items"],
+        "summary": "Update Item",
+        "description": "Replace all values of an active inventory item.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    item_id: Inventory item UUID.\n    data: Validated replacement values.\n    session: Active database session.\n\nReturns:\n    InventoryItemRead: Updated inventory item response.",
+        "operationId": "update_item_inventories__inventory_id__items__item_id__patch",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryItemUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryItemRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["inventory items"],
+        "summary": "Delete Item",
+        "description": "Delete an inventory item and tombstone its values.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    item_id: Inventory item UUID.\n    session: Active database session.\n\nReturns:\n    None.",
+        "operationId": "delete_item_inventories__inventory_id__items__item_id__delete",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}/fields": {
+      "post": {
+        "tags": ["inventory fields"],
+        "summary": "Create Inventory Field",
+        "description": "Create an inventory field.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    data: Validated inventory field creation data.\n    session: Active database session.\n\nReturns:\n    InventoryFieldRead: Created inventory field response.",
+        "operationId": "create_inventory_field_inventories__inventory_id__fields_post",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryFieldCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryFieldRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["inventory fields"],
+        "summary": "List Inventory Fields",
+        "description": "List active inventory fields.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    session: Active database session.\n\nReturns:\n    list[InventoryFieldRead]: Active inventory field responses.",
+        "operationId": "list_inventory_fields_inventories__inventory_id__fields_get",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryFieldRead"
+                  },
+                  "title": "Response List Inventory Fields Inventories  Inventory Id  Fields Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}/fields/{field_id}": {
+      "get": {
+        "tags": ["inventory fields"],
+        "summary": "Get Inventory Field",
+        "description": "Retrieve an inventory field by identifier.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    field_id: Inventory field UUID.\n    session: Active database session.\n\nReturns:\n    InventoryFieldRead: Matching inventory field response.",
+        "operationId": "get_inventory_field_inventories__inventory_id__fields__field_id__get",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryFieldRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["inventory fields"],
+        "summary": "Update Inventory Field",
+        "description": "Update an inventory field.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    field_id: Inventory field UUID.\n    data: Validated inventory field update data.\n    session: Active database session.\n\nReturns:\n    InventoryFieldRead: Updated inventory field response.",
+        "operationId": "update_inventory_field_inventories__inventory_id__fields__field_id__patch",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryFieldUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryFieldRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["inventory fields"],
+        "summary": "Delete Inventory Field",
+        "description": "Delete an inventory field using a tombstone.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    field_id: Inventory field UUID.\n    session: Active database session.\n\nReturns:\n    None.",
+        "operationId": "delete_inventory_field_inventories__inventory_id__fields__field_id__delete",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}/fields/{field_id}/options": {
+      "get": {
+        "tags": ["inventory fields"],
+        "summary": "List Inventory Field Options",
+        "operationId": "list_inventory_field_options_inventories__inventory_id__fields__field_id__options_get",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryFieldOptionRead"
+                  },
+                  "title": "Response List Inventory Field Options Inventories  Inventory Id  Fields  Field Id  Options Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["inventory fields"],
+        "summary": "Create Inventory Field Option",
+        "operationId": "create_inventory_field_option_inventories__inventory_id__fields__field_id__options_post",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryFieldOptionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryFieldOptionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}/fields/{field_id}/options/{option_id}": {
+      "patch": {
+        "tags": ["inventory fields"],
+        "summary": "Update Inventory Field Option",
+        "operationId": "update_inventory_field_option_inventories__inventory_id__fields__field_id__options__option_id__patch",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Id"
+            }
+          },
+          {
+            "name": "option_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Option Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryFieldOptionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryFieldOptionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["inventory fields"],
+        "summary": "Delete Inventory Field Option",
+        "operationId": "delete_inventory_field_option_inventories__inventory_id__fields__field_id__options__option_id__delete",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field Id"
+            }
+          },
+          {
+            "name": "option_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Option Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "InventoryCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": ["name"],
+        "title": "InventoryCreate",
+        "description": "Validate data required to create an inventory."
+      },
+      "InventoryFieldCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "field_type": {
+            "$ref": "#/components/schemas/InventoryFieldType",
+            "default": "text"
+          },
+          "max_length": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Length"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/InventoryFieldOptionCreate"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "required": ["name"],
+        "title": "InventoryFieldCreate",
+        "description": "Validate data required to create a configured inventory field."
+      },
+      "InventoryFieldOptionCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["name"],
+        "title": "InventoryFieldOptionCreate",
+        "description": "Validate data required to create an inventory field option."
+      },
+      "InventoryFieldOptionRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "field_id": {
+            "type": "string",
+            "title": "Field Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "field_id",
+          "name",
+          "position",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "InventoryFieldOptionRead",
+        "description": "Represent an active inventory field option in API responses."
+      },
+      "InventoryFieldOptionUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "title": "InventoryFieldOptionUpdate",
+        "description": "Validate optional values used to update an inventory field option."
+      },
+      "InventoryFieldRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "inventory_id": {
+            "type": "string",
+            "title": "Inventory Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "field_type": {
+            "$ref": "#/components/schemas/InventoryFieldType"
+          },
+          "max_length": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Length"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/InventoryFieldOptionRead"
+            },
+            "type": "array",
+            "title": "Options"
+          },
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "inventory_id",
+          "name",
+          "field_type",
+          "max_length",
+          "position",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "InventoryFieldRead",
+        "description": "Represent an active configured inventory field in API responses."
+      },
+      "InventoryFieldType": {
+        "type": "string",
+        "enum": [
+          "text",
+          "number",
+          "boolean",
+          "date",
+          "time",
+          "datetime",
+          "duration",
+          "select",
+          "multiselect"
+        ],
+        "title": "InventoryFieldType",
+        "description": "Represent the field types supported by the MVP."
+      },
+      "InventoryFieldUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          }
+        },
+        "type": "object",
+        "title": "InventoryFieldUpdate",
+        "description": "Validate optional values used to update an inventory field."
+      },
+      "InventoryItemCreate": {
+        "properties": {
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/InventoryItemValueInput"
+            },
+            "type": "array",
+            "title": "Values"
+          }
+        },
+        "type": "object",
+        "title": "InventoryItemCreate",
+        "description": "Validate data required to create an inventory item."
+      },
+      "InventoryItemRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "inventory_id": {
+            "type": "string",
+            "title": "Inventory Id"
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/InventoryItemValueRead"
+            },
+            "type": "array",
+            "title": "Values"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": ["id", "inventory_id", "created_at", "updated_at"],
+        "title": "InventoryItemRead",
+        "description": "Represent an active inventory item in API responses."
+      },
+      "InventoryItemUpdate": {
+        "properties": {
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/InventoryItemValueInput"
+            },
+            "type": "array",
+            "title": "Values"
+          }
+        },
+        "type": "object",
+        "title": "InventoryItemUpdate",
+        "description": "Validate replacement values for an inventory item."
+      },
+      "InventoryItemValueInput": {
+        "properties": {
+          "field_id": {
+            "type": "string",
+            "title": "Field Id"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": ["field_id", "value"],
+        "title": "InventoryItemValueInput",
+        "description": "Validate an incoming inventory item field value."
+      },
+      "InventoryItemValueRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "field_id": {
+            "type": "string",
+            "title": "Field Id"
+          },
+          "value": {
+            "title": "Value"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": ["id", "field_id", "value", "created_at", "updated_at"],
+        "title": "InventoryItemValueRead",
+        "description": "Represent an active inventory item value in API responses."
+      },
+      "InventoryRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": ["id", "name", "description", "created_at", "updated_at"],
+        "title": "InventoryRead",
+        "description": "Represent an active inventory in API responses."
+      },
+      "InventoryUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "title": "InventoryUpdate",
+        "description": "Validate optional fields used to update an inventory."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

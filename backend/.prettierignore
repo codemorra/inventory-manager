@@ -1,0 +1,5 @@
+node_modules/
+.venv/
+dist/
+drizzle/meta/
+package-lock.json

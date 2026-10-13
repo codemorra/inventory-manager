@@ -1,0 +1,21 @@
+{
+  "name": "inventory-manager-workspace",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "typecheck": "npm --prefix frontend run typecheck && npm --prefix backend run typecheck",
+    "lint": "npm --prefix frontend run lint && npm --prefix backend run lint",
+    "test": "npm --prefix frontend run test && npm --prefix backend run test",
+    "build": "npm --prefix frontend run build && npm --prefix backend run build",
+    "format:check": "prettier --check .",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build && npm run format:check"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10"
+  }
+}

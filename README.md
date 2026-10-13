@@ -6,7 +6,7 @@
 
 Users can create inventory lists, define custom fields, and manage items with typed values. Each inventory has its own field configuration, including text limits and options for select and multiselect fields.
 
-The application provides a browser-based interface built with React and TypeScript, a local FastAPI backend, and SQLite storage. Inventory lists and items are displayed in tables, with forms for creating and editing entries opened in dialogs.
+The application uses a React/TypeScript frontend, an Express/TypeScript backend, and local SQLite storage through Drizzle. Inventory lists and items are displayed in tables, with forms for creating and editing entries opened in dialogs.
 
 ## Current features
 
@@ -16,90 +16,102 @@ The application provides a browser-based interface built with React and TypeScri
 - Add, rename, and delete options for existing select and multiselect fields
 - Support text, number, boolean, date, time, datetime, duration, select, and multiselect field types
 - Create, view, edit, and delete local inventory items with typed field values
-- Local SQLite storage with Alembic database migrations
-- Local application logging
+- Local SQLite storage with Drizzle database migrations
+- Local application logging with size-based rotation
 - Responsive light and dark UI styles based on Tailwind CSS
 
 ## Development
 
-### Prerequisites
-
-- Python 3.14 or later
-- Node.js and npm
-
-### Backend
+Node.js 24 or later and npm are required. Install each package from the repository root:
 
 ```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-alembic upgrade head
-uvicorn app.main:app --reload
+npm ci
+npm --prefix backend ci
+npm --prefix frontend ci
 ```
 
-The backend is available at `http://127.0.0.1:8000`.
-Use `http://127.0.0.1:8000/health` to verify that it is running.
-Interactive API documentation is available at `http://127.0.0.1:8000/docs`.
+The packages retain independent lockfiles. `better-sqlite3` is a native dependency;
+its installation must complete successfully before running the backend. See
+[backend documentation](backend/README.md).
 
-An Express/TypeScript replacement is being developed in [`backend/node/`](backend/node/README.md).
-It provides the database, startup/shutdown, logging, health endpoint, and inventory,
-field, option, and item APIs. The frontend still runs against FastAPI until final
-integration validation and replacement are complete.
-
-### Frontend
-
-Open a second terminal:
+Start the backend and frontend in separate terminals:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+npm run dev:backend
 ```
 
-The frontend is available at the local URL shown by Vite, usually `http://localhost:5173`.
+```bash
+npm run dev:frontend
+```
 
-### Configuration
+The backend defaults to `http://127.0.0.1:8000`; the Vite frontend usually runs at
+`http://localhost:5173`. Verify backend readiness at `/health`. The backend applies
+Drizzle migrations before listening, creating an empty database on first startup.
 
-- `INVENTORY_DATA_DIR`: Override the backend's local data directory. Set this environment variable for both Alembic and the backend so that they use the same database.
-- `INVENTORY_LOG_LEVEL`: Set the backend application log level (default: `INFO`).
-- `VITE_API_BASE_URL`: Set the frontend's backend URL (default: `http://127.0.0.1:8000`). To configure it locally, copy `frontend/.env.example` to `frontend/.env` and adjust the value.
+For a compiled backend:
 
-The backend allows frontend requests from `http://localhost:5173` and `http://127.0.0.1:5173`.
+```bash
+npm --prefix backend run build
+npm --prefix backend start
+```
 
-### Local application data
+API documentation remains available at `http://127.0.0.1:8000/docs`, with the API
+contract at `/openapi.json` and an alternative view at `/redoc`.
 
-During development, local application data is stored in `InventoryData/` in the repository root:
+## Configuration and local data
+
+Copy `backend/.env.example` to `backend/.env` to customize the backend. The development,
+start, and migration commands load that optional file using Node's built-in environment
+support. Existing process environment variables take precedence.
+
+| Variable              | Purpose                                                                    |
+| --------------------- | -------------------------------------------------------------------------- |
+| `INVENTORY_DATA_DIR`  | Absolute data directory, default repository-relative `InventoryData/node/` |
+| `INVENTORY_DB_PATH`   | Absolute database path, default `<data directory>/inventory.db`            |
+| `INVENTORY_HOST`      | Bind address, default `127.0.0.1`                                          |
+| `INVENTORY_PORT`      | Backend port, default `8000`                                               |
+| `INVENTORY_LOG_LEVEL` | Application log level, default `INFO`                                      |
+| `VITE_API_BASE_URL`   | Frontend backend URL, default `http://127.0.0.1:8000`                      |
+
+Configure the frontend through `frontend/.env`, based on `frontend/.env.example`.
+Backend storage paths support `~/` and are independent of the current working directory.
+The backend permits requests from `http://localhost:5173` and `http://127.0.0.1:5173`.
 
 ```text
-InventoryData/
+InventoryData/node/
 ├── inventory.db
 ├── attachments/
 └── logs/
     └── inventory-manager.log
 ```
 
-This directory is intentionally excluded from version control.
+This data directory is excluded from version control. The Node data location is
+retained from the migration so already-created Node data stays available. The old
+Python database is not imported or used. Attachments and synchronization remain
+preparations, not implemented features.
+
+See [backend documentation](backend/README.md) for migration commands and API behavior.
 
 ## Quality checks
 
-### Backend
+Run the complete quality check from the repository root:
 
 ```bash
-cd backend
-source .venv/bin/activate
-ruff format --check .
-ruff check .
-mypy app tests
-pytest
-alembic current
+npm run check
 ```
 
-### Frontend
+It executes typecheck, lint, tests, build, and finally `prettier --check .`.
+The format check only reads files. The other checks delegate to the frontend and
+backend packages; backend tests use `node:test`, frontend tests use Vitest.
+
+Tests use synthetic data. The frontend client integration test starts Express with
+a temporary database and local port. HTTP tests require an environment permitting
+local socket communication.
+
+Individual checks remain available in each package, for example:
 
 ```bash
-cd frontend
-npm run lint
-npm run test
-npm run build
+npm --prefix backend run test
+npm --prefix frontend run test
+npm run format:check
 ```

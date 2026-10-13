@@ -12,7 +12,10 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<InventoryOverviewPage />} />
-        <Route path="/inventories/:inventoryId/items" element={<InventoryItemsPage />} />
+        <Route
+          path="/inventories/:inventoryId/items"
+          element={<InventoryItemsPage />}
+        />
         <Route
           path="/inventories/:inventoryId/fields"
           element={<InventoryFieldsPage />}
