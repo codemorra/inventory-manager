@@ -1,13 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
-import { ApiError } from "../services/api";
-import { getInventories } from "../services/inventories";
-import { InventoryOverviewPage } from "./InventoryOverviewPage";
+import { ApiError } from "../../src/services/api";
+import { getInventories } from "../../src/services/inventories";
+import { InventoryOverviewPage } from "../../src/pages/InventoryOverviewPage";
 
-vi.mock("../services/inventories", () => ({
+vi.mock("../../src/services/inventories", () => ({
   createInventory: vi.fn(),
   deleteInventory: vi.fn(),
   getInventories: vi.fn(),
@@ -40,7 +40,8 @@ afterEach(() => {
 });
 
 describe("InventoryOverviewPage", () => {
-  it("displays a loading message while inventories are loading", () => {
+  // Test that a loading message is displayed while inventories are being fetched
+  test("displays a loading message while inventories are loading", () => {
     mockedGetInventories.mockImplementation(() => new Promise<never>(() => {}));
 
     renderInventoryOverviewPage();
@@ -50,7 +51,8 @@ describe("InventoryOverviewPage", () => {
     );
   });
 
-  it("displays an API error message", async () => {
+  // Test that an API error message is displayed after a failed fetch
+  test("displays an API error message", async () => {
     mockedGetInventories.mockRejectedValue(
       new ApiError(500, "Unable to reach the backend."),
     );
@@ -62,7 +64,8 @@ describe("InventoryOverviewPage", () => {
     );
   });
 
-  it("displays an empty state when no inventories exist", async () => {
+  // Test that an empty state message is displayed when no inventories exist
+  test("displays an empty state when no inventories exist", async () => {
     mockedGetInventories.mockResolvedValue([]);
 
     renderInventoryOverviewPage();
@@ -70,7 +73,8 @@ describe("InventoryOverviewPage", () => {
     expect(await screen.findByText("No inventories yet.")).toBeInTheDocument();
   });
 
-  it("displays returned inventories", async () => {
+  // Test that returned inventories are displayed correctly
+  test("displays returned inventories", async () => {
     mockedGetInventories.mockResolvedValue([
       {
         id: "inventory-1",

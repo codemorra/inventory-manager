@@ -9,13 +9,13 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, vi } from "vitest";
 
-/** Check the real fetch clients against Express, including DTOs, 204 handling, and errors. */
+// Test that the frontend clients can complete configuration and item CRUD against an Express backend
 test("frontend clients complete configuration and item CRUD against Express", async () => {
   const dataDirectory = await mkdtemp(
     join(tmpdir(), "inventory-client-contract-"),
   );
   const backendDirectory = fileURLToPath(
-    new URL("../../../backend/", import.meta.url),
+    new URL("../../backend/", import.meta.url),
   );
   const probe = createServer();
   let child: ReturnType<typeof spawn> | undefined;
@@ -75,10 +75,10 @@ test("frontend clients complete configuration and item CRUD against Express", as
 
     vi.stubEnv("VITE_API_BASE_URL", url);
     vi.resetModules();
-    const inventories = await import("./inventories");
-    const fields = await import("./inventoryFields");
-    const items = await import("./inventoryItems");
-    const { ApiError } = await import("./api");
+    const inventories = await import("../src/services/inventories");
+    const fields = await import("../src/services/inventoryFields");
+    const items = await import("../src/services/inventoryItems");
+    const { ApiError } = await import("../src/services/api");
 
     const inventory = await inventories.createInventory({
       name: " Synthetic clients ",

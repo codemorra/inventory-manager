@@ -1,14 +1,17 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
-import { ApiError } from "../services/api";
-import { deleteInventory, updateInventory } from "../services/inventories";
-import { InventoryTable } from "./InventoryTable";
+import { ApiError } from "../../src/services/api";
+import {
+  deleteInventory,
+  updateInventory,
+} from "../../src/services/inventories";
+import { InventoryTable } from "../../src/components/InventoryTable";
 
-vi.mock("../services/inventories", () => ({
+vi.mock("../../src/services/inventories", () => ({
   createInventory: vi.fn(),
   deleteInventory: vi.fn(),
   getInventories: vi.fn(),
@@ -52,7 +55,8 @@ afterEach(() => {
 });
 
 describe("InventoryTable", () => {
-  it("submits changed inventory values", async () => {
+  // Test that inventory values can be updated successfully
+  test("submits changed inventory values", async () => {
     const user = userEvent.setup();
     mockedUpdateInventory.mockResolvedValue({
       ...inventory,
@@ -83,7 +87,8 @@ describe("InventoryTable", () => {
     });
   });
 
-  it("cancels editing without submitting changes", async () => {
+  // Test that editing can be canceled without submitting changes
+  test("cancels editing without submitting changes", async () => {
     const user = userEvent.setup();
 
     renderInventoryTable();
@@ -100,7 +105,8 @@ describe("InventoryTable", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("deletes an inventory after confirmation", async () => {
+  // Test that an inventory is deleted after the user confirms the action
+  test("deletes an inventory after confirmation", async () => {
     const user = userEvent.setup();
     vi.spyOn(window, "confirm").mockReturnValue(true);
     mockedDeleteInventory.mockResolvedValue();
@@ -116,7 +122,8 @@ describe("InventoryTable", () => {
     });
   });
 
-  it("does not delete an inventory when confirmation is rejected", async () => {
+  // Test that an inventory is not deleted when the user cancels the confirmation
+  test("does not delete an inventory when confirmation is rejected", async () => {
     const user = userEvent.setup();
     vi.spyOn(window, "confirm").mockReturnValue(false);
 
@@ -127,7 +134,8 @@ describe("InventoryTable", () => {
     expect(mockedDeleteInventory).not.toHaveBeenCalled();
   });
 
-  it("displays an update error", async () => {
+  // Test that an API error message is displayed after a failed inventory update
+  test("displays an update error", async () => {
     const user = userEvent.setup();
     mockedUpdateInventory.mockRejectedValue(
       new ApiError(500, "Unable to reach the backend."),

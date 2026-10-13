@@ -11,7 +11,8 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
   ],
   test: {
+    include: ["test/**/*.test.{ts,tsx}"],
     environment: "jsdom",
-    setupFiles: "./src/test/setup.ts",
+    setupFiles: "./test/setup.ts",
   },
 });

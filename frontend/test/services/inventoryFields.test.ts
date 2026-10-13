@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
   createInventoryField,
@@ -6,7 +6,7 @@ import {
   deleteInventoryFieldOption,
   getInventoryFieldOptions,
   updateInventoryFieldOption,
-} from "./inventoryFields";
+} from "../../src/services/inventoryFields";
 
 function createResponse(data: unknown, status = 200): Response {
   return {
@@ -21,7 +21,8 @@ afterEach(() => {
 });
 
 describe("inventory field service", () => {
-  it("creates a configured select field", async () => {
+  // Test that a configured select field can be created
+  test("creates a configured select field", async () => {
     const response = createResponse({ id: "field-1" }, 201);
     const mockedFetch = vi.fn().mockResolvedValue(response);
     vi.stubGlobal("fetch", mockedFetch);
@@ -45,7 +46,8 @@ describe("inventory field service", () => {
     );
   });
 
-  it("uses the expected option endpoints", async () => {
+  // Test that the correct endpoints are used for inventory field options
+  test("uses the expected option endpoints", async () => {
     const mockedFetch = vi
       .fn()
       .mockResolvedValueOnce(createResponse([]))

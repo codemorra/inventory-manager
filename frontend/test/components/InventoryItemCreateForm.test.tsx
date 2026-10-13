@@ -1,14 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { ApiError } from "../services/api";
-import { createInventoryItem } from "../services/inventoryItems";
-import type { InventoryField } from "../types/inventoryField";
-import { InventoryItemCreateForm } from "./InventoryItemCreateForm";
+import { ApiError } from "../../src/services/api";
+import { createInventoryItem } from "../../src/services/inventoryItems";
+import type { InventoryField } from "../../src/types/inventoryField";
+import { InventoryItemCreateForm } from "../../src/components/InventoryItemCreateForm";
 
-vi.mock("../services/inventoryItems", () => ({
+vi.mock("../../src/services/inventoryItems", () => ({
   createInventoryItem: vi.fn(),
   deleteInventoryItem: vi.fn(),
   getInventoryItems: vi.fn(),
@@ -121,7 +121,8 @@ afterEach(() => {
 });
 
 describe("InventoryItemCreateForm", () => {
-  it("submits values matching their configured field types", async () => {
+  // Test that the form submits values matching their configured field types
+  test("submits values matching their configured field types", async () => {
     const user = userEvent.setup();
     mockedCreateInventoryItem.mockResolvedValue({
       id: "item-1",
@@ -160,7 +161,8 @@ describe("InventoryItemCreateForm", () => {
     });
   });
 
-  it("clears values after successful creation", async () => {
+  // Test that the form clears its values after a successful item creation
+  test("clears values after successful creation", async () => {
     const user = userEvent.setup();
     mockedCreateInventoryItem.mockResolvedValue({
       id: "item-1",
@@ -185,7 +187,8 @@ describe("InventoryItemCreateForm", () => {
     expect(screen.getByLabelText("Title")).toHaveValue("");
   });
 
-  it("displays an API error after failed creation", async () => {
+  // Test that an API error message is displayed after a failed item creation
+  test("displays an API error after failed creation", async () => {
     const user = userEvent.setup();
     mockedCreateInventoryItem.mockRejectedValue(
       new ApiError(422, "Inventory item values are invalid."),
@@ -200,7 +203,8 @@ describe("InventoryItemCreateForm", () => {
     );
   });
 
-  it("disables creation when no fields are configured", () => {
+  // Test that the "New item" button is disabled when no fields are configured
+  test("disables creation when no fields are configured", () => {
     renderInventoryItemCreateForm([]);
 
     expect(screen.getByRole("button", { name: "New item" })).toBeDisabled();
