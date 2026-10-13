@@ -89,59 +89,58 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
 
   return (
     <>
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="overflow-hidden rounded-2xl border border-shell bg-surface shadow-soft">
         <div className="overflow-x-auto">
           <table className="min-w-full border-collapse text-left text-sm">
-            <thead className="bg-slate-100 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800/80 dark:text-slate-300">
+            <thead className="bg-surface-muted text-xs font-semibold uppercase tracking-wider text-muted">
               <tr>
-                <th
-                  className="border-b border-slate-200 px-4 py-3 dark:border-slate-700"
-                  scope="col"
-                >
+                <th className="border-b border-shell px-5 py-3.5" scope="col">
                   {t("common.fields.name")}
                 </th>
-                <th
-                  className="border-b border-slate-200 px-4 py-3 dark:border-slate-700"
-                  scope="col"
-                >
+                <th className="border-b border-shell px-5 py-3.5" scope="col">
                   {t("common.fields.description")}
                 </th>
                 <th
-                  className="border-b border-slate-200 px-4 py-3 text-right dark:border-slate-700"
+                  className="border-b border-shell px-5 py-3.5 text-right"
                   scope="col"
                 >
                   {t("table.actions")}
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+            <tbody className="divide-y divide-shell">
               {inventories.map((inventory) => (
                 <tr
-                  className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                  className="transition-colors hover:bg-surface-hover/60"
                   key={inventory.id}
                 >
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
-                    {inventory.name}
+                  <td className="px-5 py-4 font-semibold text-foreground">
+                    <Link
+                      className="transition-colors hover:text-accent"
+                      to={`/inventories/${inventory.id}/items`}
+                    >
+                      {inventory.name}
+                    </Link>
                   </td>
-                  <td className="max-w-xl px-4 py-3 text-slate-600 dark:text-slate-400">
+                  <td className="max-w-xl px-5 py-4 text-muted">
                     {inventory.description || "—"}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                  <td className="whitespace-nowrap px-5 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Link
-                        className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+                        className="rounded-lg bg-accent-soft px-3 py-2 font-medium text-accent transition hover:bg-accent/15"
                         to={`/inventories/${inventory.id}/items`}
                       >
                         {t("inventories.actions.items")}
                       </Link>
                       <Link
-                        className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+                        className="rounded-lg border border-shell px-3 py-2 font-medium transition hover:bg-surface-hover"
                         to={`/inventories/${inventory.id}/fields`}
                       >
                         {t("inventories.actions.fields")}
                       </Link>
                       <button
-                        className="rounded-md border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
+                        className="rounded-lg border border-shell px-3 py-2 font-medium transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isMutating}
                         onClick={() => startEditing(inventory)}
                         type="button"
@@ -149,7 +148,7 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
                         {t("common.actions.edit")}
                       </button>
                       <button
-                        className="rounded-md bg-red-600 px-3 py-1.5 font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500 dark:hover:bg-red-400"
+                        className="rounded-lg bg-danger-soft px-3 py-2 font-medium text-danger transition hover:bg-danger/15 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isMutating}
                         onClick={() => handleDelete(inventory)}
                         type="button"
@@ -168,7 +167,7 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
 
         {deleteInventory.error && (
           <p
-            className="border-t border-slate-200 px-4 py-3 text-red-700 dark:border-slate-800 dark:text-red-300"
+            className="border-t border-shell bg-danger-soft px-5 py-3 text-danger"
             role="alert"
           >
             {deleteInventory.error instanceof ApiError
@@ -187,13 +186,13 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
         >
           <form className="space-y-4" onSubmit={handleUpdate}>
             <label
-              className="block font-medium"
+              className="block text-sm font-medium text-foreground"
               htmlFor={`inventory-${editingInventory.id}-name`}
             >
               {t("common.fields.name")}
               <input
                 autoFocus
-                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
                 id={`inventory-${editingInventory.id}-name`}
                 maxLength={255}
                 onChange={(event) => setName(event.target.value)}
@@ -202,12 +201,12 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
               />
             </label>
             <label
-              className="block font-medium"
+              className="block text-sm font-medium text-foreground"
               htmlFor={`inventory-${editingInventory.id}-description`}
             >
               {t("common.fields.description")}
               <textarea
-                className="mt-1 min-h-24 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="mt-1.5 min-h-28 w-full resize-y rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
                 id={`inventory-${editingInventory.id}-description`}
                 onChange={(event) => setDescription(event.target.value)}
                 value={description}
@@ -215,16 +214,19 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
             </label>
 
             {updateInventory.error && (
-              <p className="text-red-700 dark:text-red-300" role="alert">
+              <p
+                className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
+                role="alert"
+              >
                 {updateInventory.error instanceof ApiError
                   ? updateInventory.error.message
                   : t("inventories.errors.update")}
               </p>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap justify-end gap-3 pt-1">
               <button
-                className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400"
+                className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isMutating || !name.trim()}
                 type="submit"
               >
@@ -233,7 +235,7 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
                   : t("common.actions.saveChanges")}
               </button>
               <button
-                className="rounded-md border border-slate-300 px-4 py-2 font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
+                className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isMutating}
                 onClick={cancelEditing}
                 type="button"

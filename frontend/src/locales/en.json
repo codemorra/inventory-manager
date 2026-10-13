@@ -47,6 +47,7 @@
     "confirmDelete": "Delete \"{{name}}\"?",
     "description": "Create and manage your inventory lists.",
     "empty": "No inventories yet.",
+    "emptyDescription": "Create your first inventory from the sidebar to start configuring fields and adding items.",
     "errors": {
       "create": "Unable to create inventory.",
       "delete": "Unable to delete inventory.",
@@ -135,11 +136,15 @@
     }
   },
   "navigation": {
+    "allInventories": "Overview",
     "close": "Close menu",
     "closeBackdrop": "Close navigation",
     "inventories": "Inventories",
+    "inventoryError": "Unable to load inventories.",
     "label": "Main navigation",
     "mobileDialog": "Mobile navigation",
+    "loadingInventories": "Loading inventories…",
+    "noInventories": "No inventories created yet.",
     "open": "Open menu",
     "skipToContent": "Skip to content"
   },
