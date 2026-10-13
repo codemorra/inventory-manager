@@ -4,6 +4,7 @@ import { createApp } from "./app.js";
 import type { AppConfig } from "./config.js";
 import { openDatabase } from "./db/connection.js";
 import { createLogger } from "./logging.js";
+import { createServices } from "./services.js";
 
 /**
  * Start the HTTP server with the given application configuration.
@@ -14,11 +15,12 @@ export async function startServer(config: AppConfig) {
   await mkdir(config.attachmentsDirectory, { recursive: true });
   const logger = await createLogger(config);
   let connection: ReturnType<typeof openDatabase> | undefined;
-  const server = createServer(createApp(logger));
+  const server = createServer();
 
   try {
     // Open the database connection before starting the server.
     connection = openDatabase(config.databasePath);
+    server.on("request", createApp(logger, createServices(connection.db)));
     await new Promise<void>((resolve, reject) => {
       server.once("error", reject);
       server.listen(config.port, config.host, () => {

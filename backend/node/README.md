@@ -1,8 +1,11 @@
-# Express backend migration — step 1
+# Express backend migration — step 2
 
-This directory contains the Node backend foundation. FastAPI remains the reference
-and the application backend until the configuration and item APIs have been migrated.
-Only `/health` is available here so far.
+This directory contains the Node backend foundation and the inventory configuration
+APIs. FastAPI remains the reference and the frontend's backend until the item API
+is migrated and parity is verified.
+
+Available: `/health`, inventory CRUD, field CRUD, and option listing/create/rename/delete.
+The item API is deliberately deferred to step 3.
 
 ## Development and checks
 
@@ -56,7 +59,10 @@ the existing Python development database. Point storage overrides at a fresh loc
 `src/db/schema.ts` defines the five domain tables and the approved lookup indexes.
 IDs are UUID strings, lifecycle timestamps are UTC ISO strings, and dynamic values
 are JSON in a text column. UUID/timestamp defaults run in Drizzle, not as SQL defaults.
-Foreign keys use `NO ACTION`; soft deletion belongs to the later services.
+Foreign keys use `NO ACTION`. Inventory, field, and option deletion uses tombstones:
+the name is cleared and `deleted_at` is set; deleting an inventory also clears its
+description. Child records and stored option IDs are preserved. Active resources
+are accessed through active parents.
 
 The regular Drizzle migrator applies `drizzle/0000_initial_schema.sql` before the
 server listens. Its migration journal makes repeated startups preserve data and
@@ -72,10 +78,28 @@ same path configuration. The `drizzle/` directory stays next to `dist/` and must
 the compiled backend when it is moved or packaged.
 
 `createApp()` has no filesystem, database, or listener side effects. `startServer()`
-owns initialization and shutdown. Services and repositories will be added in steps
-2–3 without Express types in domain code. Once parity is verified, the contents of
+owns initialization and shutdown. The `inventories/`, `fields/`, and `options/`
+feature folders each contain validation, a service, and a repository. Routes and
+frontend DTO mapping stay under `routes/`; domain code has no Express types or HTTP
+status codes. Validation is invoked by the services, including direct calls.
+Field lists load their options together, and creating a field with its initial
+options is transactional. Once parity is verified, the contents of
 `backend/node/` will move directly into `backend/`; `drizzle/` remains the migration
 directory. The Python `app/` stays in place until the migration is complete.
+
+Configuration APIs retain the existing frontend's paths, snake-case response fields,
+201/200/204 statuses, and structured 404/422 domain errors. Input validation returns
+422 with a `detail` issue list (`type`, `loc`, `msg`); framework-specific messages
+and issue types reflect Zod instead of reproducing all Pydantic internals. Unknown
+input properties are ignored. No-op patches preserve timestamps.
+
+Initial selection options must have distinct names after trimming and full Unicode
+case folding, with a maximum of 100 initial options. Later additions and renames
+allow duplicate names and do not impose that initial count limit. The last option
+may be deleted. Positions use the active record count without renumbering, and
+lists retain the existing name/position ordering. Field type and text length cannot
+be changed by PATCH. Shared name validation counts Unicode code points before
+trimming; the case-folding data matches the Python reference's Unicode 16.0 rules.
 
 The HTTP layer retains the two Vite CORS origins and disables credentials. JSON
 bodies have an explicit 1 MiB limit (413 for excess); malformed JSON returns 422.
