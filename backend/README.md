@@ -59,5 +59,4 @@ use `node:test` with synthetic data; HTTP tests require local socket communicati
 ## API behavior
 
 Item PATCH replaces all active values. Deletions preserve tombstones for future
-synchronization. Malformed date/time value strings currently return 500; other
-invalid values return structured 422 errors.
+synchronization. Invalid item values return structured 422 errors.

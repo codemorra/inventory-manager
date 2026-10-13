@@ -1,7 +1,10 @@
 import { z } from "zod";
 import type { inventoryFields, inventoryFieldOptions } from "../db/schema.js";
 import { DomainError } from "../errors.js";
-import { validateTemporalValue } from "./temporal.js";
+import {
+  InvalidTemporalValueError,
+  validateTemporalValue,
+} from "./temporal.js";
 
 const valueInputSchema = z.object({
   field_id: z.string(),
@@ -85,7 +88,12 @@ export function validateValues(
       case "time":
       case "datetime":
         if (typeof value !== "string") invalidValue();
-        validateTemporalValue(field.fieldType, value);
+        try {
+          validateTemporalValue(field.fieldType, value);
+        } catch (error) {
+          if (error instanceof InvalidTemporalValueError) invalidValue();
+          throw error;
+        }
         break;
       case "select":
         if (typeof value !== "string" || !optionIds.get(field_id)?.has(value))
