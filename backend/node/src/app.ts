@@ -4,6 +4,7 @@ import type { Logger } from "./logging.js";
 import type { Services } from "./services.js";
 import { inventoryRoutes } from "./routes/inventories.js";
 import { fieldRoutes } from "./routes/fields.js";
+import { itemRoutes } from "./routes/items.js";
 import { errorHandler } from "./routes/error-handler.js";
 
 /**
@@ -31,8 +32,13 @@ export function createApp(logger: Pick<Logger, "error">, services: Services) {
     response.json({ status: "ok" });
   });
 
-  // Inventory and field routes
-  app.use("/inventories", inventoryRoutes(services), fieldRoutes(services));
+  // Inventory-related routes
+  app.use(
+    "/inventories",
+    inventoryRoutes(services),
+    fieldRoutes(services),
+    itemRoutes(services),
+  );
 
   // 404 handler for unknown routes
   app.use((_request, response) => {

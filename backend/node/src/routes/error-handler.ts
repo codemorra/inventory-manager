@@ -2,6 +2,7 @@ import type { ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
 import { DomainError } from "../errors.js";
 import type { Logger } from "../logging.js";
+import { InvalidTemporalValueError } from "../items/temporal.js";
 
 /**
  * Creates an Express error handler middleware.
@@ -18,10 +19,18 @@ export function errorHandler(
     }
     if (error instanceof DomainError) {
       const status =
-        error.code === "inventory_field_options_not_supported" ? 422 : 404;
+        error.code === "inventory_field_options_not_supported" ||
+        error.code === "invalid_inventory_item_value"
+          ? 422
+          : 404;
       response
         .status(status)
         .json({ detail: { code: error.code, message: error.message } });
+      return;
+    }
+    if (error instanceof InvalidTemporalValueError) {
+      logger.error("Invalid temporal item value", error);
+      response.status(500).type("text/plain").send("Internal Server Error");
       return;
     }
     if (error instanceof ZodError) {

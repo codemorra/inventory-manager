@@ -1,11 +1,11 @@
-# Express backend migration — step 2
+# Express backend migration — step 3
 
-This directory contains the Node backend foundation and the inventory configuration
-APIs. FastAPI remains the reference and the frontend's backend until the item API
-is migrated and parity is verified.
+This directory contains the Node backend foundation, inventory configuration APIs,
+and item APIs. FastAPI remains the reference and the frontend's backend until the
+final integration validation and replacement in step 4.
 
-Available: `/health`, inventory CRUD, field CRUD, and option listing/create/rename/delete.
-The item API is deliberately deferred to step 3.
+Available: `/health`, inventory CRUD, field CRUD, option listing/create/rename/delete,
+and item CRUD under `/inventories/:inventory_id/items`.
 
 ## Development and checks
 
@@ -78,7 +78,7 @@ same path configuration. The `drizzle/` directory stays next to `dist/` and must
 the compiled backend when it is moved or packaged.
 
 `createApp()` has no filesystem, database, or listener side effects. `startServer()`
-owns initialization and shutdown. The `inventories/`, `fields/`, and `options/`
+owns initialization and shutdown. The `inventories/`, `fields/`, `options/`, and `items/`
 feature folders each contain validation, a service, and a repository. Routes and
 frontend DTO mapping stay under `routes/`; domain code has no Express types or HTTP
 status codes. Validation is invoked by the services, including direct calls.
@@ -100,6 +100,41 @@ may be deleted. Positions use the active record count without renumbering, and
 lists retain the existing name/position ordering. Field type and text length cannot
 be changed by PATCH. Shared name validation counts Unicode code points before
 trimming; the case-folding data matches the Python reference's Unicode 16.0 rules.
+
+## Items and dynamic values
+
+Item create and PATCH accept `{ values: [{ field_id, value }] }`. Omitted `values`
+default to an empty set; fields are not required, but an explicit `value: null` is
+invalid. PATCH replaces the entire active value set, preserving old rows as cleared
+tombstones and creating new IDs for replacement values. The item's own `updated_at`
+does not change when only its values change. Item deletion tombstones the item and
+all active values without touching earlier tombstones.
+
+Validation runs in the service using the active field definitions and options of
+the parent inventory. Duplicate, unknown, foreign, and deleted field IDs are invalid.
+Text preserves whitespace and counts Unicode code points. Numbers must be finite,
+booleans must be booleans, and duration is a nonnegative integer value without a
+new unit interpretation. Select values are active option IDs; multiselect is a
+nonempty array of active IDs, preserving order and duplicates. Existing values
+referencing deleted fields or options remain readable but cannot be resubmitted.
+
+Date, time, and datetime values retain their original strings, including supported
+basic/extended formats, ISO week dates, fractional seconds, offsets, local datetimes,
+and midnight represented by `24:00`. Invalid value types return the structured 422
+`invalid_inventory_item_value` error. The known FastAPI behavior for malformed
+temporal strings is deliberately preserved as a generic plain-text 500; correcting
+that behavior is a separate change.
+
+JavaScript does not retain the distinction between JSON numeric tokens `1` and
+`1.0`; duration validation therefore checks their integer value. Non-finite numbers
+are rejected before persistence so direct service callers cannot accidentally
+store JSON null in place of a number. JavaScript's normal number precision applies.
+
+Create, replacement, and deletion run in transactions; failures leave the item and
+its value history unchanged. Lists retain newest-first item ordering and load
+values together instead of issuing a query per item. Mutation inputs have no added
+count limit; value insertion uses bounded batches within the same transaction to
+respect SQLite's parameter limit.
 
 The HTTP layer retains the two Vite CORS origins and disables credentials. JSON
 bodies have an explicit 1 MiB limit (413 for excess); malformed JSON returns 422.

@@ -44,8 +44,8 @@ Interactive API documentation is available at `http://127.0.0.1:8000/docs`.
 
 An Express/TypeScript replacement is being developed in [`backend/node/`](backend/node/README.md).
 It provides the database, startup/shutdown, logging, health endpoint, and inventory,
-field, and option APIs. The frontend still runs against FastAPI until the item API
-and final parity validation are complete.
+field, option, and item APIs. The frontend still runs against FastAPI until final
+integration validation and replacement are complete.
 
 ### Frontend
 

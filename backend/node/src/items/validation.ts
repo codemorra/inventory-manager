@@ -1,0 +1,106 @@
+import { z } from "zod";
+import type { inventoryFields, inventoryFieldOptions } from "../db/schema.js";
+import { DomainError } from "../errors.js";
+import { validateTemporalValue } from "./temporal.js";
+
+const valueInputSchema = z.object({
+  field_id: z.string(),
+  value: z
+    .unknown()
+    .refine(
+      (value): boolean => value !== undefined,
+      "Field value is required.",
+    ),
+});
+
+// Schema for inventory item input, including validation for individual field values.
+export const itemInputSchema = z.object({
+  values: z.array(valueInputSchema).default([]),
+});
+export type ValueInput = z.infer<typeof valueInputSchema>;
+type Field = typeof inventoryFields.$inferSelect;
+type Option = typeof inventoryFieldOptions.$inferSelect;
+
+function invalidValue(): never {
+  throw new DomainError(
+    "invalid_inventory_item_value",
+    "Inventory item values are invalid.",
+  );
+}
+
+/**
+ * Validates inventory item values against the provided field definitions and options.
+ * Ensures that each value conforms to its field type and constraints.
+ * @param values The inventory item values to validate.
+ * @param fields The field definitions to validate against.
+ * @param options The field options to validate against.
+ * @throws {DomainError} If any of the values are invalid.
+ */
+export function validateValues(
+  values: ValueInput[],
+  fields: Field[],
+  options: Option[],
+): void {
+  const definitions = new Map(fields.map((field) => [field.id, field]));
+  const optionIds = new Map<string, Set<string>>();
+  for (const option of options) {
+    const ids = optionIds.get(option.fieldId) ?? new Set<string>();
+    ids.add(option.id);
+    optionIds.set(option.fieldId, ids);
+  }
+  const seen = new Set<string>();
+  // Unknown/duplicate field IDs take precedence over individual value validation in the reference.
+  for (const input of values) {
+    if (seen.has(input.field_id) || !definitions.has(input.field_id))
+      invalidValue();
+    seen.add(input.field_id);
+  }
+  for (const { field_id, value } of values) {
+    const field = definitions.get(field_id)!;
+    switch (field.fieldType) {
+      case "text":
+        if (
+          typeof value !== "string" ||
+          Array.from(value).length > (field.maxLength || 255)
+        )
+          invalidValue();
+        break;
+      case "number":
+        if (typeof value !== "number" || !Number.isFinite(value))
+          invalidValue();
+        break;
+      case "boolean":
+        if (typeof value !== "boolean") invalidValue();
+        break;
+      case "duration":
+        if (
+          typeof value !== "number" ||
+          !Number.isFinite(value) ||
+          !Number.isInteger(value) ||
+          value < 0
+        )
+          invalidValue();
+        break;
+      case "date":
+      case "time":
+      case "datetime":
+        if (typeof value !== "string") invalidValue();
+        validateTemporalValue(field.fieldType, value);
+        break;
+      case "select":
+        if (typeof value !== "string" || !optionIds.get(field_id)?.has(value))
+          invalidValue();
+        break;
+      case "multiselect":
+        if (
+          !Array.isArray(value) ||
+          !value.length ||
+          !value.every(
+            (id) => typeof id === "string" && optionIds.get(field_id)?.has(id),
+          )
+        )
+          invalidValue();
+        break;
+    }
+  }
+}
