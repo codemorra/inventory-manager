@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "node --env-file-if-exists=.env --import tsx --watch src/index.ts",
     "start": "node --env-file-if-exists=.env dist/index.js",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.tools.json",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.tools.json && tsc -p test/tsconfig.json",
     "lint": "eslint .",
     "test": "node --import tsx --test test/*.test.ts",
     "build": "tsc",
