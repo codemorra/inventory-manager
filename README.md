@@ -6,7 +6,7 @@
 
 Users can create inventory lists, define custom fields, and manage items with typed values. Each inventory has its own field configuration, including text limits and options for select and multiselect fields.
 
-The application uses a React/TypeScript frontend, an Express/TypeScript backend, and local SQLite storage through Drizzle. Inventory lists and items are displayed in tables, with forms for creating and editing entries opened in dialogs.
+The application uses a React/TypeScript frontend, an Express/TypeScript backend, and local SQLite storage through Drizzle. A responsive sidebar provides direct access to inventories, while tables and dialogs support configuration and item management.
 
 ## Current features
 
@@ -18,7 +18,9 @@ The application uses a React/TypeScript frontend, an Express/TypeScript backend,
 - Create, view, edit, and delete local inventory items with typed field values
 - Local SQLite storage with Drizzle database migrations
 - Local application logging with size-based rotation
-- Responsive light and dark UI styles based on Tailwind CSS
+- Responsive interface based on Tailwind CSS
+- English and German interface with system-language detection
+- System, light, and dark appearance modes with persistent preferences
 
 ## Development
 
@@ -76,6 +78,10 @@ support. Existing process environment variables take precedence.
 Configure the frontend through `frontend/.env`, based on `frontend/.env.example`.
 Backend storage paths support `~/` and are independent of the current working directory.
 The backend permits requests from `http://localhost:5173` and `http://127.0.0.1:5173`.
+
+The frontend initially selects German for a `de` system locale and English for all
+other locales. Language and appearance can be changed from the sidebar. Both choices
+are stored locally in the browser and restored on the next visit.
 
 ```text
 InventoryData/node/
