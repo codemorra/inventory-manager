@@ -1,0 +1,13 @@
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/drizzle/meta/
+InventoryData/
+.local/
+package-lock.json
+**/package-lock.json

@@ -69,11 +69,8 @@ describe("inventory field service", () => {
       "http://127.0.0.1:8000/inventories/inventory-1/fields/field-1/options/option-1",
       "http://127.0.0.1:8000/inventories/inventory-1/fields/field-1/options/option-1",
     ]);
-    expect(mockedFetch.mock.calls.map(([, options]) => options?.method)).toEqual([
-      undefined,
-      "POST",
-      "PATCH",
-      "DELETE",
-    ]);
+    expect(
+      mockedFetch.mock.calls.map(([, options]) => options?.method),
+    ).toEqual([undefined, "POST", "PATCH", "DELETE"]);
   });
 });
