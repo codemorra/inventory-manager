@@ -1,4 +1,8 @@
 {
+  "app": {
+    "name": "Inventory Manager",
+    "tagline": "Organize what matters"
+  },
   "common": {
     "actions": {
       "add": "Add",
@@ -123,6 +127,15 @@
       "create": "Add inventory item",
       "edit": "Edit inventory item"
     }
+  },
+  "navigation": {
+    "close": "Close menu",
+    "closeBackdrop": "Close navigation",
+    "inventories": "Inventories",
+    "label": "Main navigation",
+    "mobileDialog": "Mobile navigation",
+    "open": "Open menu",
+    "skipToContent": "Skip to content"
   },
   "table": {
     "actions": "Actions"
