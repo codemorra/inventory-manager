@@ -9,6 +9,8 @@ frontend/*.local
 
 # Backend
 backend/.venv/
+backend/node/node_modules/
+backend/node/dist/
 
 # Local configuration (commit .env.example files only)
 .env
