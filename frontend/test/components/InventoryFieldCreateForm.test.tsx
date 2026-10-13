@@ -57,6 +57,8 @@ describe("InventoryFieldCreateForm", () => {
 
     renderInventoryFieldCreateForm();
 
+    await user.click(screen.getByRole("button", { name: "New field" }));
+
     await user.type(screen.getByLabelText("Field name"), "  Brand  ");
     await user.click(screen.getByRole("button", { name: "Add field" }));
 
@@ -86,14 +88,17 @@ describe("InventoryFieldCreateForm", () => {
 
     renderInventoryFieldCreateForm();
 
-    const input = screen.getByLabelText("Field name");
+    await user.click(screen.getByRole("button", { name: "New field" }));
 
-    await user.type(input, "Brand");
+    await user.type(screen.getByLabelText("Field name"), "Brand");
     await user.click(screen.getByRole("button", { name: "Add field" }));
 
-    await waitFor(() => {
-      expect(input).toHaveValue("");
-    });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: "New field" }));
+
+    expect(screen.getByLabelText("Field name")).toHaveValue("");
   });
 
   // Test that an API error message is displayed after a failed submission
@@ -104,6 +109,8 @@ describe("InventoryFieldCreateForm", () => {
     );
 
     renderInventoryFieldCreateForm();
+
+    await user.click(screen.getByRole("button", { name: "New field" }));
 
     await user.type(screen.getByLabelText("Field name"), "Brand");
     await user.click(screen.getByRole("button", { name: "Add field" }));
@@ -128,6 +135,7 @@ describe("InventoryFieldCreateForm", () => {
       updated_at: "2026-09-17T10:00:00Z",
     });
     renderInventoryFieldCreateForm();
+    await user.click(screen.getByRole("button", { name: "New field" }));
     await user.type(screen.getByLabelText("Field name"), "Played");
     await user.selectOptions(screen.getByLabelText("Field type"), "select");
     await user.type(screen.getByLabelText("Option 1"), "Not started");

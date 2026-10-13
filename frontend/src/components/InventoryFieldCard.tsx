@@ -82,7 +82,7 @@ export function InventoryFieldCard({
   }
 
   return (
-    <article className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <article className="rounded-2xl border border-shell bg-surface p-5 shadow-soft">
       {isEditing ? (
         <form
           className="flex flex-col gap-3 sm:flex-row"
@@ -96,7 +96,7 @@ export function InventoryFieldCard({
               {t("fields.form.fieldName")}
             </label>
             <input
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              className="w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
               id={`field-${inventoryField.id}-name`}
               maxLength={255}
               onChange={(event) => setName(event.target.value)}
@@ -107,7 +107,7 @@ export function InventoryFieldCard({
 
           <div className="flex gap-2">
             <button
-              className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400"
+              className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-surface transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isMutating || !name.trim()}
               type="submit"
             >
@@ -117,7 +117,7 @@ export function InventoryFieldCard({
             </button>
 
             <button
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
+              className="rounded-lg border border-shell px-3 py-2 text-sm font-semibold transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isMutating}
               onClick={cancelEditing}
               type="button"
@@ -127,21 +127,23 @@ export function InventoryFieldCard({
           </div>
         </form>
       ) : (
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
           <div>
-            <h2 className="font-medium">{inventoryField.name}</h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            <h2 className="font-semibold text-foreground">
+              {inventoryField.name}
+            </h2>
+            <p className="mt-2 inline-flex rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">
               {t(`fields.types.${inventoryField.field_type}`)}
             </p>
             {inventoryField.max_length !== null && (
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              <p className="mt-3 text-sm text-muted">
                 {t("fields.maximumLength", {
                   length: inventoryField.max_length,
                 })}
               </p>
             )}
             {inventoryField.options.length > 0 && (
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              <p className="mt-2 text-sm leading-relaxed text-muted">
                 {t("fields.options", {
                   options: inventoryField.options
                     .map((option) => option.name)
@@ -151,9 +153,9 @@ export function InventoryFieldCard({
             )}
           </div>
 
-          <div className="flex shrink-0 gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2">
             <button
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
+              className="rounded-lg border border-shell px-3 py-2 text-sm font-semibold transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isMutating}
               onClick={startEditing}
               type="button"
@@ -162,7 +164,7 @@ export function InventoryFieldCard({
             </button>
 
             <button
-              className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500 dark:hover:bg-red-400"
+              className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-semibold text-danger transition hover:bg-danger/15 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isMutating}
               onClick={handleDelete}
               type="button"
@@ -176,7 +178,10 @@ export function InventoryFieldCard({
       )}
 
       {mutationError && (
-        <p className="mt-3 text-sm text-red-700 dark:text-red-300" role="alert">
+        <p
+          className="mt-4 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
+          role="alert"
+        >
           {mutationError instanceof ApiError
             ? mutationError.message
             : t("fields.errors.manage")}
