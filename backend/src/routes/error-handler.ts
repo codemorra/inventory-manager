@@ -2,7 +2,6 @@ import type { ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
 import { DomainError } from "../errors.js";
 import type { Logger } from "../logging.js";
-import { InvalidTemporalValueError } from "../items/temporal.js";
 
 /**
  * Creates an Express error handler middleware.
@@ -28,13 +27,6 @@ export function errorHandler(
       response
         .status(status)
         .json({ detail: { code: error.code, message: error.message } });
-      return;
-    }
-
-    // Handle invalid temporal value errors next
-    if (error instanceof InvalidTemporalValueError) {
-      logger.error("Invalid temporal item value", error);
-      response.status(500).type("text/plain").send("Internal Server Error");
       return;
     }
 

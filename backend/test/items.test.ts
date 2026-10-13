@@ -175,8 +175,8 @@ test("replacement, omitted values, and deletion preserve tombstones and list ord
   );
 });
 
-// Test for error handling, including parent scoping, DTO precedence, structured value errors, and temporal validation errors
-test("item errors preserve parent scoping, DTO precedence, structured value errors, and the temporal 500", async (context) => {
+// Test error handling for parent scoping, DTO precedence, and structured value errors.
+test("item errors preserve parent scoping, DTO precedence, and structured value errors", async (context) => {
   const { api, services, inventory, errors, db } = fixture(context);
   const other = services.inventories.create({ name: "Other" });
   const field = services.fields.create(inventory.id, {
@@ -227,13 +227,21 @@ test("item errors preserve parent scoping, DTO precedence, structured value erro
         message: "Inventory item values are invalid.",
       },
     });
-  const failed = await api
+  const invalidValueError = {
+    detail: {
+      code: "invalid_inventory_item_value",
+      message: "Inventory item values are invalid.",
+    },
+  };
+  await api
     .post(`/inventories/${inventory.id}/items`)
     .send({ values: [{ field_id: field.id, value: "not-a-date" }] })
-    .expect(500);
-  assert.equal(failed.text, "Internal Server Error");
-  assert.match(failed.headers["content-type"] ?? "", /^text\/plain/);
-  assert.equal(errors.length, 1);
+    .expect(422, invalidValueError);
+  await api
+    .patch(`/inventories/${inventory.id}/items/${item.id}`)
+    .send({ values: [{ field_id: field.id, value: "2026-02-30" }] })
+    .expect(422, invalidValueError);
+  assert.equal(errors.length, 0);
   assert.equal(db.select().from(inventoryItems).all().length, 1);
   services.inventories.delete(inventory.id);
   await api

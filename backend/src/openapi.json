@@ -256,7 +256,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DomainErrorResponse"
+                    }
+                  ]
                 }
               }
             }
@@ -407,7 +414,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DomainErrorResponse"
+                    }
+                  ]
                 }
               }
             }
@@ -929,6 +943,31 @@
   },
   "components": {
     "schemas": {
+      "DomainError": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "DomainError"
+      },
+      "DomainErrorResponse": {
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/DomainError"
+          }
+        },
+        "type": "object",
+        "required": ["detail"],
+        "title": "DomainErrorResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
