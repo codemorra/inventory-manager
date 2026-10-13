@@ -43,8 +43,9 @@ Use `http://127.0.0.1:8000/health` to verify that it is running.
 Interactive API documentation is available at `http://127.0.0.1:8000/docs`.
 
 An Express/TypeScript replacement is being developed in [`backend/node/`](backend/node/README.md).
-Its first step provides the database, startup/shutdown, logging, and health endpoint;
-the inventory APIs still run on FastAPI during the migration.
+It provides the database, startup/shutdown, logging, health endpoint, and inventory,
+field, and option APIs. The frontend still runs against FastAPI until the item API
+and final parity validation are complete.
 
 ### Frontend
 
