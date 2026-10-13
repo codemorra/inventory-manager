@@ -5,7 +5,9 @@ export class DomainError extends Error {
       | "inventory_not_found"
       | "inventory_field_not_found"
       | "inventory_field_option_not_found"
-      | "inventory_field_options_not_supported",
+      | "inventory_field_options_not_supported"
+      | "inventory_item_not_found"
+      | "invalid_inventory_item_value",
     message: string,
   ) {
     super(message);
