@@ -74,7 +74,7 @@ export function InventoryFieldOptions({
   }
 
   return (
-    <section className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
+    <section className="mt-5 border-t border-shell pt-4">
       <h3 className="text-sm font-medium">{t("fields.form.options")}</h3>
       <ul className="mt-2 space-y-2">
         {options.map((option) => (
@@ -86,21 +86,21 @@ export function InventoryFieldOptions({
               >
                 <input
                   aria-label={t("fields.optionName")}
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  className="w-full rounded-lg border border-shell bg-surface px-3 py-2 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                   maxLength={255}
                   onChange={(event) => setEditingOptionName(event.target.value)}
                   required
                   value={editingOptionName}
                 />
                 <button
-                  className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-blue-500"
+                  className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-surface disabled:opacity-50"
                   disabled={isMutating || !editingOptionName.trim()}
                   type="submit"
                 >
                   {t("common.actions.save")}
                 </button>
                 <button
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700"
+                  className="rounded-lg border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover"
                   disabled={isMutating}
                   onClick={() => setEditingOptionId(null)}
                   type="button"
@@ -109,11 +109,11 @@ export function InventoryFieldOptions({
                 </button>
               </form>
             ) : (
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm">{option.name}</span>
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted px-3 py-2">
+                <span className="min-w-0 truncate text-sm">{option.name}</span>
                 <div className="flex gap-2">
                   <button
-                    className="rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700"
+                    className="rounded-md px-2 py-1 text-sm font-medium text-muted hover:bg-surface-hover hover:text-foreground"
                     disabled={isMutating}
                     onClick={() => {
                       setEditingOptionId(option.id);
@@ -124,7 +124,7 @@ export function InventoryFieldOptions({
                     {t("common.actions.edit")}
                   </button>
                   <button
-                    className="rounded-md text-sm text-red-700 disabled:opacity-60 dark:text-red-300"
+                    className="rounded-md px-2 py-1 text-sm font-medium text-danger hover:bg-danger-soft disabled:opacity-50"
                     disabled={isMutating}
                     onClick={() => removeOption(option)}
                     type="button"
@@ -140,7 +140,7 @@ export function InventoryFieldOptions({
       <form className="mt-3 flex gap-2" onSubmit={addOption}>
         <input
           aria-label={t("fields.newOptionName")}
-          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          className="w-full rounded-lg border border-shell bg-surface px-3 py-2 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
           maxLength={255}
           onChange={(event) => setNewOptionName(event.target.value)}
           placeholder={t("fields.newOption")}
@@ -148,7 +148,7 @@ export function InventoryFieldOptions({
           value={newOptionName}
         />
         <button
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium disabled:opacity-60 dark:border-slate-700"
+          className="rounded-lg border border-shell px-3 py-2 text-sm font-semibold hover:bg-surface-hover disabled:opacity-50"
           disabled={isMutating || !newOptionName.trim()}
           type="submit"
         >
@@ -156,7 +156,10 @@ export function InventoryFieldOptions({
         </button>
       </form>
       {mutationError && (
-        <p className="mt-3 text-sm text-red-700 dark:text-red-300" role="alert">
+        <p
+          className="mt-3 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
+          role="alert"
+        >
           {mutationError instanceof ApiError
             ? mutationError.message
             : t("fields.errors.options")}

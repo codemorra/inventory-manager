@@ -65,12 +65,14 @@
     "actions": {
       "add": "Add field",
       "adding": "Adding…",
-      "addOption": "Add option"
+      "addOption": "Add option",
+      "new": "New field"
     },
     "back": "← Inventories",
     "confirmDelete": "Delete \"{{name}}\"?",
     "description": "Configure the fields that will be available for this inventory.",
     "empty": "No fields configured yet.",
+    "emptyDescription": "Add the first field to define which information every item in this inventory can store.",
     "errors": {
       "create": "Unable to create inventory field.",
       "load": "Unable to load inventory fields.",
@@ -91,6 +93,9 @@
     "optionName": "Option name",
     "options": "Options: {{options}}",
     "title": "Inventory fields",
+    "titles": {
+      "create": "Create inventory field"
+    },
     "types": {
       "boolean": "Boolean",
       "date": "Date",
@@ -141,6 +146,7 @@
     "closeBackdrop": "Close navigation",
     "inventories": "Inventories",
     "inventoryError": "Unable to load inventories.",
+    "inventorySections": "Inventory sections",
     "label": "Main navigation",
     "mobileDialog": "Mobile navigation",
     "loadingInventories": "Loading inventories…",

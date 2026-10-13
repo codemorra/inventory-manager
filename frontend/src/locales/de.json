@@ -65,12 +65,14 @@
     "actions": {
       "add": "Feld hinzufügen",
       "adding": "Wird hinzugefügt…",
-      "addOption": "Option hinzufügen"
+      "addOption": "Option hinzufügen",
+      "new": "Neues Feld"
     },
     "back": "← Inventare",
     "confirmDelete": "„{{name}}“ löschen?",
     "description": "Konfiguriere die Felder, die für dieses Inventar verfügbar sind.",
     "empty": "Noch keine Felder konfiguriert.",
+    "emptyDescription": "Füge das erste Feld hinzu und lege fest, welche Informationen jeder Eintrag dieses Inventars speichern kann.",
     "errors": {
       "create": "Das Inventarfeld konnte nicht erstellt werden.",
       "load": "Die Inventarfelder konnten nicht geladen werden.",
@@ -91,6 +93,9 @@
     "optionName": "Optionsname",
     "options": "Optionen: {{options}}",
     "title": "Inventarfelder",
+    "titles": {
+      "create": "Inventarfeld erstellen"
+    },
     "types": {
       "boolean": "Ja/Nein",
       "date": "Datum",
@@ -141,6 +146,7 @@
     "closeBackdrop": "Navigation schließen",
     "inventories": "Inventare",
     "inventoryError": "Die Inventare konnten nicht geladen werden.",
+    "inventorySections": "Inventarbereiche",
     "label": "Hauptnavigation",
     "mobileDialog": "Mobile Navigation",
     "loadingInventories": "Inventare werden geladen…",
