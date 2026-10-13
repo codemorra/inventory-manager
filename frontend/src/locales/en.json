@@ -25,6 +25,12 @@
       "en": "English",
       "label": "Language"
     },
+    "theme": {
+      "dark": "Dark",
+      "label": "Appearance",
+      "light": "Light",
+      "system": "System"
+    },
     "values": {
       "no": "No",
       "yes": "Yes"

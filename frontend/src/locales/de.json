@@ -25,6 +25,12 @@
       "en": "English",
       "label": "Sprache"
     },
+    "theme": {
+      "dark": "Dunkel",
+      "label": "Darstellung",
+      "light": "Hell",
+      "system": "System"
+    },
     "values": {
       "no": "Nein",
       "yes": "Ja"
