@@ -1,1 +1,74 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --color-canvas: var(--app-canvas);
+  --color-surface: var(--app-surface);
+  --color-surface-muted: var(--app-surface-muted);
+  --color-surface-hover: var(--app-surface-hover);
+  --color-foreground: var(--app-foreground);
+  --color-muted: var(--app-muted);
+  --color-shell: var(--app-border);
+  --color-accent: var(--app-accent);
+  --color-accent-hover: var(--app-accent-hover);
+  --color-accent-soft: var(--app-accent-soft);
+  --color-danger: var(--app-danger);
+  --color-danger-soft: var(--app-danger-soft);
+  --shadow-soft: var(--app-shadow-soft);
+  --shadow-raised: var(--app-shadow-raised);
+}
+
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --app-canvas: #edf1f0;
+  --app-surface: #ffffff;
+  --app-surface-muted: #f5f7f6;
+  --app-surface-hover: #e7ecea;
+  --app-foreground: #18211f;
+  --app-muted: #5d6b67;
+  --app-border: #d7dfdc;
+  --app-accent: #0f766e;
+  --app-accent-hover: #0b5f59;
+  --app-accent-soft: #dff4f0;
+  --app-danger: #b4232f;
+  --app-danger-soft: #fdebed;
+  --app-shadow-soft:
+    0 2px 5px rgb(24 33 31 / 4%), 0 12px 32px rgb(24 33 31 / 6%);
+  --app-shadow-raised:
+    0 8px 18px rgb(24 33 31 / 8%), 0 24px 56px rgb(24 33 31 / 14%);
+  --app-canvas-gradient: radial-gradient(
+    ellipse at 92% 0%,
+    color-mix(in srgb, var(--app-accent) 8%, transparent),
+    transparent 48%
+  );
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --app-canvas: #101614;
+  --app-surface: #18201e;
+  --app-surface-muted: #202a27;
+  --app-surface-hover: #293633;
+  --app-foreground: #edf4f1;
+  --app-muted: #abb9b4;
+  --app-border: #34413d;
+  --app-accent: #65d6c9;
+  --app-accent-hover: #8be2d8;
+  --app-accent-soft: #183c38;
+  --app-danger: #ffadb5;
+  --app-danger-soft: #48242a;
+  --app-shadow-soft: 0 2px 5px rgb(0 0 0 / 14%), 0 12px 32px rgb(0 0 0 / 18%);
+  --app-shadow-raised:
+    0 8px 18px rgb(0 0 0 / 22%), 0 24px 56px rgb(0 0 0 / 38%);
+}
+
+@layer base {
+  body {
+    min-width: 20rem;
+    background-color: var(--app-canvas);
+  }
+}

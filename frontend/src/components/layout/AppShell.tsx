@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { LanguageSwitch } from "../LanguageSwitch";
+import { ThemeSwitch } from "../ThemeSwitch";
 import { Navigation } from "./Navigation";
 
 // Define properties for the shared application shell.
@@ -40,7 +41,7 @@ export function AppShell({ children }: AppShellProps) {
   const sidebarContent = (
     <div className="flex min-h-full flex-col">
       <div className="flex items-center gap-3 px-2">
-        <span className="grid size-10 place-items-center rounded-xl bg-blue-600 text-white shadow-sm dark:bg-blue-500">
+        <span className="grid size-10 place-items-center rounded-xl bg-accent text-surface shadow-soft">
           <svg
             aria-hidden="true"
             className="size-6"
@@ -56,31 +57,30 @@ export function AppShell({ children }: AppShellProps) {
           </svg>
         </span>
         <div>
-          <p className="text-sm font-semibold tracking-tight text-slate-950 dark:text-white">
+          <p className="text-sm font-semibold tracking-tight text-foreground">
             {t("app.name")}
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {t("app.tagline")}
-          </p>
+          <p className="text-xs text-muted">{t("app.tagline")}</p>
         </div>
       </div>
       <Navigation onNavigate={() => setIsNavigationOpen(false)} />
-      <div className="mt-auto rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+      <div className="mt-auto grid gap-3 rounded-xl border border-shell bg-surface-muted p-3">
         <LanguageSwitch />
+        <ThemeSwitch />
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-dvh bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div className="min-h-dvh bg-canvas bg-(image:--app-canvas-gradient) text-foreground">
       <a
-        className="fixed left-4 top-3 z-50 -translate-y-24 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white focus:translate-y-0"
+        className="fixed left-4 top-3 z-50 -translate-y-24 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-surface focus:translate-y-0"
         href="#page-content"
       >
         {t("navigation.skipToContent")}
       </a>
 
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-slate-200 bg-white px-4 py-6 dark:border-slate-800 dark:bg-slate-900 lg:block">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-shell bg-surface px-4 py-6 shadow-soft lg:block">
         {sidebarContent}
       </aside>
 
@@ -88,7 +88,7 @@ export function AppShell({ children }: AppShellProps) {
         <div
           aria-label={t("navigation.mobileDialog")}
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-slate-950/50 lg:hidden"
+          className="fixed inset-0 z-50 bg-black/50 lg:hidden"
           role="dialog"
         >
           <button
@@ -97,10 +97,10 @@ export function AppShell({ children }: AppShellProps) {
             onClick={() => setIsNavigationOpen(false)}
             type="button"
           />
-          <aside className="relative flex h-full w-[min(20rem,88vw)] flex-col border-r border-slate-200 bg-white px-4 py-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+          <aside className="relative flex h-full w-[min(20rem,88vw)] flex-col border-r border-shell bg-surface px-4 py-6 shadow-raised">
             <div className="flex justify-end">
               <button
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+                className="rounded-lg border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover"
                 onClick={() => setIsNavigationOpen(false)}
                 type="button"
               >
@@ -113,10 +113,10 @@ export function AppShell({ children }: AppShellProps) {
       )}
 
       <div className="lg:pl-64">
-        <header className="flex min-h-16 items-center border-b border-slate-200 bg-white px-5 py-3 dark:border-slate-800 dark:bg-slate-900 sm:px-8 lg:hidden">
+        <header className="flex min-h-16 items-center border-b border-shell bg-surface px-5 py-3 shadow-soft sm:px-8 lg:hidden">
           <button
             aria-label={t("navigation.open")}
-            className="rounded-lg border border-slate-300 p-2.5 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800 lg:hidden"
+            className="rounded-lg border border-shell p-2.5 hover:bg-surface-hover lg:hidden"
             onClick={() => setIsNavigationOpen(true)}
             type="button"
           >
