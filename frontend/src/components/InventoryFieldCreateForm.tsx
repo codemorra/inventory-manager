@@ -1,4 +1,5 @@
-import { type FormEvent, useState } from "react";
+import { type SyntheticEvent, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useCreateInventoryField } from "../hooks/useInventoryFields";
 import { ApiError } from "../services/api";
@@ -9,26 +10,35 @@ interface InventoryFieldCreateFormProps {
   inventoryId: string;
 }
 
-const fieldTypes: { value: InventoryFieldType; label: string }[] = [
-  { value: "text", label: "Text" },
-  { value: "number", label: "Number" },
-  { value: "boolean", label: "Boolean" },
-  { value: "date", label: "Date" },
-  { value: "time", label: "Time" },
-  { value: "datetime", label: "Date and time" },
-  { value: "duration", label: "Duration" },
-  { value: "select", label: "Select" },
-  { value: "multiselect", label: "Multiselect" },
+const fieldTypes: InventoryFieldType[] = [
+  "text",
+  "number",
+  "boolean",
+  "date",
+  "time",
+  "datetime",
+  "duration",
+  "select",
+  "multiselect",
 ];
 
+/**
+ * Determine if a given field type supports options (select or multiselect).
+ * @param fieldType The type of the inventory field.
+ * @returns True if the field type supports options, false otherwise.
+ */
 function supportsOptions(fieldType: InventoryFieldType) {
   return fieldType === "select" || fieldType === "multiselect";
 }
 
-/** Render a form that creates a configured inventory field. */
+/**
+ * Render a form that creates a configured inventory field.
+ * @param inventoryId The ID of the inventory to which the field will be added.
+ */
 export function InventoryFieldCreateForm({
   inventoryId,
 }: InventoryFieldCreateFormProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [fieldType, setFieldType] = useState<InventoryFieldType>("text");
   const [maxLength, setMaxLength] = useState("255");
@@ -42,13 +52,15 @@ export function InventoryFieldCreateForm({
         options.length > 0 &&
         options.every((option) => option.trim())));
 
+  // Function to handle changes in the field type selection.
   function changeFieldType(nextFieldType: InventoryFieldType) {
     setFieldType(nextFieldType);
     setMaxLength(nextFieldType === "text" ? "255" : "");
     setOptions(supportsOptions(nextFieldType) ? [""] : []);
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  // Function to handle the submission of the inventory field creation form.
+  function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     createInventoryField.mutate(
       {
@@ -80,7 +92,7 @@ export function InventoryFieldCreateForm({
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm font-medium">
-          Field name
+          {t("fields.form.fieldName")}
           <input
             className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             maxLength={255}
@@ -90,7 +102,7 @@ export function InventoryFieldCreateForm({
           />
         </label>
         <label className="text-sm font-medium">
-          Field type
+          {t("fields.form.fieldType")}
           <select
             className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             onChange={(event) =>
@@ -99,8 +111,8 @@ export function InventoryFieldCreateForm({
             value={fieldType}
           >
             {fieldTypes.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
+              <option key={type} value={type}>
+                {t(`fields.types.${type}`)}
               </option>
             ))}
           </select>
@@ -108,7 +120,7 @@ export function InventoryFieldCreateForm({
       </div>
       {fieldType === "text" && (
         <label className="mt-4 block max-w-xs text-sm font-medium">
-          Maximum length
+          {t("fields.form.maximumLength")}
           <input
             className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             max={10000}
@@ -122,12 +134,14 @@ export function InventoryFieldCreateForm({
       )}
       {supportsOptions(fieldType) && (
         <fieldset className="mt-4">
-          <legend className="text-sm font-medium">Options</legend>
+          <legend className="text-sm font-medium">
+            {t("fields.form.options")}
+          </legend>
           <div className="mt-2 space-y-2">
             {options.map((option, index) => (
               <div className="flex gap-2" key={index}>
                 <input
-                  aria-label={`Option ${index + 1}`}
+                  aria-label={t("fields.form.option", { number: index + 1 })}
                   className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                   maxLength={255}
                   onChange={(event) =>
@@ -150,7 +164,7 @@ export function InventoryFieldCreateForm({
                     }
                     type="button"
                   >
-                    Remove
+                    {t("common.actions.remove")}
                   </button>
                 )}
               </div>
@@ -161,7 +175,7 @@ export function InventoryFieldCreateForm({
             onClick={() => setOptions((current) => [...current, ""])}
             type="button"
           >
-            Add option
+            {t("fields.actions.addOption")}
           </button>
         </fieldset>
       )}
@@ -170,13 +184,15 @@ export function InventoryFieldCreateForm({
         disabled={createInventoryField.isPending || !canSubmit}
         type="submit"
       >
-        {createInventoryField.isPending ? "Adding…" : "Add field"}
+        {createInventoryField.isPending
+          ? t("fields.actions.adding")
+          : t("fields.actions.add")}
       </button>
       {createInventoryField.error && (
         <p className="mt-3 text-sm text-red-700 dark:text-red-300" role="alert">
           {createInventoryField.error instanceof ApiError
             ? createInventoryField.error.message
-            : "Unable to create inventory field."}
+            : t("fields.errors.create")}
         </p>
       )}
     </form>

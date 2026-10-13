@@ -3,15 +3,16 @@ import { InventoryCreateForm } from "../components/InventoryCreateForm";
 import { useInventories } from "../hooks/useInventories";
 import { ApiError } from "../services/api";
 
-/** Render the inventory overview and creation interface. */
+// Render the inventory overview and creation interface.
 export function InventoryOverviewPage() {
+  const { t } = useTranslation();
   const { data: inventories, error, isError, isPending } = useInventories();
 
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <div className="mx-auto max-w-5xl">
         <header className="mb-8">
-          <h1 className="text-3xl font-semibold">Inventories</h1>
+          <h1 className="text-3xl font-semibold">{t("inventories.title")}</h1>
         </header>
 
         <div className="mb-8">
@@ -20,7 +21,7 @@ export function InventoryOverviewPage() {
 
         {isPending && (
           <p className="text-slate-600 dark:text-slate-400" role="status">
-            Loading inventories…
+            {t("inventories.loading")}
           </p>
         )}
 
@@ -31,13 +32,13 @@ export function InventoryOverviewPage() {
           >
             {error instanceof ApiError
               ? error.message
-              : "Unable to load inventories."}
+              : t("inventories.errors.load")}
           </p>
         )}
 
         {!isPending && !isError && inventories?.length === 0 && (
           <p className="text-slate-600 dark:text-slate-400">
-            No inventories yet.
+            {t("inventories.empty")}
           </p>
         )}
 
@@ -48,3 +49,4 @@ export function InventoryOverviewPage() {
     </main>
   );
 }
+import { useTranslation } from "react-i18next";
