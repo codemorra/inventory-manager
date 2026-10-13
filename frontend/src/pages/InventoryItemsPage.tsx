@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { InventoryItemCreateForm } from "../components/InventoryItemCreateForm";
 import { InventoryItemList } from "../components/InventoryItemList";
+import { InventorySectionNavigation } from "../components/InventorySectionNavigation";
 import { useInventoryFields } from "../hooks/useInventoryFields";
 import { useInventoryItems } from "../hooks/useInventoryItems";
 import { ApiError } from "../services/api";
@@ -25,28 +26,42 @@ export function InventoryItemsPage() {
   return (
     <div>
       <div className="mx-auto max-w-7xl">
-        <header className="mb-8">
-          <Link
-            className="text-sm font-medium text-blue-700 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-            to="/"
-          >
-            {t("items.back")}
-          </Link>
-          <h1 className="mt-4 text-3xl font-semibold">{t("items.title")}</h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-400">
-            {t("items.description")}
-          </p>
+        <InventorySectionNavigation inventoryId={inventoryId} />
+
+        <header className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <div>
+            <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">
+              {t("navigation.inventories")}
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              {t("items.title")}
+            </h1>
+            <p className="mt-3 max-w-2xl leading-relaxed text-muted">
+              {t("items.description")}
+            </p>
+          </div>
+          {!isPending && !isError && fieldQuery.data?.length ? (
+            <div className="shrink-0">
+              <InventoryItemCreateForm
+                fields={fieldQuery.data}
+                inventoryId={inventoryId}
+              />
+            </div>
+          ) : null}
         </header>
 
         {isPending && (
-          <p className="text-slate-600 dark:text-slate-400" role="status">
+          <p
+            className="rounded-xl border border-shell bg-surface p-5 text-muted shadow-soft"
+            role="status"
+          >
             {t("items.loading")}
           </p>
         )}
 
         {isError && (
           <p
-            className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
+            className="rounded-xl border border-danger/30 bg-danger-soft px-5 py-4 text-danger"
             role="alert"
           >
             {error instanceof ApiError ? error.message : t("items.errors.load")}
@@ -57,11 +72,13 @@ export function InventoryItemsPage() {
           !isError &&
           fieldQuery.data &&
           fieldQuery.data.length === 0 && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-5 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+            <div className="rounded-2xl border border-dashed border-shell bg-surface/70 p-8 text-center shadow-soft">
               <h2 className="font-semibold">{t("items.noFields.title")}</h2>
-              <p className="mt-1 text-sm">{t("items.noFields.description")}</p>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
+                {t("items.noFields.description")}
+              </p>
               <Link
-                className="mt-3 inline-block text-sm font-medium underline underline-offset-2"
+                className="mt-5 inline-flex rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover"
                 to={`/inventories/${inventoryId}/fields`}
               >
                 {t("items.noFields.action")}
@@ -74,20 +91,18 @@ export function InventoryItemsPage() {
           fieldQuery.data &&
           fieldQuery.data.length > 0 && (
             <>
-              <InventoryItemCreateForm
-                fields={fieldQuery.data}
-                inventoryId={inventoryId}
-              />
-
               {itemQuery.data?.length ? (
                 <InventoryItemList
                   fields={fieldQuery.data}
                   items={itemQuery.data}
                 />
               ) : (
-                <p className="mt-6 text-slate-600 dark:text-slate-400">
-                  {t("items.empty")}
-                </p>
+                <section className="rounded-2xl border border-dashed border-shell bg-surface/70 px-6 py-12 text-center shadow-soft">
+                  <h2 className="text-lg font-semibold">{t("items.empty")}</h2>
+                  <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
+                    {t("items.emptyDescription")}
+                  </p>
+                </section>
               )}
             </>
           )}

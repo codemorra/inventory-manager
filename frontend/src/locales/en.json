@@ -118,6 +118,7 @@
     "confirmDelete": "Delete this inventory item?",
     "description": "Add and manage the entries stored in this inventory.",
     "empty": "No items yet.",
+    "emptyDescription": "Add the first item and fill it with values from the fields configured for this inventory.",
     "errors": {
       "create": "Unable to add inventory item.",
       "delete": "Unable to delete inventory item.",

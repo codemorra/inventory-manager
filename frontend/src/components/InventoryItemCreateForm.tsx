@@ -32,6 +32,7 @@ interface InventoryItemFieldInputProps {
  * @param field The inventory field definition.
  * @param onChange Callback to handle changes to the input value.
  * @param value The current value of the input.
+ * @returns The form control matching the configured field type.
  */
 export function InventoryItemFieldInput({
   idPrefix,
@@ -43,17 +44,17 @@ export function InventoryItemFieldInput({
   const { t } = useTranslation();
   const inputId = `${idPrefix}-${field.id}`;
   const inputClassName =
-    "mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100";
+    "mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50";
 
   if (field.field_type === "boolean") {
     return (
       <label
-        className="flex items-center gap-3 rounded-md border border-slate-200 px-3 py-2 dark:border-slate-800"
+        className="flex items-center gap-3 rounded-lg border border-shell bg-surface-muted px-3 py-2.5"
         htmlFor={inputId}
       >
         <input
           checked={value === true}
-          className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950"
+          className="size-4 rounded border-shell accent-accent"
           disabled={disabled}
           id={inputId}
           onChange={(event) => onChange(event.target.checked)}
@@ -66,7 +67,10 @@ export function InventoryItemFieldInput({
 
   if (field.field_type === "select") {
     return (
-      <label className="block text-sm font-medium" htmlFor={inputId}>
+      <label
+        className="block text-sm font-medium text-foreground"
+        htmlFor={inputId}
+      >
         {field.name}
         <select
           className={inputClassName}
@@ -89,7 +93,10 @@ export function InventoryItemFieldInput({
   if (field.field_type === "multiselect") {
     return (
       <div>
-        <label className="block text-sm font-medium" htmlFor={inputId}>
+        <label
+          className="block text-sm font-medium text-foreground"
+          htmlFor={inputId}
+        >
           {field.name}
           <select
             aria-describedby={`${inputId}-help`}
@@ -115,7 +122,7 @@ export function InventoryItemFieldInput({
           </select>
         </label>
         <span
-          className="mt-1 block text-xs font-normal text-slate-500 dark:text-slate-400"
+          className="mt-1.5 block text-xs font-normal text-muted"
           id={`${inputId}-help`}
         >
           {t("items.selectMultiple")}
@@ -134,7 +141,10 @@ export function InventoryItemFieldInput({
   }[field.field_type];
 
   return (
-    <label className="block text-sm font-medium" htmlFor={inputId}>
+    <label
+      className="block text-sm font-medium text-foreground"
+      htmlFor={inputId}
+    >
       {field.name}
       <input
         className={inputClassName}
@@ -151,7 +161,12 @@ export function InventoryItemFieldInput({
   );
 }
 
-/** Render a modal form that creates inventory items. */
+/**
+ * Render a modal form that creates inventory items.
+ * @param inventoryId The inventory that will receive the new item.
+ * @param fields The fields available for item values.
+ * @returns The inventory item creation control.
+ */
 export function InventoryItemCreateForm({
   inventoryId,
   fields,
@@ -163,12 +178,17 @@ export function InventoryItemCreateForm({
   );
   const createItem = useCreateInventoryItem();
 
+  // Close the creation modal while no request is pending.
   function closeModal() {
     if (!createItem.isPending) {
       setIsOpen(false);
     }
   }
 
+  /**
+   * Submit the item values entered in the creation form.
+   * @param event The form submission event.
+   */
   function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -196,24 +216,25 @@ export function InventoryItemCreateForm({
   return (
     <>
       <button
-        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400"
+        className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
         disabled={fields.length === 0}
         onClick={() => setIsOpen(true)}
         type="button"
       >
+        <span aria-hidden="true" className="text-lg leading-none">
+          +
+        </span>
         {t("items.actions.new")}
       </button>
 
       {fields.length === 0 && (
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          {t("items.noFields.hint")}
-        </p>
+        <p className="mt-2 text-sm text-muted">{t("items.noFields.hint")}</p>
       )}
 
       {isOpen && (
         <Modal onClose={closeModal} title={t("items.titles.create")}>
           <form onSubmit={handleSubmit}>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm leading-relaxed text-muted">
               {t("items.formDescription")}
             </p>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -236,7 +257,7 @@ export function InventoryItemCreateForm({
 
             {createItem.error && (
               <p
-                className="mt-4 text-sm text-red-700 dark:text-red-300"
+                className="mt-4 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
                 role="alert"
               >
                 {createItem.error instanceof ApiError
@@ -245,9 +266,9 @@ export function InventoryItemCreateForm({
               </p>
             )}
 
-            <div className="mt-5 flex gap-3">
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
               <button
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400"
+                className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={createItem.isPending}
                 type="submit"
               >
@@ -256,7 +277,7 @@ export function InventoryItemCreateForm({
                   : t("items.actions.add")}
               </button>
               <button
-                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
+                className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={createItem.isPending}
                 onClick={closeModal}
                 type="button"

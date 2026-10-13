@@ -118,6 +118,7 @@
     "confirmDelete": "Diesen Inventareintrag löschen?",
     "description": "Füge Einträge zu diesem Inventar hinzu und verwalte sie.",
     "empty": "Noch keine Einträge vorhanden.",
+    "emptyDescription": "Füge den ersten Eintrag hinzu und fülle ihn mit Werten aus den konfigurierten Feldern dieses Inventars.",
     "errors": {
       "create": "Der Inventareintrag konnte nicht hinzugefügt werden.",
       "delete": "Der Inventareintrag konnte nicht gelöscht werden.",
