@@ -2,13 +2,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { ApiError } from "../services/api";
-import { getInventoryFields } from "../services/inventoryFields";
-import { InventoryFieldsPage } from "./InventoryFieldsPage";
+import { ApiError } from "../../src/services/api";
+import { getInventoryFields } from "../../src/services/inventoryFields";
+import { InventoryFieldsPage } from "../../src/pages/InventoryFieldsPage";
 
-vi.mock("../services/inventoryFields", () => ({
+vi.mock("../../src/services/inventoryFields", () => ({
   createInventoryField: vi.fn(),
   deleteInventoryField: vi.fn(),
   getInventoryFields: vi.fn(),
@@ -47,7 +47,8 @@ afterEach(() => {
 });
 
 describe("InventoryFieldsPage", () => {
-  it("displays a loading message while fields are loading", () => {
+  // Test that a loading message is displayed while fields are being fetched
+  test("displays a loading message while fields are loading", () => {
     mockedGetInventoryFields.mockImplementation(
       () => new Promise<never>(() => {}),
     );
@@ -57,7 +58,8 @@ describe("InventoryFieldsPage", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Loading fields…");
   });
 
-  it("displays an API error message", async () => {
+  // Test that an API error message is displayed after a failed fetch
+  test("displays an API error message", async () => {
     mockedGetInventoryFields.mockRejectedValue(
       new ApiError(500, "Unable to reach the backend."),
     );
@@ -69,7 +71,8 @@ describe("InventoryFieldsPage", () => {
     );
   });
 
-  it("displays an empty state when no fields exist", async () => {
+  // Test that an empty state message is displayed when no fields exist
+  test("displays an empty state when no fields exist", async () => {
     mockedGetInventoryFields.mockResolvedValue([]);
 
     renderInventoryFieldsPage();
@@ -79,7 +82,8 @@ describe("InventoryFieldsPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("displays returned inventory fields", async () => {
+  // Test that returned inventory fields are displayed correctly
+  test("displays returned inventory fields", async () => {
     mockedGetInventoryFields.mockResolvedValue([
       {
         id: "field-1",

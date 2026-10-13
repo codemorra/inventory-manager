@@ -1,16 +1,16 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
   createInventoryFieldOption,
   deleteInventoryFieldOption,
   updateInventoryFieldOption,
-} from "../services/inventoryFields";
-import { InventoryFieldOptions } from "./InventoryFieldOptions";
+} from "../../src/services/inventoryFields";
+import { InventoryFieldOptions } from "../../src/components/InventoryFieldOptions";
 
-vi.mock("../services/inventoryFields", () => ({
+vi.mock("../../src/services/inventoryFields", () => ({
   createInventoryFieldOption: vi.fn(),
   deleteInventoryFieldOption: vi.fn(),
   getInventoryFields: vi.fn(),
@@ -49,7 +49,8 @@ afterEach(() => {
 });
 
 describe("InventoryFieldOptions", () => {
-  it("creates an option", async () => {
+  // Test that a new option can be created successfully
+  test("creates an option", async () => {
     const user = userEvent.setup();
     vi.mocked(createInventoryFieldOption).mockResolvedValue(option);
     renderOptions();
@@ -64,7 +65,8 @@ describe("InventoryFieldOptions", () => {
     );
   });
 
-  it("updates and deletes options", async () => {
+  // Test that an existing option can be updated and deleted successfully
+  test("updates and deletes options", async () => {
     const user = userEvent.setup();
     vi.mocked(updateInventoryFieldOption).mockResolvedValue({
       ...option,

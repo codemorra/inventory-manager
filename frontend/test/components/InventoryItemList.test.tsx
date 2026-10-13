@@ -7,18 +7,18 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { ApiError } from "../services/api";
+import { ApiError } from "../../src/services/api";
 import {
   deleteInventoryItem,
   updateInventoryItem,
-} from "../services/inventoryItems";
-import type { InventoryField } from "../types/inventoryField";
-import type { InventoryItem } from "../types/inventoryItem";
-import { InventoryItemList } from "./InventoryItemList";
+} from "../../src/services/inventoryItems";
+import type { InventoryField } from "../../src/types/inventoryField";
+import type { InventoryItem } from "../../src/types/inventoryItem";
+import { InventoryItemList } from "../../src/components/InventoryItemList";
 
-vi.mock("../services/inventoryItems", () => ({
+vi.mock("../../src/services/inventoryItems", () => ({
   createInventoryItem: vi.fn(),
   deleteInventoryItem: vi.fn(),
   getInventoryItems: vi.fn(),
@@ -126,7 +126,8 @@ afterEach(() => {
 });
 
 describe("InventoryItemList", () => {
-  it("renders fields as columns and items as rows", () => {
+  // Test that the item list renders fields as columns and items as rows
+  test("renders fields as columns and items as rows", () => {
     renderInventoryItemList();
 
     expect(
@@ -139,13 +140,15 @@ describe("InventoryItemList", () => {
     expect(within(row).getByText("Yes")).toBeInTheDocument();
   });
 
-  it("renders an em dash for a missing field value", () => {
+  // Test that an em dash is rendered for a missing field value
+  test("renders an em dash for a missing field value", () => {
     renderInventoryItemList([{ ...items[0], values: [] }]);
 
     expect(screen.getAllByText("—")).toHaveLength(3);
   });
 
-  it("replaces all values when saving an edited item", async () => {
+  // Test that all values are replaced when saving an edited item
+  test("replaces all values when saving an edited item", async () => {
     const user = userEvent.setup();
     mockedUpdateInventoryItem.mockResolvedValue(items[0]);
     renderInventoryItemList();
@@ -174,7 +177,8 @@ describe("InventoryItemList", () => {
     });
   });
 
-  it("cancels editing without submitting changes", async () => {
+  // Test that editing can be canceled without submitting changes
+  test("cancels editing without submitting changes", async () => {
     const user = userEvent.setup();
     renderInventoryItemList();
 
@@ -190,7 +194,8 @@ describe("InventoryItemList", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("deletes an item after confirmation", async () => {
+  // Test that an item is deleted after the user confirms the action
+  test("deletes an item after confirmation", async () => {
     const user = userEvent.setup();
     vi.spyOn(window, "confirm").mockReturnValue(true);
     mockedDeleteInventoryItem.mockResolvedValue();
@@ -207,7 +212,8 @@ describe("InventoryItemList", () => {
     });
   });
 
-  it("keeps an item when deletion is not confirmed", async () => {
+  // Test that an item is not deleted when the user cancels the confirmation
+  test("keeps an item when deletion is not confirmed", async () => {
     const user = userEvent.setup();
     vi.spyOn(window, "confirm").mockReturnValue(false);
     renderInventoryItemList();
@@ -217,7 +223,8 @@ describe("InventoryItemList", () => {
     expect(mockedDeleteInventoryItem).not.toHaveBeenCalled();
   });
 
-  it("displays an API error after a failed update", async () => {
+  // Test that an API error message is displayed after a failed item update
+  test("displays an API error after a failed update", async () => {
     const user = userEvent.setup();
     mockedUpdateInventoryItem.mockRejectedValue(
       new ApiError(422, "Inventory item values are invalid."),

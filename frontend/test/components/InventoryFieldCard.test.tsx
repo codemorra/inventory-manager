@@ -2,17 +2,17 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { ApiError } from "../services/api";
+import { ApiError } from "../../src/services/api";
 import {
   deleteInventoryField,
   updateInventoryField,
-} from "../services/inventoryFields";
-import type { InventoryField } from "../types/inventoryField";
-import { InventoryFieldCard } from "./InventoryFieldCard";
+} from "../../src/services/inventoryFields";
+import type { InventoryField } from "../../src/types/inventoryField";
+import { InventoryFieldCard } from "../../src/components/InventoryFieldCard";
 
-vi.mock("../services/inventoryFields", () => ({
+vi.mock("../../src/services/inventoryFields", () => ({
   createInventoryField: vi.fn(),
   deleteInventoryField: vi.fn(),
   getInventoryFields: vi.fn(),
@@ -61,7 +61,8 @@ afterEach(() => {
 });
 
 describe("InventoryFieldCard", () => {
-  it("submits a changed field name", async () => {
+  // Test that a field name can be updated successfully
+  test("submits a changed field name", async () => {
     const user = userEvent.setup();
     mockedUpdateInventoryField.mockResolvedValue({
       ...inventoryField,
@@ -86,7 +87,8 @@ describe("InventoryFieldCard", () => {
     });
   });
 
-  it("cancels editing without submitting a change", async () => {
+  // Test that editing can be canceled without submitting changes
+  test("cancels editing without submitting a change", async () => {
     const user = userEvent.setup();
 
     renderInventoryFieldCard();
@@ -97,7 +99,8 @@ describe("InventoryFieldCard", () => {
     expect(mockedUpdateInventoryField).not.toHaveBeenCalled();
   });
 
-  it("deletes a field after confirmation", async () => {
+  // Test that a field is deleted after the user confirms the action
+  test("deletes a field after confirmation", async () => {
     const user = userEvent.setup();
     vi.spyOn(window, "confirm").mockReturnValue(true);
     mockedDeleteInventoryField.mockResolvedValue();
@@ -116,7 +119,8 @@ describe("InventoryFieldCard", () => {
     });
   });
 
-  it("does not delete a field when confirmation is rejected", async () => {
+  // Test that a field is not deleted when the user rejects the confirmation
+  test("does not delete a field when confirmation is rejected", async () => {
     const user = userEvent.setup();
     vi.spyOn(window, "confirm").mockReturnValue(false);
 
@@ -127,7 +131,8 @@ describe("InventoryFieldCard", () => {
     expect(mockedDeleteInventoryField).not.toHaveBeenCalled();
   });
 
-  it("displays a mutation error", async () => {
+  // Test that a mutation error is displayed when the update fails
+  test("displays a mutation error", async () => {
     const user = userEvent.setup();
     mockedUpdateInventoryField.mockRejectedValue(
       new ApiError(500, "Unable to reach the backend."),

@@ -1,13 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { ApiError } from "../services/api";
-import { createInventory } from "../services/inventories";
-import { InventoryCreateForm } from "./InventoryCreateForm";
+import { ApiError } from "../../src/services/api";
+import { createInventory } from "../../src/services/inventories";
+import { InventoryCreateForm } from "../../src/components/InventoryCreateForm";
 
-vi.mock("../services/inventories", () => ({
+vi.mock("../../src/services/inventories", () => ({
   createInventory: vi.fn(),
   getInventories: vi.fn(),
 }));
@@ -37,7 +37,8 @@ afterEach(() => {
 });
 
 describe("InventoryCreateForm", () => {
-  it("submits the entered inventory data", async () => {
+  // Test suite for the InventoryCreateForm component
+  test("submits the entered inventory data", async () => {
     const user = userEvent.setup();
     mockedCreateInventory.mockResolvedValue({
       id: "inventory-1",
@@ -66,7 +67,8 @@ describe("InventoryCreateForm", () => {
     });
   });
 
-  it("clears fields after a successful submission", async () => {
+  // Test that the form clears its fields after a successful submission
+  test("clears fields after a successful submission", async () => {
     const user = userEvent.setup();
     mockedCreateInventory.mockResolvedValue({
       id: "inventory-1",
@@ -96,7 +98,8 @@ describe("InventoryCreateForm", () => {
     expect(screen.getByLabelText("Description")).toHaveValue("");
   });
 
-  it("displays an API error message after a failed submission", async () => {
+  // Test that an API error message is displayed after a failed submission
+  test("displays an API error message after a failed submission", async () => {
     const user = userEvent.setup();
     mockedCreateInventory.mockRejectedValue(
       new ApiError(500, "Unable to reach the backend."),
@@ -114,7 +117,8 @@ describe("InventoryCreateForm", () => {
     );
   });
 
-  it("disables submission while the request is pending", async () => {
+  // Test that the submission button is disabled while the request is pending
+  test("disables submission while the request is pending", async () => {
     const user = userEvent.setup();
     mockedCreateInventory.mockImplementation(
       () => new Promise<never>(() => {}),

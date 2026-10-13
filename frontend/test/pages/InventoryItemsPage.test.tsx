@@ -1,22 +1,22 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { ApiError } from "../services/api";
-import { getInventoryFields } from "../services/inventoryFields";
-import { getInventoryItems } from "../services/inventoryItems";
-import type { InventoryField } from "../types/inventoryField";
-import { InventoryItemsPage } from "./InventoryItemsPage";
+import { ApiError } from "../../src/services/api";
+import { getInventoryFields } from "../../src/services/inventoryFields";
+import { getInventoryItems } from "../../src/services/inventoryItems";
+import type { InventoryField } from "../../src/types/inventoryField";
+import { InventoryItemsPage } from "../../src/pages/InventoryItemsPage";
 
-vi.mock("../services/inventoryFields", () => ({
+vi.mock("../../src/services/inventoryFields", () => ({
   createInventoryField: vi.fn(),
   deleteInventoryField: vi.fn(),
   getInventoryFields: vi.fn(),
   updateInventoryField: vi.fn(),
 }));
 
-vi.mock("../services/inventoryItems", () => ({
+vi.mock("../../src/services/inventoryItems", () => ({
   createInventoryItem: vi.fn(),
   deleteInventoryItem: vi.fn(),
   getInventoryItems: vi.fn(),
@@ -67,7 +67,8 @@ afterEach(() => {
 });
 
 describe("InventoryItemsPage", () => {
-  it("displays a loading state until fields and items are available", () => {
+  // Test that a loading state is displayed until fields and items are available
+  test("displays a loading state until fields and items are available", () => {
     mockedGetInventoryFields.mockImplementation(
       () => new Promise<never>(() => {}),
     );
@@ -78,7 +79,8 @@ describe("InventoryItemsPage", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Loading inventory…");
   });
 
-  it("displays an API error from the item request", async () => {
+  // Test that an API error message is displayed when the item request fails
+  test("displays an API error from the item request", async () => {
     mockedGetInventoryFields.mockResolvedValue(fields);
     mockedGetInventoryItems.mockRejectedValue(
       new ApiError(500, "Unable to reach the backend."),
@@ -91,7 +93,8 @@ describe("InventoryItemsPage", () => {
     );
   });
 
-  it("links to field configuration when no fields exist", async () => {
+  // Test that a link to field configuration is displayed when no fields exist
+  test("links to field configuration when no fields exist", async () => {
     mockedGetInventoryFields.mockResolvedValue([]);
     mockedGetInventoryItems.mockResolvedValue([]);
 
@@ -105,7 +108,8 @@ describe("InventoryItemsPage", () => {
     ).toHaveAttribute("href", "/inventories/inventory-1/fields");
   });
 
-  it("displays an empty state when no items exist", async () => {
+  // Test that an empty state message is displayed when no items exist
+  test("displays an empty state when no items exist", async () => {
     mockedGetInventoryFields.mockResolvedValue(fields);
     mockedGetInventoryItems.mockResolvedValue([]);
 
@@ -115,7 +119,8 @@ describe("InventoryItemsPage", () => {
     expect(screen.getByRole("button", { name: "New item" })).toBeEnabled();
   });
 
-  it("displays returned items in the field table", async () => {
+  // Test that returned inventory items are displayed correctly in the field table
+  test("displays returned items in the field table", async () => {
     mockedGetInventoryFields.mockResolvedValue(fields);
     mockedGetInventoryItems.mockResolvedValue([
       {

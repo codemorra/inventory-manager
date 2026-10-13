@@ -2,13 +2,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { ApiError } from "../services/api";
-import { createInventoryField } from "../services/inventoryFields";
-import { InventoryFieldCreateForm } from "./InventoryFieldCreateForm";
+import { ApiError } from "../../src/services/api";
+import { createInventoryField } from "../../src/services/inventoryFields";
+import { InventoryFieldCreateForm } from "../../src/components/InventoryFieldCreateForm";
 
-vi.mock("../services/inventoryFields", () => ({
+vi.mock("../../src/services/inventoryFields", () => ({
   createInventoryField: vi.fn(),
   deleteInventoryField: vi.fn(),
   getInventoryFields: vi.fn(),
@@ -40,7 +40,8 @@ afterEach(() => {
 });
 
 describe("InventoryFieldCreateForm", () => {
-  it("submits a trimmed field name", async () => {
+  // Test that the form submits a trimmed field name
+  test("submits a trimmed field name", async () => {
     const user = userEvent.setup();
     mockedCreateInventoryField.mockResolvedValue({
       id: "field-1",
@@ -68,7 +69,8 @@ describe("InventoryFieldCreateForm", () => {
     });
   });
 
-  it("clears the name after a successful submission", async () => {
+  // Test that the form clears the field name after a successful submission
+  test("clears the name after a successful submission", async () => {
     const user = userEvent.setup();
     mockedCreateInventoryField.mockResolvedValue({
       id: "field-1",
@@ -94,7 +96,8 @@ describe("InventoryFieldCreateForm", () => {
     });
   });
 
-  it("displays an API error after a failed submission", async () => {
+  // Test that an API error message is displayed after a failed submission
+  test("displays an API error after a failed submission", async () => {
     const user = userEvent.setup();
     mockedCreateInventoryField.mockRejectedValue(
       new ApiError(500, "Unable to reach the backend."),
@@ -110,7 +113,8 @@ describe("InventoryFieldCreateForm", () => {
     );
   });
 
-  it("submits select options", async () => {
+  // Test that select options are submitted correctly
+  test("submits select options", async () => {
     const user = userEvent.setup();
     mockedCreateInventoryField.mockResolvedValue({
       id: "field-1",

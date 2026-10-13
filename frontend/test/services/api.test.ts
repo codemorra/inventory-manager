@@ -1,13 +1,14 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { request } from "./api";
+import { request } from "../../src/services/api";
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe("request", () => {
-  it("returns undefined for a successful 204 response", async () => {
+  // Test that a successful 204 response returns undefined
+  test("returns undefined for a successful 204 response", async () => {
     const response = {
       json: vi.fn(),
       ok: true,
