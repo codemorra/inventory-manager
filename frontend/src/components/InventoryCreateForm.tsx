@@ -5,8 +5,19 @@ import { useCreateInventory } from "../hooks/useInventories";
 import { ApiError } from "../services/api";
 import { Modal } from "./Modal";
 
-// Component for creating a new inventory item.
-export function InventoryCreateForm() {
+// Define properties for the inventory creation control.
+interface InventoryCreateFormProps {
+  triggerClassName?: string;
+}
+
+/**
+ * Render a trigger and modal form for creating an inventory.
+ * @param triggerClassName Optional classes applied to the modal trigger.
+ * @returns The inventory creation control.
+ */
+export function InventoryCreateForm({
+  triggerClassName = "inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover",
+}: InventoryCreateFormProps = {}) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
@@ -42,26 +53,29 @@ export function InventoryCreateForm() {
   return (
     <>
       <button
-        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400"
+        className={triggerClassName}
         onClick={() => setIsOpen(true)}
         type="button"
       >
+        <span aria-hidden="true" className="text-lg leading-none">
+          +
+        </span>
         {t("inventories.actions.new")}
       </button>
 
       {isOpen && (
         <Modal onClose={closeModal} title={t("inventories.titles.create")}>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label
-                className="block text-sm font-medium"
+                className="block text-sm font-medium text-foreground"
                 htmlFor="inventory-name"
               >
                 {t("common.fields.name")}
               </label>
               <input
                 autoFocus
-                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
                 id="inventory-name"
                 maxLength={255}
                 onChange={(event) => setName(event.target.value)}
@@ -72,13 +86,13 @@ export function InventoryCreateForm() {
 
             <div>
               <label
-                className="block text-sm font-medium"
+                className="block text-sm font-medium text-foreground"
                 htmlFor="inventory-description"
               >
                 {t("common.fields.description")}
               </label>
               <textarea
-                className="mt-1 min-h-24 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="mt-1.5 min-h-28 w-full resize-y rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
                 id="inventory-description"
                 onChange={(event) => setDescription(event.target.value)}
                 value={description}
@@ -87,7 +101,7 @@ export function InventoryCreateForm() {
 
             {createInventory.isError && (
               <p
-                className="text-sm text-red-700 dark:text-red-300"
+                className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
                 role="alert"
               >
                 {createInventory.error instanceof ApiError
@@ -96,9 +110,9 @@ export function InventoryCreateForm() {
               </p>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap justify-end gap-3 pt-1">
               <button
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400"
+                className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={createInventory.isPending || !name.trim()}
                 type="submit"
               >
@@ -107,7 +121,7 @@ export function InventoryCreateForm() {
                   : t("inventories.actions.create")}
               </button>
               <button
-                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
+                className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={createInventory.isPending}
                 onClick={closeModal}
                 type="button"

@@ -47,6 +47,7 @@
     "confirmDelete": "„{{name}}“ löschen?",
     "description": "Erstelle und verwalte deine Inventarlisten.",
     "empty": "Noch keine Inventare vorhanden.",
+    "emptyDescription": "Erstelle dein erstes Inventar über die Seitenleiste, um Felder zu konfigurieren und Einträge hinzuzufügen.",
     "errors": {
       "create": "Das Inventar konnte nicht erstellt werden.",
       "delete": "Das Inventar konnte nicht gelöscht werden.",
@@ -135,11 +136,15 @@
     }
   },
   "navigation": {
+    "allInventories": "Übersicht",
     "close": "Menü schließen",
     "closeBackdrop": "Navigation schließen",
     "inventories": "Inventare",
+    "inventoryError": "Die Inventare konnten nicht geladen werden.",
     "label": "Hauptnavigation",
     "mobileDialog": "Mobile Navigation",
+    "loadingInventories": "Inventare werden geladen…",
+    "noInventories": "Noch keine Inventare erstellt.",
     "open": "Menü öffnen",
     "skipToContent": "Zum Inhalt springen"
   },
