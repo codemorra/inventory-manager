@@ -1,4 +1,5 @@
-import { type FormEvent, useState } from "react";
+import { type SyntheticEvent, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   useDeleteInventoryField,
@@ -19,6 +20,7 @@ export function InventoryFieldCard({
   inventoryId,
   inventoryField,
 }: InventoryFieldCardProps) {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(inventoryField.name);
 
@@ -30,16 +32,19 @@ export function InventoryFieldCard({
   const mutationError =
     updateInventoryField.error ?? deleteInventoryField.error;
 
+  // Function to initiate editing of the inventory field.
   function startEditing() {
     setName(inventoryField.name);
     setIsEditing(true);
   }
 
+  // Function to cancel editing of the inventory field.
   function cancelEditing() {
     setIsEditing(false);
   }
 
-  function handleUpdate(event: FormEvent<HTMLFormElement>) {
+  // Function to handle the update of the inventory field.
+  function handleUpdate(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
     updateInventoryField.mutate(
@@ -58,8 +63,11 @@ export function InventoryFieldCard({
     );
   }
 
+  // Function to handle the deletion of the inventory field.
   function handleDelete() {
-    if (!window.confirm(`Delete "${inventoryField.name}"?`)) {
+    if (
+      !window.confirm(t("fields.confirmDelete", { name: inventoryField.name }))
+    ) {
       return;
     }
 
@@ -81,7 +89,7 @@ export function InventoryFieldCard({
               className="sr-only"
               htmlFor={`field-${inventoryField.id}-name`}
             >
-              Field name
+              {t("fields.form.fieldName")}
             </label>
             <input
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
@@ -99,7 +107,9 @@ export function InventoryFieldCard({
               disabled={isMutating || !name.trim()}
               type="submit"
             >
-              {updateInventoryField.isPending ? "Saving…" : "Save"}
+              {updateInventoryField.isPending
+                ? t("common.actions.saving")
+                : t("common.actions.save")}
             </button>
 
             <button
@@ -108,7 +118,7 @@ export function InventoryFieldCard({
               onClick={cancelEditing}
               type="button"
             >
-              Cancel
+              {t("common.actions.cancel")}
             </button>
           </div>
         </form>
@@ -117,17 +127,22 @@ export function InventoryFieldCard({
           <div>
             <h2 className="font-medium">{inventoryField.name}</h2>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              {inventoryField.field_type}
+              {t(`fields.types.${inventoryField.field_type}`)}
             </p>
             {inventoryField.max_length !== null && (
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                Maximum length: {inventoryField.max_length}
+                {t("fields.maximumLength", {
+                  length: inventoryField.max_length,
+                })}
               </p>
             )}
             {inventoryField.options.length > 0 && (
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                Options:{" "}
-                {inventoryField.options.map((option) => option.name).join(", ")}
+                {t("fields.options", {
+                  options: inventoryField.options
+                    .map((option) => option.name)
+                    .join(", "),
+                })}
               </p>
             )}
           </div>
@@ -139,7 +154,7 @@ export function InventoryFieldCard({
               onClick={startEditing}
               type="button"
             >
-              Edit
+              {t("common.actions.edit")}
             </button>
 
             <button
@@ -148,7 +163,9 @@ export function InventoryFieldCard({
               onClick={handleDelete}
               type="button"
             >
-              {deleteInventoryField.isPending ? "Deleting…" : "Delete"}
+              {deleteInventoryField.isPending
+                ? t("common.actions.deleting")
+                : t("common.actions.delete")}
             </button>
           </div>
         </div>
@@ -158,7 +175,7 @@ export function InventoryFieldCard({
         <p className="mt-3 text-sm text-red-700 dark:text-red-300" role="alert">
           {mutationError instanceof ApiError
             ? mutationError.message
-            : "Unable to manage inventory field."}
+            : t("fields.errors.manage")}
         </p>
       )}
 

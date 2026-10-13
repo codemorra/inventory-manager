@@ -1,0 +1,130 @@
+{
+  "common": {
+    "actions": {
+      "add": "Hinzufügen",
+      "cancel": "Abbrechen",
+      "closeDialog": "Dialog schließen",
+      "delete": "Löschen",
+      "deleting": "Wird gelöscht…",
+      "edit": "Bearbeiten",
+      "remove": "Entfernen",
+      "save": "Speichern",
+      "saveChanges": "Änderungen speichern",
+      "saving": "Wird gespeichert…"
+    },
+    "fields": {
+      "description": "Beschreibung",
+      "name": "Name"
+    },
+    "language": {
+      "de": "Deutsch",
+      "en": "English",
+      "label": "Sprache"
+    },
+    "values": {
+      "no": "Nein",
+      "yes": "Ja"
+    }
+  },
+  "inventories": {
+    "actions": {
+      "create": "Inventar erstellen",
+      "creating": "Wird erstellt…",
+      "fields": "Felder",
+      "items": "Einträge",
+      "new": "Neues Inventar"
+    },
+    "confirmDelete": "„{{name}}“ löschen?",
+    "description": "Erstelle und verwalte deine Inventarlisten.",
+    "empty": "Noch keine Inventare vorhanden.",
+    "errors": {
+      "create": "Das Inventar konnte nicht erstellt werden.",
+      "delete": "Das Inventar konnte nicht gelöscht werden.",
+      "load": "Die Inventare konnten nicht geladen werden.",
+      "update": "Das Inventar konnte nicht aktualisiert werden."
+    },
+    "loading": "Inventare werden geladen…",
+    "title": "Inventare",
+    "titles": {
+      "create": "Inventar erstellen",
+      "edit": "Inventar bearbeiten"
+    }
+  },
+  "fields": {
+    "actions": {
+      "add": "Feld hinzufügen",
+      "adding": "Wird hinzugefügt…",
+      "addOption": "Option hinzufügen"
+    },
+    "back": "← Inventare",
+    "confirmDelete": "„{{name}}“ löschen?",
+    "description": "Konfiguriere die Felder, die für dieses Inventar verfügbar sind.",
+    "empty": "Noch keine Felder konfiguriert.",
+    "errors": {
+      "create": "Das Inventarfeld konnte nicht erstellt werden.",
+      "load": "Die Inventarfelder konnten nicht geladen werden.",
+      "manage": "Das Inventarfeld konnte nicht verwaltet werden.",
+      "options": "Die Feldoptionen konnten nicht verwaltet werden."
+    },
+    "form": {
+      "fieldName": "Feldname",
+      "fieldType": "Feldtyp",
+      "maximumLength": "Maximale Länge",
+      "option": "Option {{number}}",
+      "options": "Optionen"
+    },
+    "loading": "Felder werden geladen…",
+    "maximumLength": "Maximale Länge: {{length}}",
+    "newOption": "Neue Option",
+    "newOptionName": "Name der neuen Option",
+    "optionName": "Optionsname",
+    "options": "Optionen: {{options}}",
+    "title": "Inventarfelder",
+    "types": {
+      "boolean": "Ja/Nein",
+      "date": "Datum",
+      "datetime": "Datum und Uhrzeit",
+      "duration": "Dauer",
+      "multiselect": "Mehrfachauswahl",
+      "number": "Zahl",
+      "select": "Einfachauswahl",
+      "text": "Text",
+      "time": "Uhrzeit"
+    }
+  },
+  "items": {
+    "actions": {
+      "add": "Eintrag hinzufügen",
+      "adding": "Wird hinzugefügt…",
+      "new": "Neuer Eintrag"
+    },
+    "back": "← Inventare",
+    "confirmDelete": "Diesen Inventareintrag löschen?",
+    "description": "Füge Einträge zu diesem Inventar hinzu und verwalte sie.",
+    "empty": "Noch keine Einträge vorhanden.",
+    "errors": {
+      "create": "Der Inventareintrag konnte nicht hinzugefügt werden.",
+      "delete": "Der Inventareintrag konnte nicht gelöscht werden.",
+      "load": "Die Inventareinträge konnten nicht geladen werden.",
+      "update": "Der Inventareintrag konnte nicht aktualisiert werden."
+    },
+    "formDescription": "Gib die Werte ein, die in diesem Inventar gespeichert werden sollen.",
+    "loading": "Inventar wird geladen…",
+    "noFields": {
+      "action": "Felder konfigurieren",
+      "description": "Konfiguriere mindestens ein Feld, bevor du Inventareinträge hinzufügst.",
+      "hint": "Konfiguriere mindestens ein Feld, bevor du Einträge hinzufügst.",
+      "title": "Keine Felder konfiguriert"
+    },
+    "noSelection": "Keine Auswahl",
+    "selectMultiple": "Wähle eine oder mehrere Optionen aus.",
+    "title": "Inventareinträge",
+    "titles": {
+      "create": "Inventareintrag hinzufügen",
+      "edit": "Inventareintrag bearbeiten"
+    }
+  },
+  "table": {
+    "actions": "Aktionen"
+  }
+}

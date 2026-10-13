@@ -1,14 +1,21 @@
 import { type ReactNode, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
-/** Define properties for a modal dialog. */
+// Define properties for a modal dialog.
 interface ModalProps {
   children: ReactNode;
   onClose: () => void;
   title: string;
 }
 
-/** Render an accessible modal dialog above the current page. */
+/**
+ * Render an accessible modal dialog above the current page.
+ * @param children The content to display inside the modal.
+ * @param onClose The function to call when the modal should be closed.
+ * @param title The title of the modal dialog.
+ */
 export function Modal({ children, onClose, title }: ModalProps) {
+  const { t } = useTranslation();
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -40,12 +47,12 @@ export function Modal({ children, onClose, title }: ModalProps) {
             {title}
           </h2>
           <button
-            aria-label="Close dialog"
+            aria-label={t("common.actions.closeDialog")}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
             onClick={onClose}
             type="button"
           >
-            Close
+            {t("common.actions.closeDialog")}
           </button>
         </div>
         <div className="mt-5">{children}</div>

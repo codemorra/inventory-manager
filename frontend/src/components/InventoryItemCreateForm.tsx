@@ -1,4 +1,5 @@
-import { type FormEvent, useState } from "react";
+import { type SyntheticEvent, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useCreateInventoryItem } from "../hooks/useInventoryItems";
 import { ApiError } from "../services/api";
@@ -9,13 +10,13 @@ import {
   getInitialValue,
   type InventoryItemFormValue,
 } from "./inventoryItemForm";
-/** Define properties for the inventory item creation form. */
+// Define properties for the inventory item creation form.
 interface InventoryItemCreateFormProps {
   inventoryId: string;
   fields: InventoryField[];
 }
 
-/** Define properties for a field-specific form control. */
+// Define properties for a field-specific form control.
 interface InventoryItemFieldInputProps {
   idPrefix: string;
   disabled: boolean;
@@ -24,7 +25,14 @@ interface InventoryItemFieldInputProps {
   value: InventoryItemFormValue;
 }
 
-/** Render the input control matching an inventory field type. */
+/**
+ * Render the input control matching an inventory field type.
+ * @param idPrefix The prefix for the input element's ID.
+ * @param disabled Whether the input should be disabled.
+ * @param field The inventory field definition.
+ * @param onChange Callback to handle changes to the input value.
+ * @param value The current value of the input.
+ */
 export function InventoryItemFieldInput({
   idPrefix,
   disabled,
@@ -32,6 +40,7 @@ export function InventoryItemFieldInput({
   onChange,
   value,
 }: InventoryItemFieldInputProps) {
+  const { t } = useTranslation();
   const inputId = `${idPrefix}-${field.id}`;
   const inputClassName =
     "mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100";
@@ -66,7 +75,7 @@ export function InventoryItemFieldInput({
           onChange={(event) => onChange(event.target.value)}
           value={typeof value === "string" ? value : ""}
         >
-          <option value="">No selection</option>
+          <option value="">{t("items.noSelection")}</option>
           {field.options.map((option) => (
             <option key={option.id} value={option.id}>
               {option.name}
@@ -109,7 +118,7 @@ export function InventoryItemFieldInput({
           className="mt-1 block text-xs font-normal text-slate-500 dark:text-slate-400"
           id={`${inputId}-help`}
         >
-          Select one or more options.
+          {t("items.selectMultiple")}
         </span>
       </div>
     );
@@ -147,6 +156,7 @@ export function InventoryItemCreateForm({
   inventoryId,
   fields,
 }: InventoryItemCreateFormProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [values, setValues] = useState<Record<string, InventoryItemFormValue>>(
     {},
@@ -159,7 +169,7 @@ export function InventoryItemCreateForm({
     }
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const itemValues = fields.flatMap((field) => {
@@ -191,20 +201,20 @@ export function InventoryItemCreateForm({
         onClick={() => setIsOpen(true)}
         type="button"
       >
-        New item
+        {t("items.actions.new")}
       </button>
 
       {fields.length === 0 && (
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          Configure at least one field before adding items.
+          {t("items.noFields.hint")}
         </p>
       )}
 
       {isOpen && (
-        <Modal onClose={closeModal} title="Add inventory item">
+        <Modal onClose={closeModal} title={t("items.titles.create")}>
           <form onSubmit={handleSubmit}>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Enter the values you want to store in this inventory.
+              {t("items.formDescription")}
             </p>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               {fields.map((field) => (
@@ -231,7 +241,7 @@ export function InventoryItemCreateForm({
               >
                 {createItem.error instanceof ApiError
                   ? createItem.error.message
-                  : "Unable to add inventory item."}
+                  : t("items.errors.create")}
               </p>
             )}
 
@@ -241,7 +251,9 @@ export function InventoryItemCreateForm({
                 disabled={createItem.isPending}
                 type="submit"
               >
-                {createItem.isPending ? "Adding…" : "Add item"}
+                {createItem.isPending
+                  ? t("items.actions.adding")
+                  : t("items.actions.add")}
               </button>
               <button
                 className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
@@ -249,7 +261,7 @@ export function InventoryItemCreateForm({
                 onClick={closeModal}
                 type="button"
               >
-                Cancel
+                {t("common.actions.cancel")}
               </button>
             </div>
           </form>

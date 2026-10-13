@@ -1,23 +1,27 @@
-import { type FormEvent, useState } from "react";
+import { type SyntheticEvent, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useCreateInventory } from "../hooks/useInventories";
 import { ApiError } from "../services/api";
 import { Modal } from "./Modal";
 
-/** Render a modal form for creating a new inventory. */
+// Component for creating a new inventory item.
 export function InventoryCreateForm() {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const createInventory = useCreateInventory();
 
+  // Function to close the modal.
   function closeModal() {
     if (!createInventory.isPending) {
       setIsOpen(false);
     }
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  // Function to handle form submission.
+  function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
     createInventory.mutate(
@@ -42,18 +46,18 @@ export function InventoryCreateForm() {
         onClick={() => setIsOpen(true)}
         type="button"
       >
-        New inventory
+        {t("inventories.actions.new")}
       </button>
 
       {isOpen && (
-        <Modal onClose={closeModal} title="Create inventory">
+        <Modal onClose={closeModal} title={t("inventories.titles.create")}>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label
                 className="block text-sm font-medium"
                 htmlFor="inventory-name"
               >
-                Name
+                {t("common.fields.name")}
               </label>
               <input
                 autoFocus
@@ -71,7 +75,7 @@ export function InventoryCreateForm() {
                 className="block text-sm font-medium"
                 htmlFor="inventory-description"
               >
-                Description
+                {t("common.fields.description")}
               </label>
               <textarea
                 className="mt-1 min-h-24 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
@@ -88,7 +92,7 @@ export function InventoryCreateForm() {
               >
                 {createInventory.error instanceof ApiError
                   ? createInventory.error.message
-                  : "Unable to create inventory."}
+                  : t("inventories.errors.create")}
               </p>
             )}
 
@@ -98,7 +102,9 @@ export function InventoryCreateForm() {
                 disabled={createInventory.isPending || !name.trim()}
                 type="submit"
               >
-                {createInventory.isPending ? "Creating…" : "Create inventory"}
+                {createInventory.isPending
+                  ? t("inventories.actions.creating")
+                  : t("inventories.actions.create")}
               </button>
               <button
                 className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
@@ -106,7 +112,7 @@ export function InventoryCreateForm() {
                 onClick={closeModal}
                 type="button"
               >
-                Cancel
+                {t("common.actions.cancel")}
               </button>
             </div>
           </form>

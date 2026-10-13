@@ -1,6 +1,6 @@
 /** Test the inventory field overview page. */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
@@ -100,7 +100,9 @@ describe("InventoryFieldsPage", () => {
 
     renderInventoryFieldsPage();
 
-    expect(await screen.findByText("Brand")).toBeInTheDocument();
-    expect(screen.getByText("text")).toBeInTheDocument();
+    const fieldCard = (await screen.findByText("Brand")).closest("article");
+
+    expect(fieldCard).not.toBeNull();
+    expect(within(fieldCard!).getByText("Text")).toBeInTheDocument();
   });
 });

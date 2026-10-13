@@ -1,4 +1,5 @@
-import { type FormEvent, useState } from "react";
+import { type SyntheticEvent, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   useDeleteInventoryItem,
@@ -18,13 +19,18 @@ import {
   type InventoryItemFormValue,
 } from "./inventoryItemForm";
 
-/** Define properties for the inventory item table. */
+// Define properties for the inventory item table.
 interface InventoryItemListProps {
   fields: InventoryField[];
   items: InventoryItem[];
 }
 
-/** Return an option label for a stored option identifier. */
+/**
+ * Return an option label for a stored option identifier.
+ * @param options The available options for the field.
+ * @param optionId The stored option identifier.
+ * @returns The display label for the option.
+ */
 function getOptionLabel(
   options: InventoryFieldOption[],
   optionId: string,
@@ -32,10 +38,17 @@ function getOptionLabel(
   return options.find((option) => option.id === optionId)?.name ?? optionId;
 }
 
-/** Format a stored value for display in the inventory table. */
+/**
+ * Format a stored value for display in the inventory table.
+ * @param field The inventory field definition.
+ * @param itemValue The stored value for the inventory item.
+ * @param booleanLabels Labels to use for boolean values.
+ * @returns A string suitable for display in the inventory table.
+ */
 function formatValue(
   field: InventoryField,
   itemValue: InventoryItemValue | undefined,
+  booleanLabels: { no: string; yes: string },
 ): string {
   const value = itemValue?.value;
 
@@ -44,7 +57,7 @@ function formatValue(
   }
 
   if (field.field_type === "boolean" && typeof value === "boolean") {
-    return value ? "Yes" : "No";
+    return value ? booleanLabels.yes : booleanLabels.no;
   }
 
   if (field.field_type === "select" && typeof value === "string") {
@@ -61,7 +74,12 @@ function formatValue(
   return String(value);
 }
 
-/** Convert stored item values into editable form values. */
+/**
+ * Convert stored item values into editable form values.
+ * @param fields The inventory fields defining the structure of the item.
+ * @param item The inventory item containing stored values.
+ * @returns A record mapping field IDs to editable form values.
+ */
 function getEditableValues(
   fields: InventoryField[],
   item: InventoryItem,
@@ -97,8 +115,13 @@ function getEditableValues(
   );
 }
 
-/** Render active inventory items with editing and deletion actions. */
+/**
+ * Render active inventory items with editing and deletion actions.
+ * @param fields The inventory fields defining the structure of the items.
+ * @param items The list of inventory items to render.
+ */
 export function InventoryItemList({ fields, items }: InventoryItemListProps) {
+  const { t } = useTranslation();
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<
     Record<string, InventoryItemFormValue>
@@ -108,17 +131,26 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
   const isMutating = updateItem.isPending || deleteItem.isPending;
   const editingItem = items.find((item) => item.id === editingItemId);
 
+  /**
+   * Start editing the specified inventory item.
+   * @param item The inventory item to edit.
+   */
   function startEditing(item: InventoryItem) {
     setEditValues(getEditableValues(fields, item));
     setEditingItemId(item.id);
   }
 
+  // Cancel editing the current inventory item.
   function cancelEditing() {
     setEditingItemId(null);
     setEditValues({});
   }
 
-  function handleUpdate(event: FormEvent<HTMLFormElement>) {
+  /**
+   * Handle the submission of the edit form for the current inventory item.
+   * @param event The form submission event.
+   */
+  function handleUpdate(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!editingItem) {
@@ -144,8 +176,12 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
     );
   }
 
+  /**
+   * Handle the deletion of an inventory item.
+   * @param item The inventory item to delete.
+   */
   function handleDelete(item: InventoryItem) {
-    if (!window.confirm("Delete this inventory item?")) {
+    if (!window.confirm(t("items.confirmDelete"))) {
       return;
     }
 
@@ -175,7 +211,7 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
                   className="border-b border-slate-200 px-4 py-3 text-right dark:border-slate-700"
                   scope="col"
                 >
-                  Actions
+                  {t("table.actions")}
                 </th>
               </tr>
             </thead>
@@ -196,7 +232,10 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
                         key={field.id}
                       >
                         <span className="line-clamp-3">
-                          {formatValue(field, valuesByField.get(field.id))}
+                          {formatValue(field, valuesByField.get(field.id), {
+                            no: t("common.values.no"),
+                            yes: t("common.values.yes"),
+                          })}
                         </span>
                       </td>
                     ))}
@@ -208,7 +247,7 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
                           onClick={() => startEditing(item)}
                           type="button"
                         >
-                          Edit
+                          {t("common.actions.edit")}
                         </button>
                         <button
                           className="rounded-md bg-red-600 px-3 py-1.5 font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500 dark:hover:bg-red-400"
@@ -216,7 +255,9 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
                           onClick={() => handleDelete(item)}
                           type="button"
                         >
-                          {deleteItem.isPending ? "Deleting…" : "Delete"}
+                          {deleteItem.isPending
+                            ? t("common.actions.deleting")
+                            : t("common.actions.delete")}
                         </button>
                       </div>
                     </td>
@@ -234,7 +275,7 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
           >
             {deleteItem.error instanceof ApiError
               ? deleteItem.error.message
-              : "Unable to delete inventory item."}
+              : t("items.errors.delete")}
           </p>
         )}
       </div>
@@ -244,7 +285,7 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
           onClose={() => {
             if (!isMutating) cancelEditing();
           }}
-          title="Edit inventory item"
+          title={t("items.titles.edit")}
         >
           <form onSubmit={handleUpdate}>
             <div className="grid gap-4 md:grid-cols-2">
@@ -272,7 +313,7 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
               >
                 {updateItem.error instanceof ApiError
                   ? updateItem.error.message
-                  : "Unable to update inventory item."}
+                  : t("items.errors.update")}
               </p>
             )}
 
@@ -282,7 +323,9 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
                 disabled={isMutating}
                 type="submit"
               >
-                {updateItem.isPending ? "Saving…" : "Save changes"}
+                {updateItem.isPending
+                  ? t("common.actions.saving")
+                  : t("common.actions.saveChanges")}
               </button>
               <button
                 className="rounded-md border border-slate-300 px-4 py-2 font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
@@ -290,7 +333,7 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
                 onClick={cancelEditing}
                 type="button"
               >
-                Cancel
+                {t("common.actions.cancel")}
               </button>
             </div>
           </form>

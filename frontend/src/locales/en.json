@@ -1,0 +1,130 @@
+{
+  "common": {
+    "actions": {
+      "add": "Add",
+      "cancel": "Cancel",
+      "closeDialog": "Close dialog",
+      "delete": "Delete",
+      "deleting": "Deleting…",
+      "edit": "Edit",
+      "remove": "Remove",
+      "save": "Save",
+      "saveChanges": "Save changes",
+      "saving": "Saving…"
+    },
+    "fields": {
+      "description": "Description",
+      "name": "Name"
+    },
+    "language": {
+      "de": "Deutsch",
+      "en": "English",
+      "label": "Language"
+    },
+    "values": {
+      "no": "No",
+      "yes": "Yes"
+    }
+  },
+  "inventories": {
+    "actions": {
+      "create": "Create inventory",
+      "creating": "Creating…",
+      "fields": "Fields",
+      "items": "Items",
+      "new": "New inventory"
+    },
+    "confirmDelete": "Delete \"{{name}}\"?",
+    "description": "Create and manage your inventory lists.",
+    "empty": "No inventories yet.",
+    "errors": {
+      "create": "Unable to create inventory.",
+      "delete": "Unable to delete inventory.",
+      "load": "Unable to load inventories.",
+      "update": "Unable to update inventory."
+    },
+    "loading": "Loading inventories…",
+    "title": "Inventories",
+    "titles": {
+      "create": "Create inventory",
+      "edit": "Edit inventory"
+    }
+  },
+  "fields": {
+    "actions": {
+      "add": "Add field",
+      "adding": "Adding…",
+      "addOption": "Add option"
+    },
+    "back": "← Inventories",
+    "confirmDelete": "Delete \"{{name}}\"?",
+    "description": "Configure the fields that will be available for this inventory.",
+    "empty": "No fields configured yet.",
+    "errors": {
+      "create": "Unable to create inventory field.",
+      "load": "Unable to load inventory fields.",
+      "manage": "Unable to manage inventory field.",
+      "options": "Unable to manage inventory field options."
+    },
+    "form": {
+      "fieldName": "Field name",
+      "fieldType": "Field type",
+      "maximumLength": "Maximum length",
+      "option": "Option {{number}}",
+      "options": "Options"
+    },
+    "loading": "Loading fields…",
+    "maximumLength": "Maximum length: {{length}}",
+    "newOption": "New option",
+    "newOptionName": "New option name",
+    "optionName": "Option name",
+    "options": "Options: {{options}}",
+    "title": "Inventory fields",
+    "types": {
+      "boolean": "Boolean",
+      "date": "Date",
+      "datetime": "Date and time",
+      "duration": "Duration",
+      "multiselect": "Multiselect",
+      "number": "Number",
+      "select": "Select",
+      "text": "Text",
+      "time": "Time"
+    }
+  },
+  "items": {
+    "actions": {
+      "add": "Add item",
+      "adding": "Adding…",
+      "new": "New item"
+    },
+    "back": "← Inventories",
+    "confirmDelete": "Delete this inventory item?",
+    "description": "Add and manage the entries stored in this inventory.",
+    "empty": "No items yet.",
+    "errors": {
+      "create": "Unable to add inventory item.",
+      "delete": "Unable to delete inventory item.",
+      "load": "Unable to load inventory items.",
+      "update": "Unable to update inventory item."
+    },
+    "formDescription": "Enter the values you want to store in this inventory.",
+    "loading": "Loading inventory…",
+    "noFields": {
+      "action": "Configure fields",
+      "description": "Configure at least one field before adding inventory items.",
+      "hint": "Configure at least one field before adding items.",
+      "title": "No fields configured"
+    },
+    "noSelection": "No selection",
+    "selectMultiple": "Select one or more options.",
+    "title": "Inventory items",
+    "titles": {
+      "create": "Add inventory item",
+      "edit": "Edit inventory item"
+    }
+  },
+  "table": {
+    "actions": "Actions"
+  }
+}

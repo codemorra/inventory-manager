@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import { InventoryItemCreateForm } from "../components/InventoryItemCreateForm";
 import { InventoryItemList } from "../components/InventoryItemList";
@@ -6,8 +7,9 @@ import { useInventoryFields } from "../hooks/useInventoryFields";
 import { useInventoryItems } from "../hooks/useInventoryItems";
 import { ApiError } from "../services/api";
 
-/** Render the inventory item overview and creation interface. */
+// Render the inventory item overview and creation interface.
 export function InventoryItemsPage() {
+  const { t } = useTranslation();
   const { inventoryId } = useParams();
   const itemQuery = useInventoryItems(inventoryId ?? "");
   const fieldQuery = useInventoryFields(inventoryId ?? "");
@@ -28,17 +30,17 @@ export function InventoryItemsPage() {
             className="text-sm font-medium text-blue-700 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
             to="/"
           >
-            ← Inventories
+            {t("items.back")}
           </Link>
-          <h1 className="mt-4 text-3xl font-semibold">Inventory items</h1>
+          <h1 className="mt-4 text-3xl font-semibold">{t("items.title")}</h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Add and manage the entries stored in this inventory.
+            {t("items.description")}
           </p>
         </header>
 
         {isPending && (
           <p className="text-slate-600 dark:text-slate-400" role="status">
-            Loading inventory…
+            {t("items.loading")}
           </p>
         )}
 
@@ -47,9 +49,7 @@ export function InventoryItemsPage() {
             className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
             role="alert"
           >
-            {error instanceof ApiError
-              ? error.message
-              : "Unable to load inventory items."}
+            {error instanceof ApiError ? error.message : t("items.errors.load")}
           </p>
         )}
 
@@ -58,15 +58,13 @@ export function InventoryItemsPage() {
           fieldQuery.data &&
           fieldQuery.data.length === 0 && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 p-5 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
-              <h2 className="font-semibold">No fields configured</h2>
-              <p className="mt-1 text-sm">
-                Configure at least one field before adding inventory items.
-              </p>
+              <h2 className="font-semibold">{t("items.noFields.title")}</h2>
+              <p className="mt-1 text-sm">{t("items.noFields.description")}</p>
               <Link
                 className="mt-3 inline-block text-sm font-medium underline underline-offset-2"
                 to={`/inventories/${inventoryId}/fields`}
               >
-                Configure fields
+                {t("items.noFields.action")}
               </Link>
             </div>
           )}
@@ -88,7 +86,7 @@ export function InventoryItemsPage() {
                 />
               ) : (
                 <p className="mt-6 text-slate-600 dark:text-slate-400">
-                  No items yet.
+                  {t("items.empty")}
                 </p>
               )}
             </>

@@ -1,4 +1,5 @@
-import { type FormEvent, useState } from "react";
+import { type SyntheticEvent, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   useCreateInventoryFieldOption,
@@ -15,12 +16,18 @@ interface InventoryFieldOptionsProps {
   options: InventoryFieldOption[];
 }
 
-/** Render selectable field options and their management controls. */
+/**
+ * Render selectable field options and their management controls.
+ * @param inventoryId The ID of the inventory to which the field belongs.
+ * @param fieldId The ID of the inventory field.
+ * @param options The list of selectable options for the inventory field.
+ */
 export function InventoryFieldOptions({
   inventoryId,
   fieldId,
   options,
 }: InventoryFieldOptionsProps) {
+  const { t } = useTranslation();
   const [newOptionName, setNewOptionName] = useState("");
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [editingOptionName, setEditingOptionName] = useState("");
@@ -32,7 +39,8 @@ export function InventoryFieldOptions({
   const mutationError =
     createOption.error ?? updateOption.error ?? deleteOption.error;
 
-  function addOption(event: FormEvent<HTMLFormElement>) {
+  // Function to handle the addition of a new inventory field option.
+  function addOption(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     createOption.mutate(
       { inventoryId, fieldId, data: { name: newOptionName.trim() } },
@@ -40,7 +48,11 @@ export function InventoryFieldOptions({
     );
   }
 
-  function saveOption(event: FormEvent<HTMLFormElement>, optionId: string) {
+  // Function to handle the saving of an edited inventory field option.
+  function saveOption(
+    event: SyntheticEvent<HTMLFormElement>,
+    optionId: string,
+  ) {
     event.preventDefault();
     updateOption.mutate(
       {
@@ -53,14 +65,17 @@ export function InventoryFieldOptions({
     );
   }
 
+  // Function to handle the removal of an inventory field option.
   function removeOption(option: InventoryFieldOption) {
-    if (!window.confirm(`Delete "${option.name}"?`)) return;
+    if (!window.confirm(t("fields.confirmDelete", { name: option.name }))) {
+      return;
+    }
     deleteOption.mutate({ inventoryId, fieldId, optionId: option.id });
   }
 
   return (
     <section className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
-      <h3 className="text-sm font-medium">Options</h3>
+      <h3 className="text-sm font-medium">{t("fields.form.options")}</h3>
       <ul className="mt-2 space-y-2">
         {options.map((option) => (
           <li key={option.id}>
@@ -70,7 +85,7 @@ export function InventoryFieldOptions({
                 onSubmit={(event) => saveOption(event, option.id)}
               >
                 <input
-                  aria-label="Option name"
+                  aria-label={t("fields.optionName")}
                   className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                   maxLength={255}
                   onChange={(event) => setEditingOptionName(event.target.value)}
@@ -82,7 +97,7 @@ export function InventoryFieldOptions({
                   disabled={isMutating || !editingOptionName.trim()}
                   type="submit"
                 >
-                  Save
+                  {t("common.actions.save")}
                 </button>
                 <button
                   className="rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700"
@@ -90,7 +105,7 @@ export function InventoryFieldOptions({
                   onClick={() => setEditingOptionId(null)}
                   type="button"
                 >
-                  Cancel
+                  {t("common.actions.cancel")}
                 </button>
               </form>
             ) : (
@@ -106,7 +121,7 @@ export function InventoryFieldOptions({
                     }}
                     type="button"
                   >
-                    Edit
+                    {t("common.actions.edit")}
                   </button>
                   <button
                     className="rounded-md text-sm text-red-700 disabled:opacity-60 dark:text-red-300"
@@ -114,7 +129,7 @@ export function InventoryFieldOptions({
                     onClick={() => removeOption(option)}
                     type="button"
                   >
-                    Delete
+                    {t("common.actions.delete")}
                   </button>
                 </div>
               </div>
@@ -124,11 +139,11 @@ export function InventoryFieldOptions({
       </ul>
       <form className="mt-3 flex gap-2" onSubmit={addOption}>
         <input
-          aria-label="New option name"
+          aria-label={t("fields.newOptionName")}
           className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
           maxLength={255}
           onChange={(event) => setNewOptionName(event.target.value)}
-          placeholder="New option"
+          placeholder={t("fields.newOption")}
           required
           value={newOptionName}
         />
@@ -137,14 +152,14 @@ export function InventoryFieldOptions({
           disabled={isMutating || !newOptionName.trim()}
           type="submit"
         >
-          Add
+          {t("common.actions.add")}
         </button>
       </form>
       {mutationError && (
         <p className="mt-3 text-sm text-red-700 dark:text-red-300" role="alert">
           {mutationError instanceof ApiError
             ? mutationError.message
-            : "Unable to manage inventory field options."}
+            : t("fields.errors.options")}
         </p>
       )}
     </section>
