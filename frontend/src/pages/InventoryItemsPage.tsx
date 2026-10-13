@@ -23,7 +23,7 @@ export function InventoryItemsPage() {
   const isError = itemQuery.isError || fieldQuery.isError;
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div>
       <div className="mx-auto max-w-7xl">
         <header className="mb-8">
           <Link
@@ -92,6 +92,6 @@ export function InventoryItemsPage() {
             </>
           )}
       </div>
-    </main>
+    </div>
   );
 }

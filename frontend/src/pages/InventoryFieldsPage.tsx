@@ -22,7 +22,7 @@ export function InventoryFieldsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div>
       <div className="mx-auto max-w-3xl">
         <header className="mb-8">
           <Link
@@ -81,6 +81,6 @@ export function InventoryFieldsPage() {
             </ul>
           )}
       </div>
-    </main>
+    </div>
   );
 }

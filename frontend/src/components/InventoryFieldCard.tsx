@@ -9,13 +9,17 @@ import { ApiError } from "../services/api";
 import type { InventoryField } from "../types/inventoryField";
 import { InventoryFieldOptions } from "./InventoryFieldOptions";
 
-/** Define properties for an inventory field card. */
+// Define properties for an inventory field card.
 interface InventoryFieldCardProps {
   inventoryId: string;
   inventoryField: InventoryField;
 }
 
-/** Render inventory field details and management actions. */
+/**
+ * Render inventory field details and management actions.
+ * @param inventoryId The ID of the inventory to which the field belongs.
+ * @param inventoryField The inventory field to display and manage.
+ */
 export function InventoryFieldCard({
   inventoryId,
   inventoryField,

@@ -1,4 +1,8 @@
 {
+  "app": {
+    "name": "Inventory Manager",
+    "tagline": "Behalte den Überblick"
+  },
   "common": {
     "actions": {
       "add": "Hinzufügen",
@@ -123,6 +127,15 @@
       "create": "Inventareintrag hinzufügen",
       "edit": "Inventareintrag bearbeiten"
     }
+  },
+  "navigation": {
+    "close": "Menü schließen",
+    "closeBackdrop": "Navigation schließen",
+    "inventories": "Inventare",
+    "label": "Hauptnavigation",
+    "mobileDialog": "Mobile Navigation",
+    "open": "Menü öffnen",
+    "skipToContent": "Zum Inhalt springen"
   },
   "table": {
     "actions": "Aktionen"
