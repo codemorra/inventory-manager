@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useStoredPreference } from "./useStoredPreference";
 
 import {
   applyTheme,
   getInitialThemePreference,
   THEME_STORAGE_KEY,
-  type ThemePreference,
 } from "../appearance/theme";
 
 /**
@@ -12,13 +12,13 @@ import {
  * @returns The current preference and its update function.
  */
 export function useTheme() {
-  const [theme, setTheme] = useState<ThemePreference>(
+  const [theme, setTheme] = useStoredPreference(
+    THEME_STORAGE_KEY,
     getInitialThemePreference,
   );
 
   useEffect(() => {
     applyTheme(theme);
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
 
     if (theme !== "system" || typeof window.matchMedia !== "function") {
       return;

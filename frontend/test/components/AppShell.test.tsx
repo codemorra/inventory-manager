@@ -34,6 +34,52 @@ function renderAppShell() {
 }
 
 describe("AppShell", () => {
+  // Test that language is configured in settings and changes the full interface.
+  test("opens settings and changes the application language", async () => {
+    const user = userEvent.setup();
+    mockedGetInventories.mockResolvedValue([]);
+    renderAppShell();
+
+    expect(screen.queryByLabelText("Language")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Appearance")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Blue" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    const dialog = screen.getByRole("dialog", { name: "Settings" });
+    expect(within(dialog).getByLabelText("Appearance")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Blue" }));
+    expect(document.documentElement.dataset.accent).toBe("blue");
+    await user.selectOptions(within(dialog).getByLabelText("Language"), "de");
+
+    expect(
+      screen.getByRole("dialog", { name: "Einstellungen" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Dialog schließen" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  // Test that mobile settings replace the navigation overlay with one dialog.
+  test("opens settings from mobile navigation", async () => {
+    const user = userEvent.setup();
+    mockedGetInventories.mockResolvedValue([]);
+    renderAppShell();
+    await user.click(screen.getByRole("button", { name: "Open menu" }));
+    const navigation = screen.getByRole("dialog", {
+      name: "Mobile navigation",
+    });
+    await user.click(
+      within(navigation).getByRole("button", { name: "Settings" }),
+    );
+
+    expect(
+      screen.queryByRole("dialog", { name: "Mobile navigation" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "Settings" }),
+    ).toBeInTheDocument();
+  });
+
   // Test that the shell displays its primary regions and accessibility link
   test("renders application navigation and page content", () => {
     mockedGetInventories.mockResolvedValue([]);
@@ -42,7 +88,9 @@ describe("AppShell", () => {
     expect(screen.getByText("Inventory Manager")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Page content" })).toBeVisible();
     expect(
-      within(screen.getByRole("complementary")).getByLabelText("Language"),
+      within(screen.getByRole("complementary")).getByRole("button", {
+        name: "Settings",
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Skip to content" }),

@@ -1,8 +1,8 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { LanguageSwitch } from "../LanguageSwitch";
-import { ThemeSwitch } from "../ThemeSwitch";
+import { SettingsDialog } from "../SettingsDialog";
+import { useTheme } from "../../hooks/useTheme";
 import { Navigation } from "./Navigation";
 
 // Define properties for the shared application shell.
@@ -17,7 +17,10 @@ interface AppShellProps {
  */
 export function AppShell({ children }: AppShellProps) {
   const { t } = useTranslation();
+  // Follow system appearance changes even while settings are closed.
+  useTheme();
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (!isNavigationOpen) {
@@ -57,7 +60,7 @@ export function AppShell({ children }: AppShellProps) {
           </svg>
         </span>
         <div>
-          <p className="text-sm font-semibold tracking-tight text-foreground">
+          <p className="text-sm font-semibold tracking-tight text-heading">
             {t("app.name")}
           </p>
           <p className="text-xs text-muted">{t("app.tagline")}</p>
@@ -65,14 +68,36 @@ export function AppShell({ children }: AppShellProps) {
       </div>
       <Navigation onNavigate={() => setIsNavigationOpen(false)} />
       <div className="mt-auto grid shrink-0 gap-3 border-t border-shell bg-surface-muted p-4 shadow-[0_-2px_6px_rgb(0_0_0/0.06)]">
-        <LanguageSwitch />
-        <ThemeSwitch />
+        <button
+          className="flex items-center gap-2 rounded-md border border-shell bg-surface px-3 py-2 text-sm font-medium transition hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-accent"
+          onClick={() => {
+            setIsNavigationOpen(false);
+            setIsSettingsOpen(true);
+          }}
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            className="size-4 text-accent"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            viewBox="0 0 24 24"
+          >
+            <path d="M4 6h16M4 12h16M4 18h16" />
+            <path d="M8 3v6m8 0v6M10 15v6" />
+          </svg>
+          {t("settings.title")}
+        </button>
       </div>
     </div>
   );
 
   return (
     <div className="min-h-dvh bg-canvas text-foreground">
+      {isSettingsOpen && (
+        <SettingsDialog onClose={() => setIsSettingsOpen(false)} />
+      )}
       <a
         className="fixed left-4 top-3 z-50 -translate-y-24 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-surface focus:translate-y-0"
         href="#page-content"
@@ -80,7 +105,7 @@ export function AppShell({ children }: AppShellProps) {
         {t("navigation.skipToContent")}
       </a>
 
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-shell bg-surface lg:block">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-shell bg-chrome lg:block">
         {sidebarContent}
       </aside>
 
@@ -97,7 +122,7 @@ export function AppShell({ children }: AppShellProps) {
             onClick={() => setIsNavigationOpen(false)}
             type="button"
           />
-          <aside className="relative flex h-full w-[min(20rem,88vw)] flex-col border-r border-shell bg-surface shadow-raised">
+          <aside className="relative flex h-full w-[min(20rem,88vw)] flex-col border-r border-shell bg-chrome shadow-raised">
             <div className="flex shrink-0 justify-end px-4 pt-4">
               <button
                 className="rounded-lg border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover"

@@ -32,7 +32,7 @@ export function InventoryFieldsPage() {
             <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">
               {t("navigation.inventories")}
             </p>
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            <h1 className="text-3xl font-semibold tracking-tight text-heading sm:text-4xl">
               {t("fields.title")}
             </h1>
             <p className="mt-3 max-w-2xl leading-relaxed text-muted">

@@ -4,6 +4,13 @@
     "tagline": "Behalte den Überblick"
   },
   "common": {
+    "accent": {
+      "label": "Akzentfarbe",
+      "teal": "Türkis",
+      "blue": "Blau",
+      "purple": "Violett",
+      "orange": "Orange"
+    },
     "actions": {
       "add": "Hinzufügen",
       "cancel": "Abbrechen",
@@ -154,6 +161,11 @@
     "noInventories": "Noch keine Inventare erstellt.",
     "open": "Menü öffnen",
     "skipToContent": "Zum Inhalt springen"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "description": "Wähle Sprache, Darstellung und Akzentfarbe für die Anwendung.",
+    "savedAutomatically": "Änderungen werden automatisch in diesem Browser gespeichert."
   },
   "table": {
     "actions": "Aktionen"
