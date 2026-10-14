@@ -1,3 +1,10 @@
+import { saveInventoryConfiguration } from "../../src/services/inventoryEditor";
+vi.mock("../../src/services/inventoryEditor", () => ({
+  saveInventoryConfiguration: vi.fn(),
+}));
+vi.mock("../../src/services/inventoryFields", () => ({
+  getInventoryFields: vi.fn().mockResolvedValue([]),
+}));
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -7,10 +14,7 @@ import {
   SidebarContextActions,
   type SidebarContextTarget,
 } from "../../src/components/SidebarContextActions";
-import {
-  updateInventory,
-  deleteInventory,
-} from "../../src/services/inventories";
+import { deleteInventory } from "../../src/services/inventories";
 import {
   updateInventoryGroup,
   deleteInventoryGroup,
@@ -86,16 +90,20 @@ function renderActions(kind: "inventory" | "group") {
 // Test that context editing updates only inventory metadata.
 test("edits an inventory from the context menu", async () => {
   const user = userEvent.setup();
-  vi.mocked(updateInventory).mockResolvedValue(inventory);
+  vi.mocked(saveInventoryConfiguration).mockResolvedValue({
+    inventory,
+    fields: [],
+  });
   const close = renderActions("inventory");
   await user.click(screen.getByRole("menuitem", { name: "Edit" }));
-  await user.clear(screen.getByLabelText("Name"));
+  await user.clear(await screen.findByLabelText("Name"));
   await user.type(screen.getByLabelText("Name"), " Board games ");
   await user.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() =>
-    expect(updateInventory).toHaveBeenCalledWith("games", {
-      name: "Board games",
-      description: "Collection",
+    expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+      inventory: { name: "Board games", description: "Collection" },
+      fields: [],
+      options: [],
     }),
   );
   await waitFor(() => expect(close).toHaveBeenCalledOnce());

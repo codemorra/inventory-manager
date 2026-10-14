@@ -13,6 +13,7 @@
     },
     "actions": {
       "add": "Add",
+      "retry": "Retry",
       "cancel": "Cancel",
       "closeDialog": "Close dialog",
       "delete": "Delete",
@@ -69,6 +70,10 @@
     "error": "Unable to load or update inventory groups. Please try again."
   },
   "inventories": {
+    "editor": {
+      "finishForm": "Complete or cancel the open field or option form before saving.",
+      "invalidDraft": "New selection fields need at least one option with a unique, non-empty name."
+    },
     "general": "General",
     "actions": {
       "create": "Create inventory",

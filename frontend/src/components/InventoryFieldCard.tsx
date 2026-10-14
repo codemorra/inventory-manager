@@ -2,29 +2,22 @@ import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 import { type SyntheticEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  useDeleteInventoryField,
-  useUpdateInventoryField,
-} from "../hooks/useInventoryFields";
-import { ApiError } from "../services/api";
+import { useInventoryDraft, useDraftEditorLock } from "./InventoryDraftContext";
 import type { InventoryField } from "../types/inventoryField";
 import { InventoryFieldOptions } from "./InventoryFieldOptions";
 import { Modal } from "./Modal";
 
 // Define properties for an inventory field card.
 interface InventoryFieldCardProps {
-  inventoryId: string;
   inventoryField: InventoryField;
 }
 
 /**
  * Render inventory field details and management actions.
- * @param inventoryId The ID of the inventory to which the field belongs.
  * @param inventoryField The inventory field to display and manage.
  * @returns The field row and its management dialogs.
  */
 export function InventoryFieldCard({
-  inventoryId,
   inventoryField,
 }: InventoryFieldCardProps) {
   const { t } = useTranslation();
@@ -32,12 +25,12 @@ export function InventoryFieldCard({
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(inventoryField.name);
 
-  const updateInventoryField = useUpdateInventoryField();
-  const deleteInventoryField = useDeleteInventoryField();
-
-  const isMutating =
-    updateInventoryField.isPending || deleteInventoryField.isPending;
-  const mutationError = updateInventoryField.error;
+  const {
+    renameField,
+    removeField,
+    disabled: isMutating,
+  } = useInventoryDraft();
+  useDraftEditorLock(`field-${inventoryField.id}`, isEditing || isDeleting);
 
   // Function to initiate editing of the inventory field.
   function startEditing() {
@@ -51,31 +44,18 @@ export function InventoryFieldCard({
   }
 
   /**
-   * Submit the renamed field without changing its configuration.
+   * Apply the renamed field to the local draft without changing its type.
    * @param event The form submission event.
    */
   function handleUpdate(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    updateInventoryField.mutate(
-      {
-        inventoryId,
-        fieldId: inventoryField.id,
-        data: {
-          name: name.trim(),
-        },
-      },
-      {
-        onSuccess: () => {
-          setIsEditing(false);
-        },
-      },
-    );
+    renameField(inventoryField.id, name.trim());
+    setIsEditing(false);
   }
 
   // Ask for confirmation before deleting the field.
   function handleDelete() {
-    deleteInventoryField.reset();
     setIsDeleting(true);
   }
 
@@ -99,6 +79,7 @@ export function InventoryFieldCard({
               </label>
               <input
                 autoFocus
+                disabled={isMutating}
                 className="w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
                 id={`field-${inventoryField.id}-name`}
                 maxLength={255}
@@ -108,25 +89,13 @@ export function InventoryFieldCard({
               />
             </div>
 
-            {updateInventoryField.error && (
-              <p
-                className="rounded-md bg-danger-soft p-3 text-sm text-danger"
-                role="alert"
-              >
-                {updateInventoryField.error instanceof ApiError
-                  ? updateInventoryField.error.message
-                  : t("fields.errors.manage")}
-              </p>
-            )}
             <div className="flex justify-end gap-2">
               <button
                 className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isMutating || !name.trim()}
                 type="submit"
               >
-                {updateInventoryField.isPending
-                  ? t("common.actions.saving")
-                  : t("common.actions.save")}
+                {t("common.actions.save")}
               </button>
 
               <button
@@ -176,29 +145,15 @@ export function InventoryFieldCard({
             onClick={handleDelete}
             type="button"
           >
-            {deleteInventoryField.isPending
-              ? t("common.actions.deleting")
-              : t("common.actions.delete")}
+            {t("common.actions.delete")}
           </button>
         </div>
       </div>
-
-      {mutationError && !isEditing && (
-        <p
-          className="mt-4 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
-          role="alert"
-        >
-          {mutationError instanceof ApiError
-            ? mutationError.message
-            : t("fields.errors.manage")}
-        </p>
-      )}
 
       {(inventoryField.field_type === "select" ||
         inventoryField.field_type === "multiselect") && (
         <InventoryFieldOptions
           fieldId={inventoryField.id}
-          inventoryId={inventoryId}
           options={inventoryField.options}
         />
       )}
@@ -206,21 +161,13 @@ export function InventoryFieldCard({
         <DeleteConfirmationDialog
           title={t("fields.titles.delete")}
           message={t("fields.confirmDelete", { name: inventoryField.name })}
-          isPending={deleteInventoryField.isPending}
-          error={
-            deleteInventoryField.error
-              ? deleteInventoryField.error instanceof ApiError
-                ? deleteInventoryField.error.message
-                : t("fields.errors.manage")
-              : null
-          }
+          isPending={false}
+          error={null}
           onClose={() => setIsDeleting(false)}
-          onConfirm={() =>
-            deleteInventoryField.mutate(
-              { inventoryId, fieldId: inventoryField.id },
-              { onSuccess: () => setIsDeleting(false) },
-            )
-          }
+          onConfirm={() => {
+            removeField(inventoryField.id);
+            setIsDeleting(false);
+          }}
         />
       )}
     </article>

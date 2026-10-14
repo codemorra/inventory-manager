@@ -1,15 +1,9 @@
 import { type SyntheticEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useCreateInventoryField } from "../hooks/useInventoryFields";
-import { ApiError } from "../services/api";
+import { useInventoryDraft, useDraftEditorLock } from "./InventoryDraftContext";
 import type { InventoryFieldType } from "../types/inventoryField";
 import { Modal } from "./Modal";
-
-// Define properties for an inventory field creation form.
-interface InventoryFieldCreateFormProps {
-  inventoryId: string;
-}
 
 // Define the field types available during field creation.
 const fieldTypes: InventoryFieldType[] = [
@@ -34,20 +28,18 @@ function supportsOptions(fieldType: InventoryFieldType) {
 }
 
 /**
- * Render a form that creates a configured inventory field.
- * @param inventoryId The ID of the inventory to which the field will be added.
+ * Render a form that adds a configured field to the local draft.
  * @returns The inventory field creation control.
  */
-export function InventoryFieldCreateForm({
-  inventoryId,
-}: InventoryFieldCreateFormProps) {
+export function InventoryFieldCreateForm() {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [fieldType, setFieldType] = useState<InventoryFieldType>("text");
   const [maxLength, setMaxLength] = useState("255");
   const [options, setOptions] = useState([""]);
-  const createInventoryField = useCreateInventoryField();
+  const { addField, disabled } = useInventoryDraft();
+  useDraftEditorLock("create-field", isOpen);
   const canSubmit =
     name.trim() &&
     ((fieldType === "text" && Number(maxLength) > 0) ||
@@ -58,7 +50,7 @@ export function InventoryFieldCreateForm({
 
   // Close the creation modal while no request is pending.
   function closeModal() {
-    if (!createInventoryField.isPending) {
+    if (!disabled) {
       setIsOpen(false);
     }
   }
@@ -74,39 +66,31 @@ export function InventoryFieldCreateForm({
   }
 
   /**
-   * Submit the inventory field creation form.
+   * Add the field locally; the parent editor persists it on explicit save.
    * @param event The form submission event.
    */
   function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    createInventoryField.mutate(
-      {
-        inventoryId,
-        data: {
-          name: name.trim(),
-          field_type: fieldType,
-          ...(fieldType === "text" && { max_length: Number(maxLength) }),
-          ...(supportsOptions(fieldType) && {
-            options: options.map((option) => ({ name: option.trim() })),
-          }),
-        },
-      },
-      {
-        onSuccess: () => {
-          setName("");
-          setFieldType("text");
-          setMaxLength("255");
-          setOptions([""]);
-          setIsOpen(false);
-        },
-      },
-    );
+    addField({
+      name: name.trim(),
+      field_type: fieldType,
+      ...(fieldType === "text" && { max_length: Number(maxLength) }),
+      ...(supportsOptions(fieldType) && {
+        options: options.map((option) => ({ name: option.trim() })),
+      }),
+    });
+    setName("");
+    setFieldType("text");
+    setMaxLength("255");
+    setOptions([""]);
+    setIsOpen(false);
   }
 
   return (
     <>
       <button
-        className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover"
+        className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:opacity-50"
+        disabled={disabled}
         onClick={() => setIsOpen(true)}
         type="button"
       >
@@ -216,20 +200,10 @@ export function InventoryFieldCreateForm({
                 </button>
               </fieldset>
             )}
-            {createInventoryField.error && (
-              <p
-                className="mt-4 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
-                role="alert"
-              >
-                {createInventoryField.error instanceof ApiError
-                  ? createInventoryField.error.message
-                  : t("fields.errors.create")}
-              </p>
-            )}
             <div className="mt-5 flex flex-wrap justify-end gap-3">
               <button
                 className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:opacity-50"
-                disabled={createInventoryField.isPending}
+                disabled={disabled}
                 onClick={closeModal}
                 type="button"
               >
@@ -237,10 +211,10 @@ export function InventoryFieldCreateForm({
               </button>
               <button
                 className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={createInventoryField.isPending || !canSubmit}
+                disabled={disabled || !canSubmit}
                 type="submit"
               >
-                {createInventoryField.isPending
+                {disabled
                   ? t("fields.actions.adding")
                   : t("fields.actions.add")}
               </button>
