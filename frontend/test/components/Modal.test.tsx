@@ -4,6 +4,31 @@ import { Modal } from "../../src/components/Modal";
 
 afterEach(cleanup);
 
+// Test the flexible layout contract without relying on jsdom to calculate dimensions.
+test("allows content to shrink within a height-limited dialog", () => {
+  render(
+    <Modal
+      title="Inventory"
+      onClose={vi.fn()}
+      contentClassName="flex min-h-0 flex-col"
+    >
+      <p>Fields</p>
+    </Modal>,
+  );
+  const dialog = screen.getByRole("dialog", { name: "Inventory" });
+  expect(dialog).toHaveClass(
+    "flex",
+    "flex-col",
+    "max-h-[90dvh]",
+    "overflow-y-auto",
+  );
+  expect(screen.getByText("Fields").parentElement).toHaveClass(
+    "min-h-0",
+    "flex",
+    "flex-col",
+  );
+});
+
 // Test that Escape dismisses only the topmost editor.
 test("only dismisses the topmost dialog on Escape", () => {
   const closeParent = vi.fn();

@@ -56,6 +56,41 @@ function renderEditor(initialSection: "general" | "fields" = "general") {
   return close;
 }
 
+// Test that only the field list receives independent scrolling while actions stay outside it.
+test("contains a long field list in its own scroll area outside the dialog actions", async () => {
+  vi.mocked(getInventoryFields).mockResolvedValue(
+    Array.from({ length: 25 }, (_, index) => ({
+      id: `field-${index}`,
+      inventory_id: inventory.id,
+      name: `Field ${index + 1}`,
+      field_type: "text" as const,
+      max_length: 255,
+      options: [],
+      position: index,
+      created_at: "",
+      updated_at: "",
+    })),
+  );
+  renderEditor("fields");
+  const list = await screen.findByRole("list", { name: "Inventory fields" });
+  expect(list.children).toHaveLength(25);
+  expect(list).toHaveClass("overflow-y-auto", "min-h-0");
+  expect(list).toHaveAttribute("tabindex", "0");
+  expect(list).not.toContainElement(
+    screen.getByRole("button", { name: "Cancel" }),
+  );
+  expect(list).not.toContainElement(
+    screen.getByRole("button", { name: "Save changes" }),
+  );
+  expect(list).not.toContainElement(
+    screen.getByRole("button", { name: "New field" }),
+  );
+  expect(screen.getByRole("dialog", { name: "Edit inventory" })).toHaveClass(
+    "max-h-[90dvh]",
+    "overflow-y-auto",
+  );
+});
+
 // Test that switching sections does not discard unsaved general settings.
 test("keeps metadata edits when switching between general settings and fields", async () => {
   const user = userEvent.setup();
