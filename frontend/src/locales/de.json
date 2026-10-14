@@ -151,6 +151,10 @@
     }
   },
   "navigation": {
+    "searchInventories": "Inventare nach Titel durchsuchen",
+    "searchPlaceholder": "Inventare suchen…",
+    "clearSearch": "Inventarsuche leeren",
+    "noSearchResults": "Keine passenden Inventare gefunden.",
     "allInventories": "Übersicht",
     "close": "Menü schließen",
     "closeBackdrop": "Navigation schließen",
