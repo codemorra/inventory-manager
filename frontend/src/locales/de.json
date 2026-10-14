@@ -69,6 +69,7 @@
     "error": "Inventargruppen konnten nicht geladen oder geändert werden. Bitte erneut versuchen."
   },
   "inventories": {
+    "general": "Allgemein",
     "actions": {
       "create": "Inventar erstellen",
       "creating": "Wird erstellt…",

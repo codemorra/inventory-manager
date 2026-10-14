@@ -1,9 +1,9 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { InventoryItemCreateForm } from "../components/InventoryItemCreateForm";
 import { InventoryItemList } from "../components/InventoryItemList";
-import { InventorySectionNavigation } from "../components/InventorySectionNavigation";
+import { InventoryEditDialog } from "../components/InventoryEditDialog";
 import { useInventoryFields } from "../hooks/useInventoryFields";
 import { useInventoryItems } from "../hooks/useInventoryItems";
 import { useInventories } from "../hooks/useInventories";
@@ -13,6 +13,7 @@ import { ApiError } from "../services/api";
 export function InventoryItemsPage() {
   const { t } = useTranslation();
   const { inventoryId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const itemQuery = useInventoryItems(inventoryId ?? "");
   const fieldQuery = useInventoryFields(inventoryId ?? "");
   const { data: inventories } = useInventories();
@@ -29,7 +30,7 @@ export function InventoryItemsPage() {
   return (
     <div>
       <div className="min-w-0 w-full">
-        <header className="mb-5">
+        <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">
               {t("navigation.inventories")}
@@ -41,9 +42,20 @@ export function InventoryItemsPage() {
               {inventory?.description || t("items.description")}
             </p>
           </div>
+          {inventory && (
+            <button
+              className="shrink-0 rounded-md border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover"
+              onClick={() => {
+                const next = new URLSearchParams(searchParams);
+                next.set("edit", "general");
+                setSearchParams(next);
+              }}
+              type="button"
+            >
+              {t("inventories.titles.edit")}
+            </button>
+          )}
         </header>
-
-        <InventorySectionNavigation inventoryId={inventoryId} />
 
         {isPending && (
           <p
@@ -74,7 +86,7 @@ export function InventoryItemsPage() {
               </p>
               <Link
                 className="mt-5 inline-flex rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover"
-                to={`/inventories/${inventoryId}/fields`}
+                to={`/inventories/${inventoryId}/items?edit=fields`}
               >
                 {t("items.noFields.action")}
               </Link>
@@ -98,6 +110,21 @@ export function InventoryItemsPage() {
             />
           )}
       </div>
+      {inventory &&
+        ["general", "fields"].includes(searchParams.get("edit") ?? "") && (
+          <InventoryEditDialog
+            key={inventory.id}
+            inventory={inventory}
+            initialSection={
+              searchParams.get("edit") === "fields" ? "fields" : "general"
+            }
+            onClose={() => {
+              const next = new URLSearchParams(searchParams);
+              next.delete("edit");
+              setSearchParams(next, { replace: true });
+            }}
+          />
+        )}
     </div>
   );
 }

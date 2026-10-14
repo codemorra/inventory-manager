@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
@@ -12,6 +13,7 @@ import { getInventories } from "../../src/services/inventories";
 
 vi.mock("../../src/services/inventories", () => ({
   getInventories: vi.fn().mockResolvedValue([]),
+  updateInventory: vi.fn(),
 }));
 
 vi.mock("../../src/services/inventoryFields", () => ({
@@ -72,6 +74,37 @@ afterEach(() => {
 });
 
 describe("InventoryItemsPage", () => {
+  // Test that the visible edit action opens the shared editor instead of page tabs.
+  test("opens inventory editing from the page header", async () => {
+    const user = userEvent.setup();
+    vi.mocked(getInventories).mockResolvedValueOnce([
+      {
+        id: "inventory-1",
+        name: "Games",
+        description: null,
+        created_at: timestamp,
+        updated_at: timestamp,
+      },
+    ]);
+    mockedGetInventoryFields.mockResolvedValue(fields);
+    mockedGetInventoryItems.mockResolvedValue([]);
+    renderInventoryItemsPage();
+    await user.click(
+      await screen.findByRole("button", { name: "Edit inventory" }),
+    );
+    expect(
+      screen.getByRole("dialog", { name: "Edit inventory" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "General" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.queryByRole("link", { name: "Fields" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
   // Test that the inventory context and creation action remain visible above an empty table.
   test("shows the inventory name, description, and empty table toolbar", async () => {
     vi.mocked(getInventories).mockResolvedValueOnce([
@@ -136,7 +169,7 @@ describe("InventoryItemsPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Configure fields" }),
-    ).toHaveAttribute("href", "/inventories/inventory-1/fields");
+    ).toHaveAttribute("href", "/inventories/inventory-1/items?edit=fields");
   });
 
   // Test that an empty state message is displayed when no items exist

@@ -69,6 +69,7 @@
     "error": "Unable to load or update inventory groups. Please try again."
   },
   "inventories": {
+    "general": "General",
     "actions": {
       "create": "Create inventory",
       "creating": "Creating…",
