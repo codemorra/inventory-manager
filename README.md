@@ -1,26 +1,68 @@
 # inventory-manager
 
-> This project is currently under development.
+> This project is currently under development. The interface, field configuration, and application behavior may change as development progresses.
 
-`inventory-manager` is a local application for flexible management of personal inventories.
+Inventory Manager is a local application for flexible management of personal inventories.
 
 Users can create inventory lists, define custom fields, and manage items with typed values. Each inventory has its own field configuration, including text limits and options for select and multiselect fields.
 
-The application uses a React/TypeScript frontend, an Express/TypeScript backend, and local SQLite storage through Drizzle. A responsive sidebar provides direct access to inventories, while tables and dialogs support configuration and item management.
+A responsive sidebar provides direct access to inventories, while tables and dialogs support configuration and item management.
+
+![Cable inventory with typed field values and grouped inventories in the sidebar](docs/screenshots/inventory.png)
+
+The screenshot uses synthetic demo data.
 
 ## Current features
 
-- Create, view, edit, and delete inventory lists
-- Define, rename, and delete configurable fields for inventory lists
-- Configure text limits and select or multiselect options per field
-- Add, rename, and delete options for existing select and multiselect fields
-- Support text, number, boolean, date, time, datetime, duration, select, and multiselect field types
-- Create, view, edit, and delete local inventory items with typed field values
-- Local SQLite storage with Drizzle database migrations
-- Local application logging with size-based rotation
-- Responsive interface based on Tailwind CSS
-- English and German interface with system-language detection
-- System, light, and dark appearance modes with persistent preferences
+- Inventory lists with custom fields and typed items
+- Single-level groups with drag-and-drop organization
+- Sidebar filtering by inventory title
+- Sortable item tables
+- Configurable text limits and field-specific selection options
+- English and German interface
+- Light, dark, and system appearance modes with accent colors
+
+## Using the interface
+
+Create inventories and groups from the sidebar. Drag an inventory directly onto a
+group to assign it, or onto **Without a group** to remove its assignment. Groups
+can be collapsed, and inventories remain alphabetically ordered. The sidebar search
+filters inventory titles and reveals matching inventories inside collapsed groups.
+
+Creating an inventory opens its item page. Use **Edit inventory** on that page,
+or right-click an inventory in the sidebar and select **Edit**, to open its settings.
+The **General** section contains its name and description; **Fields** manages its
+field definitions and selection options. All changes remain local drafts until
+**Save changes** commits them together. **Cancel**, closing the editor, or Escape
+discards the draft. A failed save keeps the draft available for correction or retry.
+Complete or cancel open field and option forms before saving the full inventory.
+Long field lists scroll independently of the dialog actions.
+
+Available field types include text, number, boolean, date, time, datetime, duration,
+select, and multiselect.
+
+The inventory page shows its title and optional description above the item table.
+The table toolbar provides the creation action and item count. Select a column
+heading to sort ascending, then select it again to sort descending. Comparisons
+follow the field type; selection fields use option names, and empty values appear
+last. **Reset sorting** restores the original order. Sorting changes the current
+view without changing stored data.
+
+Right-click a sidebar group to rename or delete it. Deleting a group preserves its
+inventories and moves them to **Without a group**. Deleting an inventory, item,
+field, option, or group requires confirmation in an application dialog. Field and
+option deletions remain part of the local editor draft until saved. Inventory,
+item, and group deletions are applied after confirmation; failures leave the
+confirmation open with an error and allow another attempt.
+
+The **Settings** button at the bottom of the sidebar opens language, appearance, and
+accent color preferences. Changes take effect immediately.
+
+## Technology
+
+The frontend uses React, TypeScript, Vite, and Tailwind CSS. The Express/TypeScript
+backend stores data locally in SQLite through Drizzle, with database migrations
+and rotating log files.
 
 ## Development
 
@@ -80,8 +122,10 @@ Backend storage paths support `~/` and are independent of the current working di
 The backend permits requests from `http://localhost:5173` and `http://127.0.0.1:5173`.
 
 The frontend initially selects German for a `de` system locale and English for all
-other locales. Language and appearance can be changed from the sidebar. Both choices
-are stored locally in the browser and restored on the next visit.
+other locales. Language, appearance, and accent color are stored locally in the
+browser and restored on the next visit. The system appearance option follows the
+operating system's light or dark preference, including changes while the application
+is open. Inventory groups and memberships are stored in SQLite.
 
 ```text
 InventoryData/node/
@@ -91,10 +135,8 @@ InventoryData/node/
     └── inventory-manager.log
 ```
 
-This data directory is excluded from version control. The Node data location is
-retained from the migration so already-created Node data stays available. The old
-Python database is not imported or used. Attachments and synchronization remain
-preparations, not implemented features.
+This data directory is excluded from version control. Its location is retained
+across application updates so existing inventories remain available.
 
 See [backend documentation](backend/README.md) for migration commands and API behavior.
 
@@ -121,3 +163,7 @@ npm --prefix backend run test
 npm --prefix frontend run test
 npm run format:check
 ```
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
