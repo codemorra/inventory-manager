@@ -1073,6 +1073,63 @@
           }
         }
       }
+    },
+    "/inventories/{inventory_id}/configuration": {
+      "patch": {
+        "tags": ["inventories"],
+        "summary": "Save Inventory Editor Draft",
+        "operationId": "save_inventory_editor_draft",
+        "description": "Apply inventory metadata, field operations, and option operations in one transaction. Any validation, ownership, or storage failure rolls back all changes. Omitted operation arrays leave existing records unchanged. Existing field types and text limits cannot be changed; group membership is preserved. Each existing field or option may be changed only once per save, and options cannot be changed when their field is being deleted. New fields include their initial options in their create data. Existing item values retain their established deletion semantics.",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryEditorDraft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved inventory and active field configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEditorResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Inventory, field, or option is missing, deleted, or belongs to another parent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid or conflicting draft operations; nothing was saved"
+          },
+          "500": {
+            "description": "Unexpected persistence failure; the entire transaction is rolled back"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1643,6 +1700,242 @@
           }
         },
         "required": ["id", "name", "created_at", "updated_at"]
+      },
+      "InventoryEditorDraft": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "inventory": {
+            "properties": {
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Name"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Description"
+              }
+            },
+            "type": "object",
+            "additionalProperties": false,
+            "default": {}
+          },
+          "fields": {
+            "type": "array",
+            "maxItems": 1000,
+            "default": [],
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "const": "create"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/InventoryFieldCreate"
+                    }
+                  },
+                  "required": ["action", "data"]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "const": "update"
+                    },
+                    "field_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "data": {
+                      "properties": {
+                        "name": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 255,
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "title": "Name"
+                        },
+                        "position": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "title": "Position"
+                        }
+                      },
+                      "type": "object",
+                      "title": "InventoryFieldUpdate",
+                      "description": "Validate optional values used to update an inventory field.",
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["action", "field_id", "data"]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "const": "delete"
+                    },
+                    "field_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": ["action", "field_id"]
+                }
+              ]
+            }
+          },
+          "options": {
+            "type": "array",
+            "maxItems": 1000,
+            "default": [],
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "const": "create"
+                    },
+                    "field_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "data": {
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 255,
+                          "minLength": 1,
+                          "title": "Name"
+                        }
+                      },
+                      "type": "object",
+                      "required": ["name"],
+                      "title": "InventoryFieldOptionCreate",
+                      "description": "Validate data required to create an inventory field option.",
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["action", "field_id", "data"]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "const": "update"
+                    },
+                    "field_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "option_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "data": {
+                      "properties": {
+                        "name": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 255,
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "title": "Name"
+                        }
+                      },
+                      "type": "object",
+                      "title": "InventoryFieldOptionUpdate",
+                      "description": "Validate optional values used to update an inventory field option.",
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["action", "field_id", "option_id", "data"]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "action": {
+                      "type": "string",
+                      "const": "delete"
+                    },
+                    "field_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "option_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": ["action", "field_id", "option_id"]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "InventoryEditorResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "inventory": {
+            "$ref": "#/components/schemas/InventoryRead"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryFieldRead"
+            }
+          }
+        },
+        "required": ["inventory", "fields"]
       }
     }
   }
