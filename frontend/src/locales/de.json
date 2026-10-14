@@ -43,6 +43,13 @@
       "yes": "Ja"
     }
   },
+  "contextMenu": {
+    "label": "Aktionen für {{name}}",
+    "rename": "Umbenennen",
+    "deleteGroup": "Gruppe löschen",
+    "deleteInventory": "Inventar löschen",
+    "error": "Die Änderung konnte nicht gespeichert werden. Bitte erneut versuchen."
+  },
   "groups": {
     "new": "Neue Gruppe",
     "creating": "Wird erstellt…",

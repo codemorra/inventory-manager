@@ -7,20 +7,27 @@ import { ApiError } from "../../services/api";
 import { InventoryCreateForm } from "../InventoryCreateForm";
 import { useInventoryGroups } from "../../hooks/useInventoryGroups";
 import { InventoryTree } from "../InventoryTree";
+import type { SidebarContextTarget } from "../SidebarContextActions";
 
 // Define properties for the primary application navigation.
 interface NavigationProps {
   onNavigate?: () => void;
   onCreateGroup?: () => void;
+  onContext?: ((target: SidebarContextTarget) => void) | undefined;
 }
 
 /**
  * Render links to the main application sections.
  * @param onNavigate Callback invoked after selecting a navigation link.
  * @param onCreateGroup Callback used to open the group creation dialog.
+ * @param onContext Callback used to open a sidebar context menu.
  * @returns The primary application navigation.
  */
-export function Navigation({ onNavigate, onCreateGroup }: NavigationProps) {
+export function Navigation({
+  onNavigate,
+  onCreateGroup,
+  onContext,
+}: NavigationProps) {
   const { t, i18n } = useTranslation();
   const [search, setSearch] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
@@ -195,6 +202,7 @@ export function Navigation({ onNavigate, onCreateGroup }: NavigationProps) {
               searching={query.length > 0}
               onNavigate={onNavigate}
               onMove={moveInventory}
+              onContext={onContext}
               disabled={
                 move.isPending || groupQuery.isPending || groupQuery.isError
               }
@@ -207,6 +215,7 @@ export function Navigation({ onNavigate, onCreateGroup }: NavigationProps) {
             searching={query.length > 0}
             onNavigate={onNavigate}
             onMove={moveInventory}
+            onContext={onContext}
             disabled={
               move.isPending || groupQuery.isPending || groupQuery.isError
             }

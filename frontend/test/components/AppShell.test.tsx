@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -11,6 +17,7 @@ vi.mock("../../src/services/inventories", () => ({
   createInventory: vi.fn(),
   getInventories: vi.fn(),
   updateInventory: vi.fn(),
+  deleteInventory: vi.fn(),
 }));
 
 const mockedGetInventories = vi.mocked(getInventories);
@@ -41,6 +48,35 @@ function renderAppShell() {
 }
 
 describe("AppShell", () => {
+  // Test the complete right-click-to-edit flow through the actual sidebar.
+  test("opens inventory actions from a sidebar right click", async () => {
+    const user = userEvent.setup();
+    mockedGetInventories.mockResolvedValue([
+      {
+        id: "games",
+        name: "Games",
+        description: "Collection",
+        created_at: "",
+        updated_at: "",
+      },
+    ]);
+    renderAppShell();
+    const link = await screen.findByRole("link", { name: "Games" });
+    fireEvent.contextMenu(link, { clientX: 100, clientY: 200 });
+    expect(
+      screen.getByRole("menu", { name: "Actions for Games" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("menuitem", { name: "Edit" }));
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "Edit inventory" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toHaveValue("Games");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(link).toHaveFocus();
+  });
+
   // Test that group creation replaces mobile navigation with a single dialog.
   test("opens group creation from mobile navigation", async () => {
     const user = userEvent.setup();

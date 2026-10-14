@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { Inventory } from "../types/inventory";
 import type { InventoryGroup } from "../services/inventoryGroups";
+import type { SidebarContextTarget } from "./SidebarContextActions";
 
 // Identify application inventory drags without accepting arbitrary external data.
 const inventoryDragType = "application/x-inventory-manager-inventory";
@@ -15,6 +16,7 @@ interface InventoryTreeProps {
   onNavigate?: (() => void) | undefined;
   onMove?: (inventoryId: string, groupId: string | null) => void;
   disabled?: boolean;
+  onContext?: ((target: SidebarContextTarget) => void) | undefined;
 }
 
 /**
@@ -25,6 +27,7 @@ interface InventoryTreeProps {
  * @param onNavigate Callback invoked after following an inventory link.
  * @param onMove Callback used to persist a membership change.
  * @param disabled Whether membership changes are temporarily unavailable.
+ * @param onContext Callback used to open actions for a sidebar entry.
  * @returns The grouped inventory navigation list.
  */
 export function InventoryTree({
@@ -34,6 +37,7 @@ export function InventoryTree({
   onNavigate,
   onMove,
   disabled = false,
+  onContext,
 }: InventoryTreeProps) {
   const { t } = useTranslation();
   const location = useLocation();
@@ -131,6 +135,19 @@ export function InventoryTree({
           className={`rounded-md ${draggedId === inventory.id ? "ring-1 ring-accent opacity-60" : ""}`}
         >
           <Link
+            onContextMenu={(event) => {
+              if (!onContext) return;
+              event.preventDefault();
+              event.stopPropagation();
+              event.currentTarget.focus();
+              onContext({
+                kind: "inventory",
+                entry: inventory,
+                x: event.clientX,
+                y: event.clientY,
+                source: event.currentTarget,
+              });
+            }}
             aria-current={active ? "page" : undefined}
             className={`block truncate rounded-md px-3 py-2 text-sm transition-colors ${active ? "bg-accent-soft font-semibold text-accent" : "text-muted hover:bg-surface-hover hover:text-foreground"}`}
             draggable={Boolean(onMove) && !disabled}
@@ -180,6 +197,19 @@ export function InventoryTree({
               }
             >
               <button
+                onContextMenu={(event) => {
+                  if (!onContext) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  event.currentTarget.focus();
+                  onContext({
+                    kind: "group",
+                    entry: group,
+                    x: event.clientX,
+                    y: event.clientY,
+                    source: event.currentTarget,
+                  });
+                }}
                 aria-expanded={open}
                 className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-semibold text-heading hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-accent"
                 onClick={() => {
