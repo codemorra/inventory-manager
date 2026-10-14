@@ -19,7 +19,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const { t } = useTranslation();
 
   return (
-    <Modal onClose={onClose} title={t("settings.title")}>
+    <Modal onClose={onClose} title={t("settings.title")} size="small">
       <p className="mb-5 text-sm leading-relaxed text-muted">
         {t("settings.description")}
       </p>

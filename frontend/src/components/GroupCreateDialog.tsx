@@ -33,6 +33,7 @@ export function GroupCreateDialog({ onClose }: GroupCreateDialogProps) {
         if (!create.isPending) onClose();
       }}
       title={t("groups.new")}
+      size="small"
     >
       <form className="space-y-5" onSubmit={submit}>
         <label className="block text-sm font-medium">

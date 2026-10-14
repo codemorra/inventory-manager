@@ -64,7 +64,11 @@ export function InventoryCreateForm({
       </button>
 
       {isOpen && (
-        <Modal onClose={closeModal} title={t("inventories.titles.create")}>
+        <Modal
+          onClose={closeModal}
+          title={t("inventories.titles.create")}
+          size="medium"
+        >
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label

@@ -183,6 +183,7 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
             if (!isMutating) cancelEditing();
           }}
           title={t("inventories.titles.edit")}
+          size="medium"
         >
           <form className="space-y-4" onSubmit={handleUpdate}>
             <label

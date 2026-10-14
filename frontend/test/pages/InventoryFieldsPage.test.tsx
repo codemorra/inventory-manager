@@ -8,6 +8,10 @@ import { ApiError } from "../../src/services/api";
 import { getInventoryFields } from "../../src/services/inventoryFields";
 import { InventoryFieldsPage } from "../../src/pages/InventoryFieldsPage";
 
+vi.mock("../../src/services/inventories", () => ({
+  getInventories: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock("../../src/services/inventoryFields", () => ({
   createInventoryField: vi.fn(),
   deleteInventoryField: vi.fn(),
