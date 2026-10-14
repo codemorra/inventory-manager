@@ -4,6 +4,7 @@ import { createFieldService } from "./fields/service.js";
 import { createOptionService } from "./options/service.js";
 import { createItemService } from "./items/service.js";
 import { createGroupService } from "./groups/service.js";
+import { createInventoryEditorService } from "./inventories/editor-service.js";
 
 /**
  * Compose the domain services once; they have no dependency on Express or HTTP.
@@ -16,7 +17,8 @@ export function createServices(db: AppDatabase) {
   const fields = createFieldService(db, inventories);
   const options = createOptionService(db, fields);
   const items = createItemService(db, inventories);
-  return { inventories, fields, options, items, groups };
+  const inventoryEditor = createInventoryEditorService(db);
+  return { inventories, fields, options, items, groups, inventoryEditor };
 }
 
 export type Services = ReturnType<typeof createServices>;

@@ -1,14 +1,26 @@
 import { Router } from "express";
 import type { Services } from "../services.js";
-import { inventoryResponse } from "./responses.js";
+import { inventoryResponse, fieldResponse } from "./responses.js";
 
 /**
  * Creates routes for managing inventories.
  * @param services - The application's services.
  * @returns An Express router with inventory routes.
  */
-export function inventoryRoutes({ inventories }: Services) {
+export function inventoryRoutes({ inventories, inventoryEditor }: Services) {
   const router = Router();
+
+  // Save the editor draft as one transaction instead of separate HTTP mutations.
+  router.patch("/:inventory_id/configuration", (request, response) => {
+    const result = inventoryEditor.save(
+      request.params.inventory_id,
+      request.body,
+    );
+    response.json({
+      inventory: inventoryResponse(result.inventory),
+      fields: result.fields.map(fieldResponse),
+    });
+  });
 
   // Route for listing all inventories
   router.get("/", (_request, response) => {
