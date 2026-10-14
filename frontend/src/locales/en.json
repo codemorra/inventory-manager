@@ -151,6 +151,10 @@
     }
   },
   "navigation": {
+    "searchInventories": "Search inventories by title",
+    "searchPlaceholder": "Search inventories…",
+    "clearSearch": "Clear inventory search",
+    "noSearchResults": "No matching inventories.",
     "allInventories": "Overview",
     "close": "Close menu",
     "closeBackdrop": "Close navigation",
