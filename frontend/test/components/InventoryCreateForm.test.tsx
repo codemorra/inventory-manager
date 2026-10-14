@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { MemoryRouter, useLocation } from "react-router-dom";
 
 import { ApiError } from "../../src/services/api";
 import { createInventory } from "../../src/services/inventories";
@@ -13,6 +14,12 @@ vi.mock("../../src/services/inventories", () => ({
 }));
 
 const mockedCreateInventory = vi.mocked(createInventory);
+
+// Expose the destination URL without replacing the form under test.
+function Location() {
+  const location = useLocation();
+  return <p data-testid="location">{location.pathname + location.search}</p>;
+}
 
 /** Render the creation form with an isolated query client. */
 function renderInventoryCreateForm() {
@@ -26,7 +33,10 @@ function renderInventoryCreateForm() {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <InventoryCreateForm />
+      <MemoryRouter initialEntries={["/inventories/existing/items"]}>
+        <InventoryCreateForm />
+        <Location />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -65,6 +75,11 @@ describe("InventoryCreateForm", () => {
         description: "Cable collection",
       });
     });
+    await waitFor(() =>
+      expect(screen.getByTestId("location")).toHaveTextContent(
+        "/inventories/inventory-1/items",
+      ),
+    );
   });
 
   // Test that the form clears its fields after a successful submission
@@ -115,6 +130,10 @@ describe("InventoryCreateForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Unable to reach the backend.",
     );
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "/inventories/existing/items",
+    );
+    expect(screen.getByLabelText("Name")).toHaveValue("Cables");
   });
 
   // Test that the submission button is disabled while the request is pending
@@ -132,5 +151,8 @@ describe("InventoryCreateForm", () => {
     await user.click(screen.getByRole("button", { name: "Create inventory" }));
 
     expect(screen.getByRole("button", { name: "Creating…" })).toBeDisabled();
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "/inventories/existing/items",
+    );
   });
 });
