@@ -27,15 +27,18 @@ export function InventorySectionNavigation({
   ];
 
   return (
-    <nav aria-label={t("navigation.inventorySections")} className="mb-8">
-      <div className="inline-flex rounded-xl border border-shell bg-surface p-1 shadow-soft">
+    <nav
+      aria-label={t("navigation.inventorySections")}
+      className="mb-5 border-b border-shell"
+    >
+      <div className="flex gap-1">
         {links.map((link) => (
           <NavLink
             className={({ isActive }) =>
-              `rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+              `border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
                 isActive
-                  ? "bg-accent-soft text-accent"
-                  : "text-muted hover:bg-surface-hover hover:text-foreground"
+                  ? "border-accent bg-accent-soft text-accent"
+                  : "border-transparent text-muted hover:bg-surface-hover hover:text-foreground"
               }`
             }
             key={link.to}

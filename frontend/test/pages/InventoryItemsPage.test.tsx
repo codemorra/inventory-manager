@@ -8,6 +8,11 @@ import { getInventoryFields } from "../../src/services/inventoryFields";
 import { getInventoryItems } from "../../src/services/inventoryItems";
 import type { InventoryField } from "../../src/types/inventoryField";
 import { InventoryItemsPage } from "../../src/pages/InventoryItemsPage";
+import { getInventories } from "../../src/services/inventories";
+
+vi.mock("../../src/services/inventories", () => ({
+  getInventories: vi.fn().mockResolvedValue([]),
+}));
 
 vi.mock("../../src/services/inventoryFields", () => ({
   createInventoryField: vi.fn(),
@@ -67,6 +72,32 @@ afterEach(() => {
 });
 
 describe("InventoryItemsPage", () => {
+  // Test that the inventory context and creation action remain visible above an empty table.
+  test("shows the inventory name, description, and empty table toolbar", async () => {
+    vi.mocked(getInventories).mockResolvedValueOnce([
+      {
+        id: "inventory-1",
+        name: "Games",
+        description: "My game collection",
+        created_at: timestamp,
+        updated_at: timestamp,
+      },
+    ]);
+    mockedGetInventoryFields.mockResolvedValue(fields);
+    mockedGetInventoryItems.mockResolvedValue([]);
+    renderInventoryItemsPage();
+
+    expect(
+      await screen.findByRole("heading", { name: "Games" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("My game collection")).toBeInTheDocument();
+    expect(await screen.findByText("0 items")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New item" })).toBeEnabled();
+    expect(
+      screen.getByRole("columnheader", { name: "Title" }),
+    ).toBeInTheDocument();
+  });
+
   // Test that a loading state is displayed until fields and items are available
   test("displays a loading state until fields and items are available", () => {
     mockedGetInventoryFields.mockImplementation(

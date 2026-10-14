@@ -116,6 +116,8 @@
     }
   },
   "items": {
+    "count_one": "{{count}} Eintrag",
+    "count_other": "{{count}} Einträge",
     "actions": {
       "add": "Eintrag hinzufügen",
       "adding": "Wird hinzugefügt…",
@@ -168,6 +170,8 @@
     "savedAutomatically": "Änderungen werden automatisch in diesem Browser gespeichert."
   },
   "table": {
+    "resetSort": "Sortierung zurücksetzen",
+    "sortHint": "Wähle eine Spaltenüberschrift, um auf- oder absteigend zu sortieren. Leere Werte stehen am Ende.",
     "actions": "Aktionen"
   }
 }

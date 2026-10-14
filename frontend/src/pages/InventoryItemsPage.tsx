@@ -6,6 +6,7 @@ import { InventoryItemList } from "../components/InventoryItemList";
 import { InventorySectionNavigation } from "../components/InventorySectionNavigation";
 import { useInventoryFields } from "../hooks/useInventoryFields";
 import { useInventoryItems } from "../hooks/useInventoryItems";
+import { useInventories } from "../hooks/useInventories";
 import { ApiError } from "../services/api";
 
 // Render the inventory item overview and creation interface.
@@ -14,6 +15,8 @@ export function InventoryItemsPage() {
   const { inventoryId } = useParams();
   const itemQuery = useInventoryItems(inventoryId ?? "");
   const fieldQuery = useInventoryFields(inventoryId ?? "");
+  const { data: inventories } = useInventories();
+  const inventory = inventories?.find((entry) => entry.id === inventoryId);
 
   if (!inventoryId) {
     return null;
@@ -26,29 +29,21 @@ export function InventoryItemsPage() {
   return (
     <div>
       <div className="mx-auto max-w-7xl">
-        <InventorySectionNavigation inventoryId={inventoryId} />
-
-        <header className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+        <header className="mb-5">
           <div>
             <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">
               {t("navigation.inventories")}
             </p>
-            <h1 className="text-3xl font-semibold tracking-tight text-heading sm:text-4xl">
-              {t("items.title")}
+            <h1 className="text-2xl font-semibold tracking-tight text-heading sm:text-3xl">
+              {inventory?.name ?? t("items.title")}
             </h1>
-            <p className="mt-3 max-w-2xl leading-relaxed text-muted">
-              {t("items.description")}
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+              {inventory?.description || t("items.description")}
             </p>
           </div>
-          {!isPending && !isError && fieldQuery.data?.length ? (
-            <div className="shrink-0">
-              <InventoryItemCreateForm
-                fields={fieldQuery.data}
-                inventoryId={inventoryId}
-              />
-            </div>
-          ) : null}
         </header>
+
+        <InventorySectionNavigation inventoryId={inventoryId} />
 
         {isPending && (
           <p
@@ -90,21 +85,17 @@ export function InventoryItemsPage() {
           !isError &&
           fieldQuery.data &&
           fieldQuery.data.length > 0 && (
-            <>
-              {itemQuery.data?.length ? (
-                <InventoryItemList
+            <InventoryItemList
+              key={inventoryId}
+              fields={fieldQuery.data}
+              items={itemQuery.data ?? []}
+              actions={
+                <InventoryItemCreateForm
                   fields={fieldQuery.data}
-                  items={itemQuery.data}
+                  inventoryId={inventoryId}
                 />
-              ) : (
-                <section className="rounded-2xl border border-dashed border-shell bg-surface/70 px-6 py-12 text-center shadow-soft">
-                  <h2 className="text-lg font-semibold">{t("items.empty")}</h2>
-                  <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
-                    {t("items.emptyDescription")}
-                  </p>
-                </section>
-              )}
-            </>
+              }
+            />
           )}
       </div>
     </div>

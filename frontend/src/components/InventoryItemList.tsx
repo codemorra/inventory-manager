@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useState } from "react";
+import { type ReactNode, type SyntheticEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -13,6 +13,7 @@ import type {
 import type { InventoryItem, InventoryItemValue } from "../types/inventoryItem";
 import { InventoryItemFieldInput } from "./InventoryItemCreateForm";
 import { Modal } from "./Modal";
+import { sortInventoryItems, type ItemSort } from "./inventoryItemSorting";
 import {
   createValueInput,
   getInitialValue,
@@ -23,6 +24,7 @@ import {
 interface InventoryItemListProps {
   fields: InventoryField[];
   items: InventoryItem[];
+  actions?: ReactNode;
 }
 
 /**
@@ -119,10 +121,26 @@ function getEditableValues(
  * Render active inventory items with editing and deletion actions.
  * @param fields The inventory fields defining the structure of the items.
  * @param items The list of inventory items to render.
+ * @param actions Optional controls displayed in the table toolbar.
  * @returns The inventory item table and edit modal.
  */
-export function InventoryItemList({ fields, items }: InventoryItemListProps) {
-  const { t } = useTranslation();
+export function InventoryItemList({
+  fields,
+  items,
+  actions,
+}: InventoryItemListProps) {
+  const { t, i18n } = useTranslation();
+  const [sort, setSort] = useState<ItemSort | null>(null);
+  const sortField = fields.find((field) => field.id === sort?.fieldId);
+  const displayedItems =
+    sort && sortField
+      ? sortInventoryItems(
+          items,
+          sortField,
+          sort.direction,
+          i18n.resolvedLanguage ?? "en",
+        )
+      : items;
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<
     Record<string, InventoryItemFormValue>
@@ -131,6 +149,20 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
   const deleteItem = useDeleteInventoryItem();
   const isMutating = updateItem.isPending || deleteItem.isPending;
   const editingItem = items.find((item) => item.id === editingItemId);
+
+  /**
+   * Sort a column ascending initially and toggle its direction on subsequent clicks.
+   * @param fieldId The identifier of the selected column.
+   */
+  function toggleSort(fieldId: string) {
+    setSort((current) => ({
+      fieldId,
+      direction:
+        current?.fieldId === fieldId && current.direction === "ascending"
+          ? "descending"
+          : "ascending",
+    }));
+  }
 
   /**
    * Start editing the specified inventory item.
@@ -194,22 +226,74 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
 
   return (
     <>
-      <div className="overflow-hidden rounded-2xl border border-shell bg-surface shadow-soft">
-        <div className="overflow-x-auto">
+      <div className="overflow-hidden rounded-md border border-shell bg-surface">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-shell px-3 py-3 sm:px-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm font-medium text-muted">
+              {t("items.count", { count: items.length })}
+            </p>
+            {sort && sortField && (
+              <button
+                className="rounded-md px-2 py-1 text-xs font-medium text-accent hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-accent"
+                onClick={() => setSort(null)}
+                type="button"
+              >
+                {t("table.resetSort")}
+              </button>
+            )}
+          </div>
+          {actions}
+        </div>
+        <div
+          className="overflow-x-auto"
+          role="region"
+          aria-label={t("items.title")}
+          tabIndex={0}
+        >
           <table className="min-w-full border-collapse text-left text-sm">
+            <caption className="sr-only">{t("table.sortHint")}</caption>
             <thead className="bg-surface-muted text-xs font-semibold uppercase tracking-wider text-muted">
               <tr>
                 {fields.map((field) => (
                   <th
-                    className="whitespace-nowrap border-b border-shell px-5 py-3.5"
+                    aria-sort={
+                      sort?.fieldId === field.id ? sort.direction : undefined
+                    }
+                    className="whitespace-nowrap border-b border-shell p-0"
                     key={field.id}
                     scope="col"
                   >
-                    {field.name}
+                    <button
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left font-semibold transition-colors hover:bg-surface-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sort?.fieldId === field.id ? "bg-accent-soft text-accent" : ""}`}
+                      onClick={() => toggleSort(field.id)}
+                      type="button"
+                    >
+                      <span>{field.name}</span>
+                      <svg
+                        aria-hidden="true"
+                        className="size-3.5 shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        viewBox="0 0 16 16"
+                      >
+                        {sort?.fieldId === field.id ? (
+                          <path
+                            d={
+                              sort.direction === "ascending"
+                                ? "M8 13V3m-4 4 4-4 4 4"
+                                : "M8 3v10m-4-4 4 4 4-4"
+                            }
+                          />
+                        ) : (
+                          <path d="m3 6 3-3 3 3M7 10l3 3 3-3" />
+                        )}
+                      </svg>
+                    </button>
                   </th>
                 ))}
                 <th
-                  className="sticky right-0 border-b border-shell bg-surface-muted px-5 py-3.5 text-right"
+                  className="sticky right-0 w-px whitespace-nowrap border-b border-l border-shell bg-surface-muted px-4 py-3 text-right"
                   scope="col"
                 >
                   {t("table.actions")}
@@ -217,7 +301,7 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-shell">
-              {items.map((item) => {
+              {displayedItems.map((item) => {
                 const valuesByField = new Map(
                   item.values.map((value) => [value.field_id, value]),
                 );
@@ -226,7 +310,7 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
                   <tr className="group" key={item.id}>
                     {fields.map((field) => (
                       <td
-                        className="max-w-80 px-5 py-4 align-top text-foreground transition-colors group-hover:bg-surface-hover"
+                        className="max-w-80 border-r border-shell/60 px-4 py-2.5 align-top text-foreground transition-colors group-hover:bg-surface-hover"
                         key={field.id}
                       >
                         <span className="line-clamp-3">
@@ -237,10 +321,10 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
                         </span>
                       </td>
                     ))}
-                    <td className="sticky right-0 whitespace-nowrap bg-surface px-5 py-4 text-right align-top transition-colors group-hover:bg-surface-hover">
+                    <td className="sticky right-0 whitespace-nowrap border-l border-shell bg-surface px-4 py-2.5 text-right align-top transition-colors group-hover:bg-surface-hover">
                       <div className="flex justify-end gap-2">
                         <button
-                          className="rounded-lg border border-shell px-3 py-2 font-medium transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-md border border-shell px-2.5 py-1 font-medium transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
                           disabled={isMutating}
                           onClick={() => startEditing(item)}
                           type="button"
@@ -248,7 +332,7 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
                           {t("common.actions.edit")}
                         </button>
                         <button
-                          className="rounded-lg bg-danger-soft px-3 py-2 font-medium text-danger transition hover:bg-danger/15 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-md bg-danger-soft px-2.5 py-1 font-medium text-danger transition hover:bg-danger/15 disabled:cursor-not-allowed disabled:opacity-50"
                           disabled={isMutating}
                           onClick={() => handleDelete(item)}
                           type="button"
@@ -262,6 +346,21 @@ export function InventoryItemList({ fields, items }: InventoryItemListProps) {
                   </tr>
                 );
               })}
+              {items.length === 0 && (
+                <tr>
+                  <td
+                    className="px-6 py-12 text-center"
+                    colSpan={fields.length + 1}
+                  >
+                    <p className="font-semibold text-heading">
+                      {t("items.empty")}
+                    </p>
+                    <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
+                      {t("items.emptyDescription")}
+                    </p>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
