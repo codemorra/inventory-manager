@@ -939,6 +939,140 @@
           }
         }
       }
+    },
+    "/inventory-groups": {
+      "get": {
+        "tags": ["inventory-groups"],
+        "summary": "List active inventory groups",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryGroup"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["inventory-groups"],
+        "summary": "Create an inventory group",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryGroupInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryGroup"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventory-groups/{group_id}": {
+      "parameters": [
+        {
+          "name": "group_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "patch": {
+        "tags": ["inventory-groups"],
+        "summary": "Rename an inventory group",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryGroupInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryGroup"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["inventory-groups"],
+        "summary": "Delete a group and preserve its inventories without a group",
+        "responses": {
+          "204": {
+            "description": "Group deleted; inventories retained"
+          },
+          "404": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -998,6 +1132,17 @@
               }
             ],
             "title": "Description"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional single-level group membership. Set null to remove membership."
           }
         },
         "type": "object",
@@ -1021,8 +1166,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
+                "maximum": 10000,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -1218,7 +1363,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -1366,10 +1511,28 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional single-level group membership. Set null to remove membership."
           }
         },
         "type": "object",
-        "required": ["id", "name", "description", "created_at", "updated_at"],
+        "required": [
+          "id",
+          "name",
+          "description",
+          "created_at",
+          "updated_at",
+          "group_id"
+        ],
         "title": "InventoryRead",
         "description": "Represent an active inventory in API responses."
       },
@@ -1397,6 +1560,17 @@
               }
             ],
             "title": "Description"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional single-level group membership. Set null to remove membership."
           }
         },
         "type": "object",
@@ -1438,6 +1612,37 @@
         "type": "object",
         "required": ["loc", "msg", "type"],
         "title": "ValidationError"
+      },
+      "InventoryGroupInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        },
+        "required": ["name"]
+      },
+      "InventoryGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["id", "name", "created_at", "updated_at"]
       }
     }
   }

@@ -79,6 +79,7 @@ test("frontend clients complete configuration and item CRUD against Express", as
     const fields = await import("../src/services/inventoryFields");
     const items = await import("../src/services/inventoryItems");
     const { ApiError } = await import("../src/services/api");
+    const groups = await import("../src/services/inventoryGroups");
 
     const inventory = await inventories.createInventory({
       name: " Synthetic clients ",
@@ -86,6 +87,17 @@ test("frontend clients complete configuration and item CRUD against Express", as
     });
     expect(inventory.name).toBe("Synthetic clients");
     expect(await inventories.getInventories()).toEqual([inventory]);
+    const group = await groups.createInventoryGroup("Leisure");
+    expect(
+      (await inventories.updateInventory(inventory.id, { group_id: group.id }))
+        .group_id,
+    ).toBe(group.id);
+    expect((await groups.updateInventoryGroup(group.id, "Hobbies")).name).toBe(
+      "Hobbies",
+    );
+    await groups.deleteInventoryGroup(group.id);
+    expect(await groups.getInventoryGroups()).toEqual([]);
+    expect((await inventories.getInventories())[0]?.group_id).toBeNull();
     expect(
       (await inventories.updateInventory(inventory.id, { description: null }))
         .description,

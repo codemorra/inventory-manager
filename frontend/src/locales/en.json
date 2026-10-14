@@ -43,6 +43,24 @@
       "yes": "Yes"
     }
   },
+  "groups": {
+    "new": "New group",
+    "creating": "Creating…",
+    "moveError": "Unable to move the inventory. Please try again.",
+    "title": "Inventory groups",
+    "manage": "Manage groups",
+    "description": "Organize inventories into groups. Changes are saved immediately.",
+    "name": "Group name",
+    "create": "Create group",
+    "rename": "Rename group {{name}}",
+    "delete": "Delete group {{name}}",
+    "confirmDelete": "Delete group \"{{name}}\"? Its inventories will be kept without a group.",
+    "assignments": "Inventory assignments",
+    "ungrouped": "Without a group",
+    "empty": "No inventories in this group.",
+    "loading": "Loading groups…",
+    "error": "Unable to load or update inventory groups. Please try again."
+  },
   "inventories": {
     "actions": {
       "create": "Create inventory",

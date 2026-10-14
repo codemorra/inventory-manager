@@ -19,11 +19,18 @@ export function createInventoryRepository(db: AppDatabase) {
         .orderBy(asc(inventories.name))
         .all(),
     find: (id: string) => db.select().from(inventories).where(active(id)).get(),
-    create: (data: { name: string; description: string | null }) =>
-      db.insert(inventories).values(data).returning().get(),
+    create: (data: {
+      name: string;
+      description: string | null;
+      groupId: string | null;
+    }) => db.insert(inventories).values(data).returning().get(),
     update: (
       id: string,
-      changes: { name?: string; description?: string | null },
+      changes: {
+        name?: string;
+        description?: string | null;
+        groupId?: string | null;
+      },
     ) =>
       db.update(inventories).set(changes).where(active(id)).returning().get(),
     tombstone: (id: string) =>
@@ -32,6 +39,7 @@ export function createInventoryRepository(db: AppDatabase) {
         .set({
           name: "",
           description: null,
+          groupId: null,
           deletedAt: new Date().toISOString(),
         })
         .where(active(id))

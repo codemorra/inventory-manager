@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { SettingsDialog } from "../SettingsDialog";
+import { GroupCreateDialog } from "../GroupCreateDialog";
 import { useTheme } from "../../hooks/useTheme";
 import { Navigation } from "./Navigation";
 
@@ -21,6 +22,7 @@ export function AppShell({ children }: AppShellProps) {
   useTheme();
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isGroupCreateOpen, setIsGroupCreateOpen] = useState(false);
 
   useEffect(() => {
     if (!isNavigationOpen) {
@@ -66,7 +68,13 @@ export function AppShell({ children }: AppShellProps) {
           <p className="text-xs text-muted">{t("app.tagline")}</p>
         </div>
       </div>
-      <Navigation onNavigate={() => setIsNavigationOpen(false)} />
+      <Navigation
+        onNavigate={() => setIsNavigationOpen(false)}
+        onCreateGroup={() => {
+          setIsNavigationOpen(false);
+          setIsGroupCreateOpen(true);
+        }}
+      />
       <div className="mt-auto grid shrink-0 gap-3 border-t border-shell bg-surface-muted p-4 shadow-[0_-2px_6px_rgb(0_0_0/0.06)]">
         <button
           className="flex items-center gap-2 rounded-md border border-shell bg-surface px-3 py-2 text-sm font-medium transition hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-accent"
@@ -95,6 +103,9 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="min-h-dvh bg-canvas text-foreground">
+      {isGroupCreateOpen && (
+        <GroupCreateDialog onClose={() => setIsGroupCreateOpen(false)} />
+      )}
       {isSettingsOpen && (
         <SettingsDialog onClose={() => setIsSettingsOpen(false)} />
       )}

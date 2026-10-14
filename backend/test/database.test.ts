@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  rmSync,
+  mkdirSync,
+  copyFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { afterEach } from "node:test";
@@ -11,6 +17,49 @@ import {
   inventoryItems,
   inventoryItemValues,
 } from "../src/db/schema.js";
+
+// Test that upgrading an existing database preserves inventories and adds nullable memberships.
+test("adds groups to an existing database without losing inventory data", () => {
+  const directory = mkdtempSync(join(tmpdir(), "inventory-group-migration-"));
+  directories.push(directory);
+  const legacy = join(directory, "legacy");
+  mkdirSync(join(legacy, "meta"), { recursive: true });
+  copyFileSync(
+    new URL("../drizzle/0000_initial_schema.sql", import.meta.url),
+    join(legacy, "0000_initial_schema.sql"),
+  );
+  writeFileSync(
+    join(legacy, "meta", "_journal.json"),
+    JSON.stringify({
+      version: "7",
+      dialect: "sqlite",
+      entries: [
+        {
+          idx: 0,
+          version: "6",
+          when: 1791817571688,
+          tag: "0000_initial_schema",
+          breakpoints: true,
+        },
+      ],
+    }),
+  );
+  const path = join(directory, "legacy.db");
+  const original = openDatabase(path, legacy);
+  connections.push(original);
+  original.sqlite
+    .prepare(
+      "INSERT INTO inventories (id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+    )
+    .run("existing", "Tools", "Workshop", "2026-01-01", "2026-01-01");
+  original.close();
+  const upgraded = openDatabase(path);
+  connections.push(upgraded);
+  const inventory = upgraded.db.select().from(inventories).get();
+  assert.equal(inventory?.name, "Tools");
+  assert.equal(inventory?.description, "Workshop");
+  assert.equal(inventory?.groupId, null);
+});
 
 const directories: string[] = [];
 const connections: DatabaseConnection[] = [];
@@ -47,7 +96,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     assert.deepEqual(db.select().from(table).all(), []);
   assert.deepEqual(
     sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get(),
-    { count: 1 },
+    { count: 2 },
   );
 
   const inventory = db
@@ -108,7 +157,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     reopened.sqlite
       .prepare("SELECT count(*) AS count FROM __drizzle_migrations")
       .get(),
-    { count: 1 },
+    { count: 2 },
   );
 });
 
