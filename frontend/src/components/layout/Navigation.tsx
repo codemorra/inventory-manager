@@ -1,26 +1,31 @@
 import { useRef, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import { useInventories } from "../../hooks/useInventories";
+import { useInventories, useUpdateInventory } from "../../hooks/useInventories";
 import { ApiError } from "../../services/api";
 import { InventoryCreateForm } from "../InventoryCreateForm";
+import { useInventoryGroups } from "../../hooks/useInventoryGroups";
+import { InventoryTree } from "../InventoryTree";
 
 // Define properties for the primary application navigation.
 interface NavigationProps {
   onNavigate?: () => void;
+  onCreateGroup?: () => void;
 }
 
 /**
  * Render links to the main application sections.
  * @param onNavigate Callback invoked after selecting a navigation link.
+ * @param onCreateGroup Callback used to open the group creation dialog.
  * @returns The primary application navigation.
  */
-export function Navigation({ onNavigate }: NavigationProps) {
+export function Navigation({ onNavigate, onCreateGroup }: NavigationProps) {
   const { t, i18n } = useTranslation();
   const [search, setSearch] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
-  const location = useLocation();
+  const groupQuery = useInventoryGroups();
+  const move = useUpdateInventory();
   const { data: inventories, error, isError, isPending } = useInventories();
   const locale = i18n.resolvedLanguage ?? "en";
   const query = search.trim().toLocaleLowerCase(locale);
@@ -34,12 +39,29 @@ export function Navigation({ onNavigate }: NavigationProps) {
     searchInput.current?.focus();
   }
 
+  /**
+   * Persist an inventory's new group after a drop.
+   * @param inventoryId The inventory being moved.
+   * @param groupId The destination group, or null to remove membership.
+   */
+  function moveInventory(inventoryId: string, groupId: string | null) {
+    move.mutate({ inventoryId, data: { group_id: groupId } });
+  }
+
   return (
     <nav
       aria-label={t("navigation.label")}
       className="flex min-h-0 flex-1 flex-col px-3 pb-4 pt-5"
     >
       <InventoryCreateForm triggerClassName="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover" />
+      <button
+        className="mt-2 rounded-md border border-shell px-3 py-2 text-sm font-medium text-heading hover:bg-surface-hover"
+        onClick={onCreateGroup}
+        type="button"
+      >
+        <span aria-hidden="true">+ </span>
+        {t("groups.new")}
+      </button>
 
       <NavLink
         className={({ isActive }) =>
@@ -167,32 +189,39 @@ export function Navigation({ onNavigate }: NavigationProps) {
           !isError &&
           filteredInventories &&
           filteredInventories.length > 0 && (
-            <ul className="mt-2 min-h-0 space-y-0.5 overflow-y-auto overscroll-contain">
-              {filteredInventories.map((inventory) => {
-                const isActive = location.pathname.startsWith(
-                  `/inventories/${inventory.id}/`,
-                );
-
-                return (
-                  <li key={inventory.id}>
-                    <Link
-                      aria-current={isActive ? "page" : undefined}
-                      className={`block truncate rounded-lg px-3 py-2 text-sm transition-colors ${
-                        isActive
-                          ? "bg-accent-soft font-semibold text-accent"
-                          : "text-muted hover:bg-surface-hover hover:text-foreground"
-                      }`}
-                      onClick={onNavigate}
-                      title={inventory.name}
-                      to={`/inventories/${inventory.id}/items`}
-                    >
-                      {inventory.name}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+            <InventoryTree
+              inventories={filteredInventories}
+              groups={groupQuery.data ?? []}
+              searching={query.length > 0}
+              onNavigate={onNavigate}
+              onMove={moveInventory}
+              disabled={
+                move.isPending || groupQuery.isPending || groupQuery.isError
+              }
+            />
           )}
+        {!isPending && !isError && inventories?.length === 0 && (
+          <InventoryTree
+            inventories={[]}
+            groups={groupQuery.data ?? []}
+            searching={query.length > 0}
+            onNavigate={onNavigate}
+            onMove={moveInventory}
+            disabled={
+              move.isPending || groupQuery.isPending || groupQuery.isError
+            }
+          />
+        )}
+        {groupQuery.isError && (
+          <p className="px-3 py-2 text-xs text-danger" role="alert">
+            {t("groups.error")}
+          </p>
+        )}
+        {move.error && (
+          <p className="px-3 py-2 text-xs text-danger" role="alert">
+            {t("groups.moveError")}
+          </p>
+        )}
       </div>
     </nav>
   );

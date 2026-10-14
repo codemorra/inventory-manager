@@ -13,6 +13,12 @@ vi.mock("../../src/services/inventories", () => ({
 }));
 
 const onNavigate = vi.fn();
+vi.mock("../../src/services/inventoryGroups", () => ({
+  getInventoryGroups: vi.fn().mockResolvedValue([]),
+  createInventoryGroup: vi.fn(),
+  updateInventoryGroup: vi.fn(),
+  deleteInventoryGroup: vi.fn(),
+}));
 const inventories = [
   { id: "games", name: "Games", description: "Board games" },
   { id: "books", name: "Books", description: "Games and programming" },

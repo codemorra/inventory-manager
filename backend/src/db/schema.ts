@@ -26,6 +26,12 @@ export const fieldTypes = [
   "multiselect",
 ] as const;
 
+// Single-level inventory groups with deletion tombstones.
+export const inventoryGroups = sqliteTable("inventory_groups", {
+  ...lifecycleColumns(),
+  name: text("name").notNull(),
+});
+
 // Inventories table
 export const inventories = sqliteTable(
   "inventories",
@@ -33,6 +39,7 @@ export const inventories = sqliteTable(
     ...lifecycleColumns(),
     name: text("name").notNull(),
     description: text("description"),
+    groupId: text("group_id").references(() => inventoryGroups.id),
   },
   (table) => [
     index("inventories_active_name_idx").on(table.deletedAt, table.name),

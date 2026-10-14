@@ -37,6 +37,7 @@ test("inventory HTTP CRUD preserves the frontend DTO, ordering, partial updates,
   assert.deepEqual(Object.keys(created.body).sort(), [
     "created_at",
     "description",
+    "group_id",
     "id",
     "name",
     "updated_at",

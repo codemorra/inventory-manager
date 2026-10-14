@@ -10,9 +10,16 @@ import { getInventories } from "../../src/services/inventories";
 vi.mock("../../src/services/inventories", () => ({
   createInventory: vi.fn(),
   getInventories: vi.fn(),
+  updateInventory: vi.fn(),
 }));
 
 const mockedGetInventories = vi.mocked(getInventories);
+vi.mock("../../src/services/inventoryGroups", () => ({
+  getInventoryGroups: vi.fn().mockResolvedValue([]),
+  createInventoryGroup: vi.fn(),
+  updateInventoryGroup: vi.fn(),
+  deleteInventoryGroup: vi.fn(),
+}));
 
 afterEach(cleanup);
 
@@ -34,6 +41,26 @@ function renderAppShell() {
 }
 
 describe("AppShell", () => {
+  // Test that group creation replaces mobile navigation with a single dialog.
+  test("opens group creation from mobile navigation", async () => {
+    const user = userEvent.setup();
+    mockedGetInventories.mockResolvedValue([]);
+    renderAppShell();
+    await user.click(screen.getByRole("button", { name: "Open menu" }));
+    const navigation = screen.getByRole("dialog", {
+      name: "Mobile navigation",
+    });
+    await user.click(
+      within(navigation).getByRole("button", { name: "New group" }),
+    );
+    expect(
+      screen.queryByRole("dialog", { name: "Mobile navigation" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "New group" }),
+    ).toBeInTheDocument();
+  });
+
   // Test that language is configured in settings and changes the full interface.
   test("opens settings and changes the application language", async () => {
     const user = userEvent.setup();

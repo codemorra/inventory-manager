@@ -44,6 +44,7 @@ export function inventoryResponse(inventory: Inventory) {
     id: inventory.id,
     name: inventory.name,
     description: inventory.description,
+    group_id: inventory.groupId,
     created_at: inventory.createdAt,
     updated_at: inventory.updatedAt,
   };

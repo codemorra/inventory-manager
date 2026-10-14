@@ -43,6 +43,24 @@
       "yes": "Ja"
     }
   },
+  "groups": {
+    "new": "Neue Gruppe",
+    "creating": "Wird erstellt…",
+    "moveError": "Das Inventar konnte nicht verschoben werden. Bitte erneut versuchen.",
+    "title": "Inventargruppen",
+    "manage": "Gruppen verwalten",
+    "description": "Ordne Inventare in Gruppen ein. Änderungen werden sofort gespeichert.",
+    "name": "Gruppenname",
+    "create": "Gruppe erstellen",
+    "rename": "Gruppe {{name}} umbenennen",
+    "delete": "Gruppe {{name}} löschen",
+    "confirmDelete": "Gruppe „{{name}}“ löschen? Ihre Inventare bleiben ohne Gruppenzuordnung erhalten.",
+    "assignments": "Inventare zuordnen",
+    "ungrouped": "Ohne Gruppe",
+    "empty": "Keine Inventare in dieser Gruppe.",
+    "loading": "Gruppen werden geladen…",
+    "error": "Inventargruppen konnten nicht geladen oder geändert werden. Bitte erneut versuchen."
+  },
   "inventories": {
     "actions": {
       "create": "Inventar erstellen",

@@ -3,6 +3,7 @@ export class DomainError extends Error {
   constructor(
     public readonly code:
       | "inventory_not_found"
+      | "inventory_group_not_found"
       | "inventory_field_not_found"
       | "inventory_field_option_not_found"
       | "inventory_field_options_not_supported"
