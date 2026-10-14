@@ -60,3 +60,28 @@ use `node:test` with synthetic data; HTTP tests require local socket communicati
 
 Item PATCH replaces all active values. Deletions preserve tombstones for future
 synchronization. Invalid item values return structured 422 errors.
+
+The inventory editor saves through `PATCH /inventories/{inventory_id}/configuration`.
+The request contains optional `inventory` metadata and `fields` and `options` arrays
+of create, update, or delete operations. New field definitions include their initial
+options. Omitted operation arrays leave existing records unchanged; this endpoint
+does not replace the entire field list. The response contains the saved inventory
+and its active fields with options.
+
+All editor operations run in one database transaction. Invalid data, unrelated or
+deleted identifiers, and persistence errors roll back the entire save. Existing
+field and option IDs are preserved, field types and text limits remain immutable,
+and inventory group membership is unchanged. Field and option deletions retain
+their tombstones and existing item values. Individual configuration endpoints
+remain available; item PATCH continues to replace all active values.
+
+Inventory groups have one level. `/inventory-groups` supports listing and creation;
+`/inventory-groups/{group_id}` supports renaming with PATCH and deletion with DELETE.
+Inventory responses include a nullable `group_id`. Send `group_id` when creating or
+updating an inventory to assign it to an active group, or send `null` to remove its
+membership. Omitting the property in PATCH preserves the existing assignment.
+
+Deleting a group clears its name and records a deletion tombstone. All inventory
+memberships are removed in the same transaction, preserving the inventories,
+fields, and items. The group migration also supports existing databases, leaving
+their inventories initially ungrouped.
