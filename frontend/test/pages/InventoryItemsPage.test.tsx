@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -124,12 +124,43 @@ describe("InventoryItemsPage", () => {
       await screen.findByRole("heading", { name: "Games" }),
     ).toBeInTheDocument();
     expect(screen.getByText("My game collection")).toBeInTheDocument();
+    const header = screen
+      .getByRole("heading", { name: "Games" })
+      .closest("header")!;
+    expect(header.querySelectorAll("p")).toHaveLength(1);
+    expect(within(header).queryByText("Inventories")).not.toBeInTheDocument();
     expect(await screen.findByText("0 items")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New item" })).toBeEnabled();
     expect(
       screen.getByRole("columnheader", { name: "Title" }),
     ).toBeInTheDocument();
   });
+
+  // Test that missing or blank descriptions leave no placeholder beneath the title.
+  test.each([null, "", "   "])(
+    "omits the header description when it is %j",
+    async (description) => {
+      vi.mocked(getInventories).mockResolvedValueOnce([
+        {
+          id: "inventory-1",
+          name: "Games",
+          description,
+          created_at: timestamp,
+          updated_at: timestamp,
+        },
+      ]);
+      mockedGetInventoryFields.mockResolvedValue(fields);
+      mockedGetInventoryItems.mockResolvedValue([]);
+      renderInventoryItemsPage();
+
+      const title = await screen.findByRole("heading", { name: "Games" });
+      const header = title.closest("header")!;
+      expect(header.querySelector("p")).not.toBeInTheDocument();
+      expect(
+        within(header).getByRole("button", { name: "Edit inventory" }),
+      ).toBeEnabled();
+    },
+  );
 
   // Test that a loading state is displayed until fields and items are available
   test("displays a loading state until fields and items are available", () => {

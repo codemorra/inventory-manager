@@ -30,18 +30,10 @@ export function InventoryItemsPage() {
   return (
     <div>
       <div className="min-w-0 w-full">
-        <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">
-              {t("navigation.inventories")}
-            </p>
-            <h1 className="text-2xl font-semibold tracking-tight text-heading sm:text-3xl">
-              {inventory?.name ?? t("items.title")}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-              {inventory?.description || t("items.description")}
-            </p>
-          </div>
+        <header className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-2">
+          <h1 className="min-w-0 wrap-break-word text-2xl font-semibold tracking-tight text-heading sm:text-3xl">
+            {inventory?.name ?? t("items.title")}
+          </h1>
           {inventory && (
             <button
               className="shrink-0 rounded-md border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover"
@@ -54,6 +46,11 @@ export function InventoryItemsPage() {
             >
               {t("inventories.titles.edit")}
             </button>
+          )}
+          {inventory?.description?.trim() && (
+            <p className="col-span-full wrap-break-word text-sm leading-relaxed text-muted">
+              {inventory.description}
+            </p>
           )}
         </header>
 
