@@ -95,13 +95,13 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
                   <td className="whitespace-nowrap px-5 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Link
-                        className="rounded-lg bg-accent-soft px-3 py-2 font-medium text-accent transition hover:bg-accent/15"
+                        className="rounded-lg bg-accent-soft px-3 py-2 font-medium text-accent transition hover:bg-control-hover"
                         to={`/inventories/${inventory.id}/items`}
                       >
                         {t("inventories.actions.items")}
                       </Link>
                       <button
-                        className="rounded-lg border border-shell px-3 py-2 font-medium transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg border border-shell px-3 py-2 font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isMutating}
                         onClick={() => startEditing(inventory)}
                         type="button"
@@ -109,7 +109,7 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
                         {t("common.actions.edit")}
                       </button>
                       <button
-                        className="rounded-lg bg-danger-soft px-3 py-2 font-medium text-danger transition hover:bg-danger/15 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg bg-danger-soft px-3 py-2 font-medium text-danger transition enabled:hover:bg-danger/25 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isMutating}
                         onClick={() => handleDelete(inventory)}
                         type="button"

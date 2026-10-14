@@ -31,7 +31,7 @@ export function AccentPicker() {
           <button
             aria-label={t(`common.accent.${color}`)}
             aria-pressed={accent === color}
-            className="grid size-8 place-items-center rounded-md border border-shell bg-surface text-foreground outline-none transition hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-muted aria-pressed:border-accent aria-pressed:bg-accent-soft"
+            className="grid size-8 place-items-center rounded-md border border-shell bg-surface text-foreground outline-none transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-muted aria-pressed:border-accent aria-pressed:bg-accent-soft"
             key={color}
             onClick={() => setAccent(color)}
             type="button"

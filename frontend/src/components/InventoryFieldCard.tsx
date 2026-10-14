@@ -127,7 +127,7 @@ export function InventoryFieldCard({
             )}
             <div className="flex justify-end gap-2">
               <button
-                className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-surface transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isMutating || !name.trim()}
                 type="submit"
               >
@@ -137,7 +137,7 @@ export function InventoryFieldCard({
               </button>
 
               <button
-                className="rounded-lg border border-shell px-3 py-2 text-sm font-semibold transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-shell px-3 py-2 text-sm font-semibold transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isMutating}
                 onClick={cancelEditing}
                 type="button"
@@ -169,7 +169,7 @@ export function InventoryFieldCard({
 
         <div className="flex shrink-0 flex-wrap gap-2">
           <button
-            className="rounded-lg border border-shell px-3 py-2 text-sm font-semibold transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg border border-shell px-3 py-2 text-sm font-semibold transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isMutating}
             onClick={startEditing}
             type="button"
@@ -178,7 +178,7 @@ export function InventoryFieldCard({
           </button>
 
           <button
-            className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-semibold text-danger transition hover:bg-danger/15 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-semibold text-danger transition enabled:hover:bg-danger/25 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isMutating}
             onClick={handleDelete}
             type="button"

@@ -103,7 +103,7 @@ export function ContextMenu({
           key={action.label}
           role="menuitem"
           type="button"
-          className={`block w-full rounded-md px-3 py-2 text-left outline-none ${action.danger ? "text-danger hover:bg-danger-soft focus:bg-danger-soft" : "hover:bg-surface-hover focus:bg-surface-hover"}`}
+          className={`block w-full rounded-md px-3 py-2 text-left outline-none ${action.danger ? "text-danger enabled:hover:bg-danger/25 focus:bg-danger-soft" : "enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover"}`}
           onClick={action.onSelect}
         >
           {action.label}

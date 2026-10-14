@@ -233,7 +233,7 @@ export function InventoryItemList({
         </p>
         {sort && sortField && (
           <button
-            className="rounded-md px-2 py-1 text-xs font-medium text-accent hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-accent"
+            className="rounded-md px-2 py-1 text-xs font-medium text-accent enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent"
             onClick={() => setSort(null)}
             type="button"
           >
@@ -262,7 +262,7 @@ export function InventoryItemList({
                     scope="col"
                   >
                     <button
-                      className={`flex w-full items-center gap-3 px-4 py-3 text-left font-semibold transition-colors hover:bg-surface-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sort?.fieldId === field.id ? "bg-accent-soft text-accent" : ""}`}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left font-semibold transition-colors enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sort?.fieldId === field.id ? "bg-accent-soft text-accent" : ""}`}
                       onClick={() => toggleSort(field.id)}
                       type="button"
                     >
@@ -322,7 +322,7 @@ export function InventoryItemList({
                     <td className="sticky right-0 whitespace-nowrap border-l border-shell bg-surface px-4 py-2.5 text-right align-top transition-colors group-hover:bg-surface-hover">
                       <div className="flex justify-end gap-2">
                         <button
-                          className="rounded-md border border-shell px-2.5 py-1 font-medium transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-md border border-shell px-2.5 py-1 font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
                           disabled={isMutating}
                           onClick={() => startEditing(item)}
                           type="button"
@@ -330,7 +330,7 @@ export function InventoryItemList({
                           {t("common.actions.edit")}
                         </button>
                         <button
-                          className="rounded-md bg-danger-soft px-2.5 py-1 font-medium text-danger transition hover:bg-danger/15 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-md bg-danger-soft px-2.5 py-1 font-medium text-danger transition enabled:hover:bg-danger/25 disabled:cursor-not-allowed disabled:opacity-50"
                           disabled={isMutating}
                           onClick={() => handleDelete(item)}
                           type="button"
@@ -414,7 +414,7 @@ export function InventoryItemList({
 
             <div className="mt-6 flex flex-wrap justify-end gap-3">
               <button
-                className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isMutating}
                 type="submit"
               >
@@ -423,7 +423,7 @@ export function InventoryItemList({
                   : t("common.actions.saveChanges")}
               </button>
               <button
-                className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isMutating}
                 onClick={cancelEditing}
                 type="button"

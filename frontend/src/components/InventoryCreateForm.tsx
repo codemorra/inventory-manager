@@ -126,7 +126,7 @@ export function InventoryCreateForm({
 
             <div className="flex flex-wrap justify-end gap-3 pt-1">
               <button
-                className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={createInventory.isPending || !name.trim()}
                 type="submit"
               >
@@ -135,7 +135,7 @@ export function InventoryCreateForm({
                   : t("inventories.actions.create")}
               </button>
               <button
-                className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={createInventory.isPending}
                 onClick={closeModal}
                 type="button"

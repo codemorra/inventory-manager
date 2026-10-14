@@ -13,6 +13,7 @@
   --color-surface: var(--app-surface);
   --color-surface-muted: var(--app-surface-muted);
   --color-surface-hover: var(--app-surface-hover);
+  --color-control-hover: var(--app-control-hover);
   --color-chrome: var(--app-chrome);
   --color-heading: var(--app-heading);
   --color-foreground: var(--app-foreground);
@@ -45,6 +46,12 @@
   --app-accent: #0f766e;
   --app-accent-hover: #0b5f59;
   --app-accent-soft: #c6e7e1;
+  /* Keep control hover distinct from both row hover and selected surfaces. */
+  --app-control-hover: color-mix(
+    in srgb,
+    var(--app-accent) 14%,
+    var(--app-accent-soft)
+  );
   --app-danger: #b4232f;
   --app-danger-soft: #fdebed;
   --app-shadow-soft: 0 1px 2px rgb(24 33 31 / 5%);
@@ -115,6 +122,21 @@
 }
 
 @layer base {
+  /* Utilities such as cursor-default can still override these control defaults. */
+  button:enabled,
+  select:enabled,
+  input[type="checkbox"]:enabled,
+  input[type="radio"]:enabled,
+  a[href]:not([aria-disabled="true"]),
+  [role="button"]:not([aria-disabled="true"]) {
+    @apply cursor-pointer;
+  }
+
+  :is(button, input, select, textarea):disabled,
+  [aria-disabled="true"] {
+    @apply cursor-not-allowed;
+  }
+
   body {
     min-width: 20rem;
     background-color: var(--app-canvas);

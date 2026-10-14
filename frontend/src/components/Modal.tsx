@@ -81,7 +81,7 @@ export function Modal({
           </h2>
           <button
             aria-label={t("common.actions.closeDialog")}
-            className="shrink-0 rounded-md p-1.5 text-muted transition hover:bg-surface-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
+            className="shrink-0 rounded-md p-1.5 text-muted transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
             onClick={onClose}
             type="button"
           >
