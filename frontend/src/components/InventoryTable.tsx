@@ -1,3 +1,4 @@
+import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -15,8 +16,10 @@ interface InventoryTableProps {
 /**
  * Render inventories with navigation and management actions.
  * @param inventories The list of inventories to render.
+ * @returns The inventory table and its management dialogs.
  */
 export function InventoryTable({ inventories }: InventoryTableProps) {
+  const [deletingTarget, setDeletingTarget] = useState<Inventory | null>(null);
   const { t } = useTranslation();
   const [editingInventoryId, setEditingInventoryId] = useState<string | null>(
     null,
@@ -41,17 +44,12 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
   }
 
   /**
-   * Handle the deletion of an inventory.
-   * @param inventory The inventory to delete.
+   * Ask for confirmation before deleting the selected inventory.
+   * @param inventory The inventory selected for deletion.
    */
   function handleDelete(inventory: Inventory) {
-    if (
-      !window.confirm(t("inventories.confirmDelete", { name: inventory.name }))
-    ) {
-      return;
-    }
-
-    deleteInventory.mutate(inventory.id);
+    deleteInventory.reset();
+    setDeletingTarget(inventory);
   }
 
   return (
@@ -125,17 +123,6 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
             </tbody>
           </table>
         </div>
-
-        {deleteInventory.error && (
-          <p
-            className="border-t border-shell bg-danger-soft px-5 py-3 text-danger"
-            role="alert"
-          >
-            {deleteInventory.error instanceof ApiError
-              ? deleteInventory.error.message
-              : t("inventories.errors.delete")}
-          </p>
-        )}
       </div>
 
       {editingInventory && (
@@ -143,6 +130,28 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
           key={editingInventory.id}
           inventory={editingInventory}
           onClose={cancelEditing}
+        />
+      )}
+      {deletingTarget && (
+        <DeleteConfirmationDialog
+          title={t("contextMenu.deleteInventory")}
+          message={t("inventories.confirmDelete", {
+            name: deletingTarget.name,
+          })}
+          isPending={deleteInventory.isPending}
+          error={
+            deleteInventory.error
+              ? deleteInventory.error instanceof ApiError
+                ? deleteInventory.error.message
+                : t("inventories.errors.delete")
+              : null
+          }
+          onClose={() => setDeletingTarget(null)}
+          onConfirm={() =>
+            deleteInventory.mutate(deletingTarget.id, {
+              onSuccess: () => setDeletingTarget(null),
+            })
+          }
         />
       )}
     </>

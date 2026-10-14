@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
@@ -73,7 +79,6 @@ describe("InventoryFieldOptions", () => {
       name: "Role-playing game",
     });
     vi.mocked(deleteInventoryFieldOption).mockResolvedValue();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     renderOptions();
     await user.click(screen.getByRole("button", { name: "Edit" }));
     await user.clear(screen.getByLabelText("Option name"));
@@ -88,6 +93,12 @@ describe("InventoryFieldOptions", () => {
       ),
     );
     await user.click(screen.getByRole("button", { name: "Delete" }));
+    const confirmation = screen.getByRole("dialog", { name: "Delete option" });
+    expect(deleteInventoryFieldOption).not.toHaveBeenCalled();
+    await user.click(
+      within(confirmation).getByRole("button", { name: "Delete" }),
+    );
+
     await waitFor(() =>
       expect(deleteInventoryFieldOption).toHaveBeenCalledWith(
         "inventory-1",
@@ -96,4 +107,38 @@ describe("InventoryFieldOptions", () => {
       ),
     );
   });
+});
+
+// Test that a failed deletion remains in the confirmation and can be retried.
+test("keeps deletion failures in the dialog and closes after retry", async () => {
+  const user = userEvent.setup();
+  vi.mocked(deleteInventoryFieldOption)
+    .mockRejectedValueOnce(new Error("Synthetic failure"))
+    .mockResolvedValueOnce();
+  renderOptions();
+  await user.click(screen.getByRole("button", { name: "Delete" }));
+  const confirmation = screen.getByRole("dialog", { name: "Delete option" });
+  await user.click(
+    within(confirmation).getByRole("button", { name: "Delete" }),
+  );
+  expect(await within(confirmation).findByRole("alert")).toBeInTheDocument();
+  expect(
+    screen.getByRole("dialog", { name: "Delete option" }),
+  ).toBeInTheDocument();
+  await user.click(
+    within(confirmation).getByRole("button", { name: "Delete" }),
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+  );
+});
+
+// Test that canceling option deletion leaves the saved option untouched.
+test("cancels option deletion without sending a request", async () => {
+  const user = userEvent.setup();
+  renderOptions();
+  await user.click(screen.getByRole("button", { name: "Delete" }));
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(deleteInventoryFieldOption).not.toHaveBeenCalled();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
