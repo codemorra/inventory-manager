@@ -116,6 +116,8 @@
     }
   },
   "items": {
+    "count_one": "{{count}} item",
+    "count_other": "{{count}} items",
     "actions": {
       "add": "Add item",
       "adding": "Adding…",
@@ -168,6 +170,8 @@
     "savedAutomatically": "Changes are saved automatically in this browser."
   },
   "table": {
+    "resetSort": "Reset sorting",
+    "sortHint": "Select a column heading to sort ascending or descending. Empty values appear last.",
     "actions": "Actions"
   }
 }

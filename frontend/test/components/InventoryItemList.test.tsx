@@ -126,6 +126,40 @@ afterEach(() => {
 });
 
 describe("InventoryItemList", () => {
+  // Test keyboard sorting, direction announcements, and restoration of API order.
+  test("sorts a column in both directions and resets the order", async () => {
+    const user = userEvent.setup();
+    const anotherItem: InventoryItem = {
+      ...items[0],
+      id: "item-2",
+      values: [
+        { ...items[0].values[0], id: "other-value", value: "Animal Crossing" },
+      ],
+    };
+    renderInventoryItemList([...items, anotherItem]);
+
+    const heading = screen.getByRole("columnheader", { name: "Title" });
+    const sortButton = within(heading).getByRole("button", { name: "Title" });
+    sortButton.focus();
+    await user.keyboard("{Enter}");
+    expect(heading).toHaveAttribute("aria-sort", "ascending");
+    expect(
+      within(screen.getAllByRole("row")[1]).getByText("Animal Crossing"),
+    ).toBeInTheDocument();
+
+    await user.click(sortButton);
+    expect(heading).toHaveAttribute("aria-sort", "descending");
+    expect(
+      within(screen.getAllByRole("row")[1]).getByText("Baldur's Gate 3"),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Reset sorting" }));
+    expect(heading).not.toHaveAttribute("aria-sort");
+    expect(
+      within(screen.getAllByRole("row")[1]).getByText("Baldur's Gate 3"),
+    ).toBeInTheDocument();
+  });
+
   // Test that the item list renders fields as columns and items as rows
   test("renders fields as columns and items as rows", () => {
     renderInventoryItemList();
