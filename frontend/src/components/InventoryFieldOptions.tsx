@@ -2,29 +2,21 @@ import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 import { type SyntheticEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  useCreateInventoryFieldOption,
-  useDeleteInventoryFieldOption,
-  useUpdateInventoryFieldOption,
-} from "../hooks/useInventoryFields";
-import { ApiError } from "../services/api";
+import { useInventoryDraft, useDraftEditorLock } from "./InventoryDraftContext";
 import type { InventoryFieldOption } from "../types/inventoryField";
 
 /** Define properties for selectable inventory field options. */
 interface InventoryFieldOptionsProps {
-  inventoryId: string;
   fieldId: string;
   options: InventoryFieldOption[];
 }
 
 /**
  * Render selectable field options and their management controls.
- * @param inventoryId The ID of the inventory to which the field belongs.
  * @param fieldId The ID of the inventory field.
  * @param options The list of selectable options for the inventory field.
  */
 export function InventoryFieldOptions({
-  inventoryId,
   fieldId,
   options,
 }: InventoryFieldOptionsProps) {
@@ -34,37 +26,39 @@ export function InventoryFieldOptions({
   const [newOptionName, setNewOptionName] = useState("");
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [editingOptionName, setEditingOptionName] = useState("");
-  const createOption = useCreateInventoryFieldOption();
-  const updateOption = useUpdateInventoryFieldOption();
-  const deleteOption = useDeleteInventoryFieldOption();
-  const isMutating =
-    createOption.isPending || updateOption.isPending || deleteOption.isPending;
-  const mutationError = createOption.error ?? updateOption.error;
+  const {
+    addOption: addDraftOption,
+    renameOption,
+    removeOption: removeDraftOption,
+    disabled: isMutating,
+  } = useInventoryDraft();
+  useDraftEditorLock(
+    `options-${fieldId}`,
+    Boolean(editingOptionId || newOptionName.trim() || deletingOption),
+  );
 
-  // Function to handle the addition of a new inventory field option.
+  /**
+   * Add an option to the local field draft.
+   * @param event The option form submission event.
+   */
   function addOption(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    createOption.mutate(
-      { inventoryId, fieldId, data: { name: newOptionName.trim() } },
-      { onSuccess: () => setNewOptionName("") },
-    );
+    addDraftOption(fieldId, newOptionName.trim());
+    setNewOptionName("");
   }
 
-  // Function to handle the saving of an edited inventory field option.
+  /**
+   * Apply an option rename to the local draft.
+   * @param event The rename form submission event.
+   * @param optionId The option being renamed.
+   */
   function saveOption(
     event: SyntheticEvent<HTMLFormElement>,
     optionId: string,
   ) {
     event.preventDefault();
-    updateOption.mutate(
-      {
-        inventoryId,
-        fieldId,
-        optionId,
-        data: { name: editingOptionName.trim() },
-      },
-      { onSuccess: () => setEditingOptionId(null) },
-    );
+    renameOption(fieldId, optionId, editingOptionName.trim());
+    setEditingOptionId(null);
   }
 
   /**
@@ -72,7 +66,6 @@ export function InventoryFieldOptions({
    * @param option The option selected for deletion.
    */
   function removeOption(option: InventoryFieldOption) {
-    deleteOption.reset();
     setDeletingOption(option);
   }
 
@@ -89,6 +82,7 @@ export function InventoryFieldOptions({
               >
                 <input
                   aria-label={t("fields.optionName")}
+                  disabled={isMutating}
                   className="w-full rounded-lg border border-shell bg-surface px-3 py-2 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                   maxLength={255}
                   onChange={(event) => setEditingOptionName(event.target.value)}
@@ -143,6 +137,7 @@ export function InventoryFieldOptions({
       <form className="mt-3 flex gap-2" onSubmit={addOption}>
         <input
           aria-label={t("fields.newOptionName")}
+          disabled={isMutating}
           className="w-full rounded-lg border border-shell bg-surface px-3 py-2 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
           maxLength={255}
           onChange={(event) => setNewOptionName(event.target.value)}
@@ -158,35 +153,17 @@ export function InventoryFieldOptions({
           {t("common.actions.add")}
         </button>
       </form>
-      {mutationError && (
-        <p
-          className="mt-3 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
-          role="alert"
-        >
-          {mutationError instanceof ApiError
-            ? mutationError.message
-            : t("fields.errors.options")}
-        </p>
-      )}
       {deletingOption && (
         <DeleteConfirmationDialog
           title={t("fields.titles.deleteOption")}
           message={t("fields.confirmDelete", { name: deletingOption.name })}
-          isPending={deleteOption.isPending}
-          error={
-            deleteOption.error
-              ? deleteOption.error instanceof ApiError
-                ? deleteOption.error.message
-                : t("fields.errors.options")
-              : null
-          }
+          isPending={false}
+          error={null}
           onClose={() => setDeletingOption(null)}
-          onConfirm={() =>
-            deleteOption.mutate(
-              { inventoryId, fieldId, optionId: deletingOption.id },
-              { onSuccess: () => setDeletingOption(null) },
-            )
-          }
+          onConfirm={() => {
+            removeDraftOption(fieldId, deletingOption.id);
+            setDeletingOption(null);
+          }}
         />
       )}
     </section>

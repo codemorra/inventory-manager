@@ -1,3 +1,6 @@
+vi.mock("../../src/services/inventoryFields", () => ({
+  getInventoryFields: vi.fn().mockResolvedValue([]),
+}));
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   cleanup,
@@ -71,7 +74,7 @@ describe("AppShell", () => {
     expect(
       screen.getByRole("dialog", { name: "Edit inventory" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Name")).toHaveValue("Games");
+    expect(await screen.findByLabelText("Name")).toHaveValue("Games");
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(link).toHaveFocus();

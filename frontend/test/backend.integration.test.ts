@@ -159,6 +159,64 @@ test("frontend clients complete configuration and item CRUD against Express", as
     expect(
       updated.values.find((value) => value.field_id === boolean.id)?.id,
     ).not.toBe(item.values.find((value) => value.field_id === boolean.id)?.id);
+
+    // Exercise the draft client's atomic contract against the actual SQLite-backed server.
+    const { saveInventoryConfiguration } =
+      await import("../src/services/inventoryEditor");
+    const saved = await saveInventoryConfiguration(inventory.id, {
+      inventory: {
+        name: "Saved editor draft",
+        description: "Atomic configuration",
+      },
+      fields: [
+        { action: "update", field_id: boolean.id, data: { name: "Played" } },
+        {
+          action: "create",
+          data: { name: "Notes", field_type: "text", max_length: 500 },
+        },
+      ],
+      options: [
+        {
+          action: "update",
+          field_id: select.id,
+          option_id: option.id,
+          data: { name: "Priority" },
+        },
+      ],
+    });
+    expect(saved.inventory.name).toBe("Saved editor draft");
+    expect(saved.fields.map((field) => field.name)).toEqual([
+      "Played",
+      "Category",
+      "Notes",
+    ]);
+    expect(
+      saved.fields[1]?.options.find((entry) => entry.id === option.id)?.name,
+    ).toBe("Priority");
+    expect(await fields.getInventoryFields(inventory.id)).toEqual(saved.fields);
+    expect(await items.getInventoryItems(inventory.id)).toEqual([updated]);
+    await expect(
+      saveInventoryConfiguration(inventory.id, {
+        inventory: { name: "Must roll back", description: null },
+        fields: [
+          {
+            action: "create",
+            data: { name: "Temporary field", field_type: "text" },
+          },
+        ],
+        options: [
+          { action: "delete", field_id: select.id, option_id: "missing" },
+        ],
+      }),
+    ).rejects.toMatchObject({
+      status: 404,
+      code: "inventory_field_option_not_found",
+    });
+    expect((await inventories.getInventories())[0]?.name).toBe(
+      "Saved editor draft",
+    );
+    expect(await fields.getInventoryFields(inventory.id)).toEqual(saved.fields);
+    expect(await items.getInventoryItems(inventory.id)).toEqual([updated]);
     expect(
       await fields.deleteInventoryFieldOption(
         inventory.id,

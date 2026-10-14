@@ -10,11 +10,16 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
+import { saveInventoryConfiguration } from "../../src/services/inventoryEditor";
+vi.mock("../../src/services/inventoryEditor", () => ({
+  saveInventoryConfiguration: vi.fn(),
+}));
+vi.mock("../../src/services/inventoryFields", () => ({
+  getInventoryFields: vi.fn().mockResolvedValue([]),
+}));
+
 import { ApiError } from "../../src/services/api";
-import {
-  deleteInventory,
-  updateInventory,
-} from "../../src/services/inventories";
+import { deleteInventory } from "../../src/services/inventories";
 import { InventoryTable } from "../../src/components/InventoryTable";
 
 vi.mock("../../src/services/inventories", () => ({
@@ -25,7 +30,7 @@ vi.mock("../../src/services/inventories", () => ({
 }));
 
 const mockedDeleteInventory = vi.mocked(deleteInventory);
-const mockedUpdateInventory = vi.mocked(updateInventory);
+const mockedUpdateInventory = vi.mocked(saveInventoryConfiguration);
 
 const inventory = {
   id: "inventory-1",
@@ -73,9 +78,12 @@ describe("InventoryTable", () => {
   test("submits changed inventory values", async () => {
     const user = userEvent.setup();
     mockedUpdateInventory.mockResolvedValue({
-      ...inventory,
-      name: "Tools",
-      description: "Updated description",
+      inventory: {
+        ...inventory,
+        name: "Tools",
+        description: "Updated description",
+      },
+      fields: [],
     });
 
     renderInventoryTable();
@@ -84,19 +92,22 @@ describe("InventoryTable", () => {
     expect(
       screen.getByRole("dialog", { name: "Edit inventory" }),
     ).toBeInTheDocument();
-    await user.clear(screen.getByLabelText("Name"));
+    await user.clear(await screen.findByLabelText("Name"));
     await user.type(screen.getByLabelText("Name"), "Tools");
     await user.clear(screen.getByLabelText("Description"));
     await user.type(
       screen.getByLabelText("Description"),
       "Updated description",
     );
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Save changes" }),
+    );
 
     await waitFor(() => {
       expect(mockedUpdateInventory).toHaveBeenCalledWith("inventory-1", {
-        name: "Tools",
-        description: "Updated description",
+        inventory: { name: "Tools", description: "Updated description" },
+        fields: [],
+        options: [],
       });
     });
   });
