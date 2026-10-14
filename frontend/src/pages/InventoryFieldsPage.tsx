@@ -7,6 +7,7 @@ import { ApiError } from "../services/api";
 import { InventoryFieldCard } from "../components/InventoryFieldCard";
 import { InventoryFieldCreateForm } from "../components/InventoryFieldCreateForm";
 import { InventorySectionNavigation } from "../components/InventorySectionNavigation";
+import { InventoryToolbar } from "../components/InventoryToolbar";
 
 // Render the inventory field overview and management interface.
 export function InventoryFieldsPage() {
@@ -44,12 +45,13 @@ export function InventoryFieldsPage() {
 
         <InventorySectionNavigation inventoryId={inventoryId} />
 
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-shell pb-4">
+        <InventoryToolbar
+          actions={<InventoryFieldCreateForm inventoryId={inventoryId} />}
+        >
           <h2 className="text-sm font-semibold text-heading">
             {t("fields.title")}
           </h2>
-          <InventoryFieldCreateForm inventoryId={inventoryId} />
-        </div>
+        </InventoryToolbar>
 
         {isPending && (
           <p

@@ -13,6 +13,7 @@ import type {
 import type { InventoryItem, InventoryItemValue } from "../types/inventoryItem";
 import { InventoryItemFieldInput } from "./InventoryItemCreateForm";
 import { Modal } from "./Modal";
+import { InventoryToolbar } from "./InventoryToolbar";
 import { sortInventoryItems, type ItemSort } from "./inventoryItemSorting";
 import {
   createValueInput,
@@ -226,24 +227,21 @@ export function InventoryItemList({
 
   return (
     <>
+      <InventoryToolbar actions={actions}>
+        <p className="text-sm font-semibold text-heading">
+          {t("items.count", { count: items.length })}
+        </p>
+        {sort && sortField && (
+          <button
+            className="rounded-md px-2 py-1 text-xs font-medium text-accent hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-accent"
+            onClick={() => setSort(null)}
+            type="button"
+          >
+            {t("table.resetSort")}
+          </button>
+        )}
+      </InventoryToolbar>
       <div className="overflow-hidden rounded-md border border-shell bg-surface">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-shell px-3 py-3 sm:px-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-sm font-medium text-muted">
-              {t("items.count", { count: items.length })}
-            </p>
-            {sort && sortField && (
-              <button
-                className="rounded-md px-2 py-1 text-xs font-medium text-accent hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-accent"
-                onClick={() => setSort(null)}
-                type="button"
-              >
-                {t("table.resetSort")}
-              </button>
-            )}
-          </div>
-          {actions}
-        </div>
         <div
           className="overflow-x-auto"
           role="region"
