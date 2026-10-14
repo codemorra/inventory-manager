@@ -84,7 +84,7 @@ export function AppShell({ children }: AppShellProps) {
       />
       <div className="mt-auto grid shrink-0 gap-3 border-t border-shell bg-surface-muted p-4 shadow-[0_-2px_6px_rgb(0_0_0/0.06)]">
         <button
-          className="flex items-center gap-2 rounded-md border border-shell bg-surface px-3 py-2 text-sm font-medium transition hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-accent"
+          className="flex items-center gap-2 rounded-md border border-shell bg-surface px-3 py-2 text-sm font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent"
           onClick={() => {
             setIsNavigationOpen(false);
             setIsSettingsOpen(true);
@@ -151,7 +151,7 @@ export function AppShell({ children }: AppShellProps) {
           <aside className="relative flex h-full w-[min(20rem,88vw)] flex-col border-r border-shell bg-chrome shadow-raised">
             <div className="flex shrink-0 justify-end px-4 pt-4">
               <button
-                className="rounded-lg border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover"
+                className="rounded-lg border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover enabled:hover:border-accent/50"
                 onClick={() => setIsNavigationOpen(false)}
                 type="button"
               >
@@ -167,7 +167,7 @@ export function AppShell({ children }: AppShellProps) {
         <header className="flex min-h-14 items-center border-b border-shell bg-surface px-4 py-2 sm:px-6 lg:hidden">
           <button
             aria-label={t("navigation.open")}
-            className="rounded-lg border border-shell p-2.5 hover:bg-surface-hover lg:hidden"
+            className="rounded-lg border border-shell p-2.5 enabled:hover:bg-control-hover enabled:hover:border-accent/50 lg:hidden"
             onClick={() => setIsNavigationOpen(true)}
             type="button"
           >

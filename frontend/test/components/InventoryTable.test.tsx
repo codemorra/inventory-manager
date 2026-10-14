@@ -55,6 +55,14 @@ afterEach(() => {
 });
 
 describe("InventoryTable", () => {
+  // Test that inventory actions use the same enabled-only hover treatment as item actions.
+  test("uses a distinct hover surface for inventory editing", () => {
+    renderInventoryTable();
+    expect(screen.getByRole("button", { name: "Edit" })).toHaveClass(
+      "enabled:hover:bg-control-hover",
+      "enabled:hover:border-accent/50",
+    );
+  });
   // Test that inventory values can be updated successfully
   test("submits changed inventory values", async () => {
     const user = userEvent.setup();

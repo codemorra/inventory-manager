@@ -106,7 +106,7 @@ export function InventoryFieldCreateForm({
   return (
     <>
       <button
-        className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover"
+        className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover"
         onClick={() => setIsOpen(true)}
         type="button"
       >
@@ -191,7 +191,7 @@ export function InventoryFieldCreateForm({
                       />
                       {options.length > 1 && (
                         <button
-                          className="rounded-lg border border-shell px-3 py-2 text-sm font-medium text-danger transition hover:bg-danger-soft"
+                          className="rounded-lg border border-shell px-3 py-2 text-sm font-medium text-danger transition enabled:hover:bg-danger/25"
                           onClick={() =>
                             setOptions((current) =>
                               current.filter(
@@ -208,7 +208,7 @@ export function InventoryFieldCreateForm({
                   ))}
                 </div>
                 <button
-                  className="mt-3 rounded-lg border border-shell px-3 py-2 text-sm font-medium transition hover:bg-surface-hover"
+                  className="mt-3 rounded-lg border border-shell px-3 py-2 text-sm font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50"
                   onClick={() => setOptions((current) => [...current, ""])}
                   type="button"
                 >
@@ -228,7 +228,7 @@ export function InventoryFieldCreateForm({
             )}
             <div className="mt-5 flex flex-wrap justify-end gap-3">
               <button
-                className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-hover disabled:opacity-50"
+                className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:opacity-50"
                 disabled={createInventoryField.isPending}
                 onClick={closeModal}
                 type="button"
@@ -236,7 +236,7 @@ export function InventoryFieldCreateForm({
                 {t("common.actions.cancel")}
               </button>
               <button
-                className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={createInventoryField.isPending || !canSubmit}
                 type="submit"
               >

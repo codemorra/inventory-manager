@@ -36,7 +36,7 @@ export function InventoryItemsPage() {
           </h1>
           {inventory && (
             <button
-              className="shrink-0 rounded-md border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover"
+              className="shrink-0 rounded-md border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover enabled:hover:border-accent/50"
               onClick={() => {
                 const next = new URLSearchParams(searchParams);
                 next.set("edit", "general");

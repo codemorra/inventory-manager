@@ -70,7 +70,7 @@ export function InventoryEditDialog({
             type="button"
             aria-current={section === entry ? "page" : undefined}
             disabled={update.isPending}
-            className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50 ${section === entry ? "border-accent bg-accent-soft text-accent" : "border-transparent text-muted hover:bg-surface-hover hover:text-foreground"}`}
+            className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50 ${section === entry ? "border-accent bg-accent-soft text-accent" : "border-transparent text-muted enabled:hover:bg-control-hover enabled:hover:border-accent/50 hover:text-foreground"}`}
             onClick={() => setSection(entry)}
           >
             {t(
@@ -123,7 +123,7 @@ export function InventoryEditDialog({
       )}
       <div className="mt-5 flex shrink-0 flex-wrap justify-end gap-2 border-t border-shell pt-4">
         <button
-          className="rounded-md border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover disabled:opacity-50"
+          className="rounded-md border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:opacity-50"
           disabled={update.isPending}
           onClick={close}
           type="button"
@@ -131,7 +131,7 @@ export function InventoryEditDialog({
           {t("common.actions.cancel")}
         </button>
         <button
-          className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-surface hover:bg-accent-hover disabled:opacity-50"
+          className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-surface enabled:hover:bg-accent-hover disabled:opacity-50"
           disabled={update.isPending || !name.trim()}
           form={formId}
           type="submit"

@@ -65,7 +65,7 @@ export function Navigation({
         triggerClassName="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover"
       />
       <button
-        className="mt-2 rounded-md border border-shell px-3 py-2 text-sm font-medium text-heading hover:bg-surface-hover"
+        className="mt-2 rounded-md border border-shell px-3 py-2 text-sm font-medium text-heading enabled:hover:bg-control-hover enabled:hover:border-accent/50"
         onClick={onCreateGroup}
         type="button"
       >
@@ -144,7 +144,7 @@ export function Navigation({
           {search && (
             <button
               aria-label={t("navigation.clearSearch")}
-              className="absolute right-1 top-1 rounded-md p-1.5 text-muted hover:bg-surface-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
+              className="absolute right-1 top-1 rounded-md p-1.5 text-muted enabled:hover:bg-control-hover enabled:hover:border-accent/50 hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
               onClick={clearSearch}
               type="button"
             >

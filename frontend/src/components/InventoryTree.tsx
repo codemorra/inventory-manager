@@ -211,7 +211,7 @@ export function InventoryTree({
                   });
                 }}
                 aria-expanded={open}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-semibold text-heading hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-accent"
+                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-semibold text-heading enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent"
                 onClick={() => {
                   setCollapsed((current) => {
                     const next = new Set(current);

@@ -100,7 +100,7 @@ export function InventoryFieldOptions({
                   {t("common.actions.save")}
                 </button>
                 <button
-                  className="rounded-lg border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover"
+                  className="rounded-lg border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover enabled:hover:border-accent/50"
                   disabled={isMutating}
                   onClick={() => setEditingOptionId(null)}
                   type="button"
@@ -113,7 +113,7 @@ export function InventoryFieldOptions({
                 <span className="min-w-0 truncate text-sm">{option.name}</span>
                 <div className="flex gap-2">
                   <button
-                    className="rounded-md px-2 py-1 text-sm font-medium text-muted hover:bg-surface-hover hover:text-foreground"
+                    className="rounded-md px-2 py-1 text-sm font-medium text-muted enabled:hover:bg-control-hover enabled:hover:border-accent/50 hover:text-foreground"
                     disabled={isMutating}
                     onClick={() => {
                       setEditingOptionId(option.id);
@@ -124,7 +124,7 @@ export function InventoryFieldOptions({
                     {t("common.actions.edit")}
                   </button>
                   <button
-                    className="rounded-md px-2 py-1 text-sm font-medium text-danger hover:bg-danger-soft disabled:opacity-50"
+                    className="rounded-md px-2 py-1 text-sm font-medium text-danger enabled:hover:bg-danger/25 disabled:opacity-50"
                     disabled={isMutating}
                     onClick={() => removeOption(option)}
                     type="button"
@@ -148,7 +148,7 @@ export function InventoryFieldOptions({
           value={newOptionName}
         />
         <button
-          className="rounded-lg border border-shell px-3 py-2 text-sm font-semibold hover:bg-surface-hover disabled:opacity-50"
+          className="rounded-lg border border-shell px-3 py-2 text-sm font-semibold enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:opacity-50"
           disabled={isMutating || !newOptionName.trim()}
           type="submit"
         >

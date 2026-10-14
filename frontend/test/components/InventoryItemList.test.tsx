@@ -126,6 +126,17 @@ afterEach(() => {
 });
 
 describe("InventoryItemList", () => {
+  // Test that row actions have a hover surface distinct from the highlighted row.
+  test("uses a distinct hover surface for the edit action", () => {
+    renderInventoryItemList();
+    expect(screen.getByRole("button", { name: "Edit" })).toHaveClass(
+      "enabled:hover:bg-control-hover",
+      "enabled:hover:border-accent/50",
+    );
+    expect(screen.getByRole("button", { name: "Delete" })).toHaveClass(
+      "enabled:hover:bg-danger/25",
+    );
+  });
   // Test keyboard sorting, direction announcements, and restoration of API order.
   test("sorts a column in both directions and resets the order", async () => {
     const user = userEvent.setup();

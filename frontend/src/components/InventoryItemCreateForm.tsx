@@ -216,7 +216,7 @@ export function InventoryItemCreateForm({
   return (
     <>
       <button
-        className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
         disabled={fields.length === 0}
         onClick={() => setIsOpen(true)}
         type="button"
@@ -268,7 +268,7 @@ export function InventoryItemCreateForm({
 
             <div className="mt-6 flex flex-wrap justify-end gap-3">
               <button
-                className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={createItem.isPending}
                 type="submit"
               >
@@ -277,7 +277,7 @@ export function InventoryItemCreateForm({
                   : t("items.actions.add")}
               </button>
               <button
-                className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={createItem.isPending}
                 onClick={closeModal}
                 type="button"
