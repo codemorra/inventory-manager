@@ -11,7 +11,7 @@ export function InventoryOverviewPage() {
 
   return (
     <div>
-      <div className="mx-auto max-w-5xl">
+      <div className="min-w-0 w-full">
         <header className="mb-8">
           <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">
             {t("app.name")}
