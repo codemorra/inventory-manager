@@ -1,3 +1,4 @@
+import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 import { type SyntheticEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -122,94 +123,69 @@ export function SidebarContextActions({
     return <InventoryEditDialog inventory={target.entry} onClose={close} />;
   }
 
+  if (stage === "delete") {
+    return (
+      <DeleteConfirmationDialog
+        title={t(
+          group ? "contextMenu.deleteGroup" : "contextMenu.deleteInventory",
+        )}
+        message={t(
+          group ? "groups.confirmDelete" : "inventories.confirmDelete",
+          { name: target.entry.name },
+        )}
+        isPending={busy}
+        error={error ? t("contextMenu.error") : null}
+        onClose={close}
+        onConfirm={confirmDelete}
+      />
+    );
+  }
+
   return (
     <Modal
-      size={group || stage === "delete" ? "small" : "medium"}
+      size="small"
       onClose={close}
-      title={
-        stage === "delete"
-          ? t(group ? "contextMenu.deleteGroup" : "contextMenu.deleteInventory")
-          : group
-            ? t("groups.rename", { name: target.entry.name })
-            : t("inventories.titles.edit")
-      }
+      title={t("groups.rename", { name: target.entry.name })}
     >
-      {stage === "edit" ? (
-        <form className="space-y-4" onSubmit={save}>
-          <label className="block text-sm font-medium">
-            {t(group ? "groups.name" : "common.fields.name")}
-            <input
-              autoFocus
-              className={inputClass}
-              maxLength={255}
-              required
-              disabled={busy}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-          {error && (
-            <p
-              className="rounded-md bg-danger-soft p-3 text-sm text-danger"
-              role="alert"
-            >
-              {t("contextMenu.error")}
-            </p>
-          )}
-          <div className="flex justify-end gap-2">
-            <button
-              className="rounded-md border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:opacity-50"
-              disabled={busy}
-              onClick={close}
-              type="button"
-            >
-              {t("common.actions.cancel")}
-            </button>
-            <button
-              className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-surface enabled:hover:bg-accent-hover disabled:opacity-50"
-              disabled={busy || !name.trim()}
-              type="submit"
-            >
-              {t(busy ? "common.actions.saving" : "common.actions.saveChanges")}
-            </button>
-          </div>
-        </form>
-      ) : (
-        <div className="space-y-4">
-          <p className="wrap-break-word text-sm leading-relaxed">
-            {t(group ? "groups.confirmDelete" : "inventories.confirmDelete", {
-              name: target.entry.name,
-            })}
+      <form className="space-y-4" onSubmit={save}>
+        <label className="block text-sm font-medium">
+          {t("groups.name")}
+          <input
+            autoFocus
+            className={inputClass}
+            maxLength={255}
+            required
+            disabled={busy}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+        </label>
+        {error && (
+          <p
+            className="rounded-md bg-danger-soft p-3 text-sm text-danger"
+            role="alert"
+          >
+            {t("contextMenu.error")}
           </p>
-          {error && (
-            <p
-              className="rounded-md bg-danger-soft p-3 text-sm text-danger"
-              role="alert"
-            >
-              {t("contextMenu.error")}
-            </p>
-          )}
-          <div className="flex justify-end gap-2">
-            <button
-              autoFocus
-              className="rounded-md border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:opacity-50"
-              disabled={busy}
-              onClick={close}
-              type="button"
-            >
-              {t("common.actions.cancel")}
-            </button>
-            <button
-              className="rounded-md bg-danger-soft px-3 py-2 text-sm font-semibold text-danger enabled:hover:bg-danger/25 disabled:opacity-50"
-              disabled={busy}
-              onClick={confirmDelete}
-              type="button"
-            >
-              {t(busy ? "common.actions.deleting" : "common.actions.delete")}
-            </button>
-          </div>
+        )}
+        <div className="flex justify-end gap-2">
+          <button
+            className="rounded-md border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:opacity-50"
+            disabled={busy}
+            onClick={close}
+            type="button"
+          >
+            {t("common.actions.cancel")}
+          </button>
+          <button
+            className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-surface enabled:hover:bg-accent-hover disabled:opacity-50"
+            disabled={busy || !name.trim()}
+            type="submit"
+          >
+            {t(busy ? "common.actions.saving" : "common.actions.saveChanges")}
+          </button>
         </div>
-      )}
+      </form>
     </Modal>
   );
 }

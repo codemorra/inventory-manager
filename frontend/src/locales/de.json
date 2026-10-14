@@ -128,6 +128,8 @@
     "title": "Inventarfelder",
     "titles": {
       "create": "Inventarfeld erstellen",
+      "delete": "Inventarfeld löschen",
+      "deleteOption": "Auswahloption löschen",
       "edit": "Inventarfeld umbenennen"
     },
     "types": {
@@ -174,6 +176,7 @@
     "title": "Inventareinträge",
     "titles": {
       "create": "Inventareintrag hinzufügen",
+      "delete": "Inventareintrag löschen",
       "edit": "Inventareintrag bearbeiten"
     }
   },

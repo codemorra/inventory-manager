@@ -167,6 +167,38 @@ test("disables footer actions while saving from the fields section", async () =>
   expect(close).not.toHaveBeenCalled();
 });
 
+// Test that canceling field deletion leaves the parent inventory editor open.
+test("Escape cancels field deletion without closing the inventory editor", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getInventoryFields).mockResolvedValue([
+    {
+      id: "title",
+      inventory_id: inventory.id,
+      name: "Title",
+      field_type: "text",
+      max_length: 255,
+      options: [],
+      position: 0,
+      created_at: "",
+      updated_at: "",
+    },
+  ]);
+  const close = renderEditor("fields");
+  await user.click(await screen.findByRole("button", { name: "Delete" }));
+  expect(
+    screen.getByRole("dialog", { name: "Delete inventory field" }),
+  ).toBeInTheDocument();
+  expect(screen.getAllByRole("dialog")).toHaveLength(2);
+  await user.keyboard("{Escape}");
+  expect(
+    screen.queryByRole("dialog", { name: "Delete inventory field" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("dialog", { name: "Edit inventory" }),
+  ).toBeInTheDocument();
+  expect(close).not.toHaveBeenCalled();
+});
+
 // Test that canceling a child form leaves the inventory editor open.
 test("Escape closes the new field dialog without closing the editor", async () => {
   const user = userEvent.setup();

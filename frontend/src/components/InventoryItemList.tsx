@@ -1,3 +1,4 @@
+import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 import { type ReactNode, type SyntheticEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -123,13 +124,16 @@ function getEditableValues(
  * @param fields The inventory fields defining the structure of the items.
  * @param items The list of inventory items to render.
  * @param actions Optional controls displayed in the table toolbar.
- * @returns The inventory item table and edit modal.
+ * @returns The inventory item table and its management dialogs.
  */
 export function InventoryItemList({
   fields,
   items,
   actions,
 }: InventoryItemListProps) {
+  const [deletingTarget, setDeletingTarget] = useState<InventoryItem | null>(
+    null,
+  );
   const { t, i18n } = useTranslation();
   const [sort, setSort] = useState<ItemSort | null>(null);
   const sortField = fields.find((field) => field.id === sort?.fieldId);
@@ -211,18 +215,12 @@ export function InventoryItemList({
   }
 
   /**
-   * Handle the deletion of an inventory item.
-   * @param item The inventory item to delete.
+   * Ask for confirmation before deleting the selected item.
+   * @param item The item selected for deletion.
    */
   function handleDelete(item: InventoryItem) {
-    if (!window.confirm(t("items.confirmDelete"))) {
-      return;
-    }
-
-    deleteItem.mutate({
-      inventoryId: item.inventory_id,
-      itemId: item.id,
-    });
+    deleteItem.reset();
+    setDeletingTarget(item);
   }
 
   return (
@@ -362,17 +360,6 @@ export function InventoryItemList({
             </tbody>
           </table>
         </div>
-
-        {deleteItem.error && (
-          <p
-            className="border-t border-shell bg-danger-soft px-5 py-3 text-sm text-danger"
-            role="alert"
-          >
-            {deleteItem.error instanceof ApiError
-              ? deleteItem.error.message
-              : t("items.errors.delete")}
-          </p>
-        )}
       </div>
 
       {editingItem && (
@@ -433,6 +420,30 @@ export function InventoryItemList({
             </div>
           </form>
         </Modal>
+      )}
+      {deletingTarget && (
+        <DeleteConfirmationDialog
+          title={t("items.titles.delete")}
+          message={t("items.confirmDelete")}
+          isPending={deleteItem.isPending}
+          error={
+            deleteItem.error
+              ? deleteItem.error instanceof ApiError
+                ? deleteItem.error.message
+                : t("items.errors.delete")
+              : null
+          }
+          onClose={() => setDeletingTarget(null)}
+          onConfirm={() =>
+            deleteItem.mutate(
+              {
+                inventoryId: deletingTarget.inventory_id,
+                itemId: deletingTarget.id,
+              },
+              { onSuccess: () => setDeletingTarget(null) },
+            )
+          }
+        />
       )}
     </>
   );

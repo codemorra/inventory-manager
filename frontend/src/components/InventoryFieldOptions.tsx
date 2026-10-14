@@ -1,3 +1,4 @@
+import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 import { type SyntheticEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -28,6 +29,8 @@ export function InventoryFieldOptions({
   options,
 }: InventoryFieldOptionsProps) {
   const { t } = useTranslation();
+  const [deletingOption, setDeletingOption] =
+    useState<InventoryFieldOption | null>(null);
   const [newOptionName, setNewOptionName] = useState("");
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [editingOptionName, setEditingOptionName] = useState("");
@@ -36,8 +39,7 @@ export function InventoryFieldOptions({
   const deleteOption = useDeleteInventoryFieldOption();
   const isMutating =
     createOption.isPending || updateOption.isPending || deleteOption.isPending;
-  const mutationError =
-    createOption.error ?? updateOption.error ?? deleteOption.error;
+  const mutationError = createOption.error ?? updateOption.error;
 
   // Function to handle the addition of a new inventory field option.
   function addOption(event: SyntheticEvent<HTMLFormElement>) {
@@ -65,12 +67,13 @@ export function InventoryFieldOptions({
     );
   }
 
-  // Function to handle the removal of an inventory field option.
+  /**
+   * Ask for confirmation before removing an option.
+   * @param option The option selected for deletion.
+   */
   function removeOption(option: InventoryFieldOption) {
-    if (!window.confirm(t("fields.confirmDelete", { name: option.name }))) {
-      return;
-    }
-    deleteOption.mutate({ inventoryId, fieldId, optionId: option.id });
+    deleteOption.reset();
+    setDeletingOption(option);
   }
 
   return (
@@ -164,6 +167,27 @@ export function InventoryFieldOptions({
             ? mutationError.message
             : t("fields.errors.options")}
         </p>
+      )}
+      {deletingOption && (
+        <DeleteConfirmationDialog
+          title={t("fields.titles.deleteOption")}
+          message={t("fields.confirmDelete", { name: deletingOption.name })}
+          isPending={deleteOption.isPending}
+          error={
+            deleteOption.error
+              ? deleteOption.error instanceof ApiError
+                ? deleteOption.error.message
+                : t("fields.errors.options")
+              : null
+          }
+          onClose={() => setDeletingOption(null)}
+          onConfirm={() =>
+            deleteOption.mutate(
+              { inventoryId, fieldId, optionId: deletingOption.id },
+              { onSuccess: () => setDeletingOption(null) },
+            )
+          }
+        />
       )}
     </section>
   );

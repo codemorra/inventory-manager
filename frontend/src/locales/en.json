@@ -128,6 +128,8 @@
     "title": "Inventory fields",
     "titles": {
       "create": "Create inventory field",
+      "delete": "Delete inventory field",
+      "deleteOption": "Delete option",
       "edit": "Rename inventory field"
     },
     "types": {
@@ -174,6 +176,7 @@
     "title": "Inventory items",
     "titles": {
       "create": "Add inventory item",
+      "delete": "Delete inventory item",
       "edit": "Edit inventory item"
     }
   },

@@ -1,6 +1,12 @@
 /** Test the inventory field management card. */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
@@ -109,14 +115,18 @@ describe("InventoryFieldCard", () => {
   // Test that a field is deleted after the user confirms the action
   test("deletes a field after confirmation", async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     mockedDeleteInventoryField.mockResolvedValue();
 
     renderInventoryFieldCard();
 
     await user.click(screen.getByRole("button", { name: "Delete" }));
-
-    expect(window.confirm).toHaveBeenCalledWith('Delete "Brand"?');
+    const confirmation = screen.getByRole("dialog", {
+      name: "Delete inventory field",
+    });
+    expect(mockedDeleteInventoryField).not.toHaveBeenCalled();
+    await user.click(
+      within(confirmation).getByRole("button", { name: "Delete" }),
+    );
 
     await waitFor(() => {
       expect(mockedDeleteInventoryField).toHaveBeenCalledWith(
@@ -129,11 +139,18 @@ describe("InventoryFieldCard", () => {
   // Test that a field is not deleted when the user rejects the confirmation
   test("does not delete a field when confirmation is rejected", async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(false);
 
     renderInventoryFieldCard();
 
     await user.click(screen.getByRole("button", { name: "Delete" }));
+    const confirmation = screen.getByRole("dialog", {
+      name: "Delete inventory field",
+    });
+    expect(mockedDeleteInventoryField).not.toHaveBeenCalled();
+    await user.click(
+      within(confirmation).getByRole("button", { name: "Cancel" }),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     expect(mockedDeleteInventoryField).not.toHaveBeenCalled();
   });
@@ -154,4 +171,30 @@ describe("InventoryFieldCard", () => {
       "Unable to reach the backend.",
     );
   });
+});
+
+// Test that a failed deletion remains in the confirmation and can be retried.
+test("keeps deletion failures in the dialog and closes after retry", async () => {
+  const user = userEvent.setup();
+  mockedDeleteInventoryField
+    .mockRejectedValueOnce(new Error("Synthetic failure"))
+    .mockResolvedValueOnce();
+  renderInventoryFieldCard();
+  await user.click(screen.getByRole("button", { name: "Delete" }));
+  const confirmation = screen.getByRole("dialog", {
+    name: "Delete inventory field",
+  });
+  await user.click(
+    within(confirmation).getByRole("button", { name: "Delete" }),
+  );
+  expect(await within(confirmation).findByRole("alert")).toBeInTheDocument();
+  expect(
+    screen.getByRole("dialog", { name: "Delete inventory field" }),
+  ).toBeInTheDocument();
+  await user.click(
+    within(confirmation).getByRole("button", { name: "Delete" }),
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+  );
 });

@@ -1,3 +1,4 @@
+import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 import { type SyntheticEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -20,13 +21,14 @@ interface InventoryFieldCardProps {
  * Render inventory field details and management actions.
  * @param inventoryId The ID of the inventory to which the field belongs.
  * @param inventoryField The inventory field to display and manage.
- * @returns The field row and its rename dialog.
+ * @returns The field row and its management dialogs.
  */
 export function InventoryFieldCard({
   inventoryId,
   inventoryField,
 }: InventoryFieldCardProps) {
   const { t } = useTranslation();
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(inventoryField.name);
 
@@ -35,8 +37,7 @@ export function InventoryFieldCard({
 
   const isMutating =
     updateInventoryField.isPending || deleteInventoryField.isPending;
-  const mutationError =
-    updateInventoryField.error ?? deleteInventoryField.error;
+  const mutationError = updateInventoryField.error;
 
   // Function to initiate editing of the inventory field.
   function startEditing() {
@@ -72,18 +73,10 @@ export function InventoryFieldCard({
     );
   }
 
-  // Function to handle the deletion of the inventory field.
+  // Ask for confirmation before deleting the field.
   function handleDelete() {
-    if (
-      !window.confirm(t("fields.confirmDelete", { name: inventoryField.name }))
-    ) {
-      return;
-    }
-
-    deleteInventoryField.mutate({
-      inventoryId,
-      fieldId: inventoryField.id,
-    });
+    deleteInventoryField.reset();
+    setIsDeleting(true);
   }
 
   return (
@@ -207,6 +200,27 @@ export function InventoryFieldCard({
           fieldId={inventoryField.id}
           inventoryId={inventoryId}
           options={inventoryField.options}
+        />
+      )}
+      {isDeleting && (
+        <DeleteConfirmationDialog
+          title={t("fields.titles.delete")}
+          message={t("fields.confirmDelete", { name: inventoryField.name })}
+          isPending={deleteInventoryField.isPending}
+          error={
+            deleteInventoryField.error
+              ? deleteInventoryField.error instanceof ApiError
+                ? deleteInventoryField.error.message
+                : t("fields.errors.manage")
+              : null
+          }
+          onClose={() => setIsDeleting(false)}
+          onConfirm={() =>
+            deleteInventoryField.mutate(
+              { inventoryId, fieldId: inventoryField.id },
+              { onSuccess: () => setIsDeleting(false) },
+            )
+          }
         />
       )}
     </article>

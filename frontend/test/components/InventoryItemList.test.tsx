@@ -242,13 +242,18 @@ describe("InventoryItemList", () => {
   // Test that an item is deleted after the user confirms the action
   test("deletes an item after confirmation", async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     mockedDeleteInventoryItem.mockResolvedValue();
     renderInventoryItemList();
 
     await user.click(screen.getByRole("button", { name: "Delete" }));
+    const confirmation = screen.getByRole("dialog", {
+      name: "Delete inventory item",
+    });
+    expect(mockedDeleteInventoryItem).not.toHaveBeenCalled();
+    await user.click(
+      within(confirmation).getByRole("button", { name: "Delete" }),
+    );
 
-    expect(window.confirm).toHaveBeenCalledWith("Delete this inventory item?");
     await waitFor(() => {
       expect(mockedDeleteInventoryItem).toHaveBeenCalledWith(
         "inventory-1",
@@ -260,10 +265,17 @@ describe("InventoryItemList", () => {
   // Test that an item is not deleted when the user cancels the confirmation
   test("keeps an item when deletion is not confirmed", async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     renderInventoryItemList();
 
     await user.click(screen.getByRole("button", { name: "Delete" }));
+    const confirmation = screen.getByRole("dialog", {
+      name: "Delete inventory item",
+    });
+    expect(mockedDeleteInventoryItem).not.toHaveBeenCalled();
+    await user.click(
+      within(confirmation).getByRole("button", { name: "Cancel" }),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     expect(mockedDeleteInventoryItem).not.toHaveBeenCalled();
   });
@@ -286,4 +298,30 @@ describe("InventoryItemList", () => {
       "Inventory item values are invalid.",
     );
   });
+});
+
+// Test that a failed deletion remains in the confirmation and can be retried.
+test("keeps deletion failures in the dialog and closes after retry", async () => {
+  const user = userEvent.setup();
+  mockedDeleteInventoryItem
+    .mockRejectedValueOnce(new Error("Synthetic failure"))
+    .mockResolvedValueOnce();
+  renderInventoryItemList();
+  await user.click(screen.getByRole("button", { name: "Delete" }));
+  const confirmation = screen.getByRole("dialog", {
+    name: "Delete inventory item",
+  });
+  await user.click(
+    within(confirmation).getByRole("button", { name: "Delete" }),
+  );
+  expect(await within(confirmation).findByRole("alert")).toBeInTheDocument();
+  expect(
+    screen.getByRole("dialog", { name: "Delete inventory item" }),
+  ).toBeInTheDocument();
+  await user.click(
+    within(confirmation).getByRole("button", { name: "Delete" }),
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+  );
 });
