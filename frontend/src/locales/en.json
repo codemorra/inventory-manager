@@ -43,6 +43,13 @@
       "yes": "Yes"
     }
   },
+  "contextMenu": {
+    "label": "Actions for {{name}}",
+    "rename": "Rename",
+    "deleteGroup": "Delete group",
+    "deleteInventory": "Delete inventory",
+    "error": "The change could not be saved. Please try again."
+  },
   "groups": {
     "new": "New group",
     "creating": "Creating…",

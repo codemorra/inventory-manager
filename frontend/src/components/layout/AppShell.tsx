@@ -5,6 +5,10 @@ import { SettingsDialog } from "../SettingsDialog";
 import { GroupCreateDialog } from "../GroupCreateDialog";
 import { useTheme } from "../../hooks/useTheme";
 import { Navigation } from "./Navigation";
+import {
+  SidebarContextActions,
+  type SidebarContextTarget,
+} from "../SidebarContextActions";
 
 // Define properties for the shared application shell.
 interface AppShellProps {
@@ -23,6 +27,8 @@ export function AppShell({ children }: AppShellProps) {
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGroupCreateOpen, setIsGroupCreateOpen] = useState(false);
+  const [contextTarget, setContextTarget] =
+    useState<SidebarContextTarget | null>(null);
 
   useEffect(() => {
     if (!isNavigationOpen) {
@@ -69,6 +75,7 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       </div>
       <Navigation
+        onContext={setContextTarget}
         onNavigate={() => setIsNavigationOpen(false)}
         onCreateGroup={() => {
           setIsNavigationOpen(false);
@@ -103,6 +110,14 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="min-h-dvh bg-canvas text-foreground">
+      {contextTarget && (
+        <SidebarContextActions
+          key={`${contextTarget.kind}-${contextTarget.entry.id}-${contextTarget.x}-${contextTarget.y}`}
+          target={contextTarget}
+          onClose={() => setContextTarget(null)}
+          onOpenDialog={() => setIsNavigationOpen(false)}
+        />
+      )}
       {isGroupCreateOpen && (
         <GroupCreateDialog onClose={() => setIsGroupCreateOpen(false)} />
       )}

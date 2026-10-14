@@ -15,6 +15,31 @@ const inventory = {
   updated_at: "",
 };
 
+// Test that group right-clicks select the group without collapsing or navigating.
+test("opens context actions for the right-clicked group", () => {
+  const context = vi.fn();
+  render(
+    <MemoryRouter>
+      <InventoryTree
+        groups={[group]}
+        inventories={[inventory]}
+        searching={false}
+        onContext={context}
+      />
+    </MemoryRouter>,
+  );
+  const button = screen.getByRole("button", { name: "Leisure" });
+  fireEvent.contextMenu(button, { clientX: 20, clientY: 40 });
+  expect(context).toHaveBeenCalledWith({
+    kind: "group",
+    entry: group,
+    x: 20,
+    y: 40,
+    source: button,
+  });
+  expect(button).toHaveAttribute("aria-expanded", "true");
+});
+
 // Test native inventory drags to a group, rejecting external or mismatched payloads.
 test("moves a dragged inventory to a group and rejects external data", () => {
   const move = vi.fn();
