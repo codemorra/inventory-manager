@@ -132,7 +132,7 @@ export function InventoryFieldCard({
             <h2 className="font-semibold text-foreground">
               {inventoryField.name}
             </h2>
-            <p className="mt-2 inline-flex rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">
+            <p className="mt-2 inline-flex rounded-md bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">
               {t(`fields.types.${inventoryField.field_type}`)}
             </p>
             {inventoryField.max_length !== null && (

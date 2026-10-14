@@ -23,7 +23,7 @@ export function Navigation({ onNavigate }: NavigationProps) {
   return (
     <nav
       aria-label={t("navigation.label")}
-      className="mt-8 flex min-h-0 flex-1 flex-col"
+      className="flex min-h-0 flex-1 flex-col px-3 pb-4 pt-5"
     >
       <InventoryCreateForm triggerClassName="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover" />
 
@@ -81,7 +81,7 @@ export function Navigation({ onNavigate }: NavigationProps) {
         )}
 
         {!isPending && !isError && inventories && inventories.length > 0 && (
-          <ul className="mt-2 space-y-1 overflow-y-auto">
+          <ul className="mt-2 min-h-0 space-y-0.5 overflow-y-auto overscroll-contain">
             {inventories.map((inventory) => {
               const isActive = location.pathname.startsWith(
                 `/inventories/${inventory.id}/`,

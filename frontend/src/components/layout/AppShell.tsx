@@ -39,9 +39,9 @@ export function AppShell({ children }: AppShellProps) {
   }, [isNavigationOpen]);
 
   const sidebarContent = (
-    <div className="flex min-h-full flex-col">
-      <div className="flex items-center gap-3 px-2">
-        <span className="grid size-10 place-items-center rounded-xl bg-accent text-surface shadow-soft">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center gap-3 px-5 pb-1 pt-5">
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-surface">
           <svg
             aria-hidden="true"
             className="size-6"
@@ -64,7 +64,7 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       </div>
       <Navigation onNavigate={() => setIsNavigationOpen(false)} />
-      <div className="mt-auto grid gap-3 rounded-xl border border-shell bg-surface-muted p-3">
+      <div className="mt-auto grid shrink-0 gap-3 border-t border-shell bg-surface-muted p-4 shadow-[0_-2px_6px_rgb(0_0_0/0.06)]">
         <LanguageSwitch />
         <ThemeSwitch />
       </div>
@@ -72,7 +72,7 @@ export function AppShell({ children }: AppShellProps) {
   );
 
   return (
-    <div className="min-h-dvh bg-canvas bg-(image:--app-canvas-gradient) text-foreground">
+    <div className="min-h-dvh bg-canvas text-foreground">
       <a
         className="fixed left-4 top-3 z-50 -translate-y-24 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-surface focus:translate-y-0"
         href="#page-content"
@@ -80,7 +80,7 @@ export function AppShell({ children }: AppShellProps) {
         {t("navigation.skipToContent")}
       </a>
 
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-shell bg-surface px-4 py-6 shadow-soft lg:block">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-shell bg-surface lg:block">
         {sidebarContent}
       </aside>
 
@@ -97,8 +97,8 @@ export function AppShell({ children }: AppShellProps) {
             onClick={() => setIsNavigationOpen(false)}
             type="button"
           />
-          <aside className="relative flex h-full w-[min(20rem,88vw)] flex-col border-r border-shell bg-surface px-4 py-6 shadow-raised">
-            <div className="flex justify-end">
+          <aside className="relative flex h-full w-[min(20rem,88vw)] flex-col border-r border-shell bg-surface shadow-raised">
+            <div className="flex shrink-0 justify-end px-4 pt-4">
               <button
                 className="rounded-lg border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover"
                 onClick={() => setIsNavigationOpen(false)}
@@ -107,13 +107,13 @@ export function AppShell({ children }: AppShellProps) {
                 {t("navigation.close")}
               </button>
             </div>
-            <div className="mt-5 min-h-0 flex-1">{sidebarContent}</div>
+            <div className="min-h-0 flex-1">{sidebarContent}</div>
           </aside>
         </div>
       )}
 
       <div className="lg:pl-64">
-        <header className="flex min-h-16 items-center border-b border-shell bg-surface px-5 py-3 shadow-soft sm:px-8 lg:hidden">
+        <header className="flex min-h-14 items-center border-b border-shell bg-surface px-4 py-2 sm:px-6 lg:hidden">
           <button
             aria-label={t("navigation.open")}
             className="rounded-lg border border-shell p-2.5 hover:bg-surface-hover lg:hidden"
@@ -135,7 +135,7 @@ export function AppShell({ children }: AppShellProps) {
         </header>
 
         <main
-          className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:py-10"
+          className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8"
           id="page-content"
           tabIndex={-1}
         >
