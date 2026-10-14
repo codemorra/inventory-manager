@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+/* Keep shared Tailwind corner sizes compact across controls and surfaces. */
+@theme {
+  --radius-md: 0.25rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.25rem;
+  --radius-2xl: 0.375rem;
+}
 
 @theme inline {
   --color-canvas: var(--app-canvas);
@@ -36,8 +42,7 @@
   --app-accent-soft: #dff4f0;
   --app-danger: #b4232f;
   --app-danger-soft: #fdebed;
-  --app-shadow-soft:
-    0 2px 5px rgb(24 33 31 / 4%), 0 12px 32px rgb(24 33 31 / 6%);
+  --app-shadow-soft: 0 1px 2px rgb(24 33 31 / 5%);
   --app-shadow-raised:
     0 8px 18px rgb(24 33 31 / 8%), 0 24px 56px rgb(24 33 31 / 14%);
   --app-canvas-gradient: radial-gradient(
@@ -61,7 +66,7 @@
   --app-accent-soft: #183c38;
   --app-danger: #ffadb5;
   --app-danger-soft: #48242a;
-  --app-shadow-soft: 0 2px 5px rgb(0 0 0 / 14%), 0 12px 32px rgb(0 0 0 / 18%);
+  --app-shadow-soft: 0 1px 2px rgb(0 0 0 / 16%);
   --app-shadow-raised:
     0 8px 18px rgb(0 0 0 / 22%), 0 24px 56px rgb(0 0 0 / 38%);
 }
