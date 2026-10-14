@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useId } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 // Define properties for a modal dialog.
@@ -43,7 +44,8 @@ export function Modal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  return (
+  // Escape sidebar stacking contexts so sticky table actions stay below the overlay.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
       onMouseDown={(event) => {
@@ -85,6 +87,7 @@ export function Modal({
         </div>
         <div className="p-5">{children}</div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
