@@ -43,7 +43,10 @@ export function Modal({ children, onClose, title }: ModalProps) {
         role="dialog"
       >
         <div className="flex items-start justify-between gap-4">
-          <h2 className="text-xl font-semibold tracking-tight" id="modal-title">
+          <h2
+            className="text-xl font-semibold tracking-tight text-heading"
+            id="modal-title"
+          >
             {title}
           </h2>
           <button

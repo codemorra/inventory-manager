@@ -93,7 +93,7 @@ export function Navigation({ onNavigate }: NavigationProps) {
                     aria-current={isActive ? "page" : undefined}
                     className={`block truncate rounded-lg px-3 py-2 text-sm transition-colors ${
                       isActive
-                        ? "bg-accent-soft font-medium text-accent"
+                        ? "bg-accent-soft font-semibold text-accent"
                         : "text-muted hover:bg-surface-hover hover:text-foreground"
                     }`}
                     onClick={onNavigate}

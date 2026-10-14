@@ -4,6 +4,13 @@
     "tagline": "Organize what matters"
   },
   "common": {
+    "accent": {
+      "label": "Accent color",
+      "teal": "Teal",
+      "blue": "Blue",
+      "purple": "Purple",
+      "orange": "Orange"
+    },
     "actions": {
       "add": "Add",
       "cancel": "Cancel",
@@ -154,6 +161,11 @@
     "noInventories": "No inventories created yet.",
     "open": "Open menu",
     "skipToContent": "Skip to content"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Choose your language, appearance, and accent color.",
+    "savedAutomatically": "Changes are saved automatically in this browser."
   },
   "table": {
     "actions": "Actions"
