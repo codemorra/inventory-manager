@@ -119,7 +119,8 @@
     "options": "Optionen: {{options}}",
     "title": "Inventarfelder",
     "titles": {
-      "create": "Inventarfeld erstellen"
+      "create": "Inventarfeld erstellen",
+      "edit": "Inventarfeld umbenennen"
     },
     "types": {
       "boolean": "Ja/Nein",

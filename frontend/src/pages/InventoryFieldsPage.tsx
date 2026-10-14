@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useInventoryFields } from "../hooks/useInventoryFields";
+import { useInventories } from "../hooks/useInventories";
 import { ApiError } from "../services/api";
 import { InventoryFieldCard } from "../components/InventoryFieldCard";
 import { InventoryFieldCreateForm } from "../components/InventoryFieldCreateForm";
@@ -11,6 +12,8 @@ import { InventorySectionNavigation } from "../components/InventorySectionNaviga
 export function InventoryFieldsPage() {
   const { t } = useTranslation();
   const { inventoryId } = useParams();
+  const { data: inventories } = useInventories();
+  const inventory = inventories?.find((entry) => entry.id === inventoryId);
   const {
     data: inventoryFields,
     error,
@@ -24,25 +27,29 @@ export function InventoryFieldsPage() {
 
   return (
     <div>
-      <div className="mx-auto max-w-5xl">
-        <InventorySectionNavigation inventoryId={inventoryId} />
-
-        <header className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-5">
           <div>
             <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">
               {t("navigation.inventories")}
             </p>
-            <h1 className="text-3xl font-semibold tracking-tight text-heading sm:text-4xl">
-              {t("fields.title")}
+            <h1 className="text-2xl font-semibold tracking-tight text-heading sm:text-3xl">
+              {inventory?.name ?? t("fields.title")}
             </h1>
-            <p className="mt-3 max-w-2xl leading-relaxed text-muted">
-              {t("fields.description")}
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+              {inventory?.description || t("fields.description")}
             </p>
           </div>
-          <div className="shrink-0">
-            <InventoryFieldCreateForm inventoryId={inventoryId} />
-          </div>
         </header>
+
+        <InventorySectionNavigation inventoryId={inventoryId} />
+
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-shell pb-4">
+          <h2 className="text-sm font-semibold text-heading">
+            {t("fields.title")}
+          </h2>
+          <InventoryFieldCreateForm inventoryId={inventoryId} />
+        </div>
 
         {isPending && (
           <p
@@ -77,7 +84,7 @@ export function InventoryFieldsPage() {
           !isError &&
           inventoryFields &&
           inventoryFields.length > 0 && (
-            <ul className="grid gap-4 md:grid-cols-2">
+            <ul className="divide-y divide-shell overflow-hidden rounded-md border border-shell">
               {inventoryFields.map((inventoryField) => (
                 <li key={inventoryField.id}>
                   <InventoryFieldCard

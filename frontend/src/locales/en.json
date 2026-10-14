@@ -119,7 +119,8 @@
     "options": "Options: {{options}}",
     "title": "Inventory fields",
     "titles": {
-      "create": "Create inventory field"
+      "create": "Create inventory field",
+      "edit": "Rename inventory field"
     },
     "types": {
       "boolean": "Boolean",

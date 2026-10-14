@@ -74,7 +74,7 @@ export function InventoryFieldOptions({
   }
 
   return (
-    <section className="mt-5 border-t border-shell pt-4">
+    <section className="mt-3 max-w-2xl border-t border-shell pt-3">
       <h3 className="text-sm font-medium">{t("fields.form.options")}</h3>
       <ul className="mt-2 space-y-2">
         {options.map((option) => (

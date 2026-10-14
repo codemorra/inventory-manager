@@ -117,7 +117,11 @@ export function InventoryFieldCreateForm({
       </button>
 
       {isOpen && (
-        <Modal onClose={closeModal} title={t("fields.titles.create")}>
+        <Modal
+          onClose={closeModal}
+          title={t("fields.titles.create")}
+          size="medium"
+        >
           <form onSubmit={submit}>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium text-foreground">

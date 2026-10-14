@@ -72,6 +72,9 @@ describe("InventoryFieldCard", () => {
     renderInventoryFieldCard();
 
     await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(
+      screen.getByRole("dialog", { name: "Rename inventory field" }),
+    ).toBeInTheDocument();
     await user.clear(screen.getByLabelText("Field name"));
     await user.type(screen.getByLabelText("Field name"), "Manufacturer");
     await user.click(screen.getByRole("button", { name: "Save" }));
@@ -85,6 +88,9 @@ describe("InventoryFieldCard", () => {
         },
       );
     });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
   });
 
   // Test that editing can be canceled without submitting changes
@@ -97,6 +103,7 @@ describe("InventoryFieldCard", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(mockedUpdateInventoryField).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   // Test that a field is deleted after the user confirms the action
