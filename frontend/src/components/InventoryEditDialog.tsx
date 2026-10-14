@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useState } from "react";
+import { type SyntheticEvent, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateInventory } from "../hooks/useInventories";
 import { ApiError } from "../services/api";
@@ -26,6 +26,7 @@ export function InventoryEditDialog({
   initialSection = "general",
 }: InventoryEditDialogProps) {
   const { t } = useTranslation();
+  const formId = useId();
   const [section, setSection] = useState(initialSection);
   const [name, setName] = useState(inventory.name);
   const [description, setDescription] = useState(inventory.description ?? "");
@@ -77,9 +78,12 @@ export function InventoryEditDialog({
         ))}
       </nav>
       {section === "fields" ? (
-        <InventoryFieldsPanel inventoryId={inventory.id} />
+        <>
+          <InventoryFieldsPanel inventoryId={inventory.id} />
+          <form id={formId} onSubmit={save} />
+        </>
       ) : (
-        <form className="space-y-4" onSubmit={save}>
+        <form className="space-y-4" id={formId} onSubmit={save}>
           <label className="block text-sm font-medium">
             {t("common.fields.name")}
             <input
@@ -101,39 +105,40 @@ export function InventoryEditDialog({
               onChange={(event) => setDescription(event.target.value)}
             />
           </label>
-          {update.error && (
-            <p
-              className="rounded-md bg-danger-soft p-3 text-sm text-danger"
-              role="alert"
-            >
-              {update.error instanceof ApiError
-                ? update.error.message
-                : t("inventories.errors.update")}
-            </p>
-          )}
-          <div className="flex justify-end gap-2">
-            <button
-              className="rounded-md border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover disabled:opacity-50"
-              disabled={update.isPending}
-              onClick={close}
-              type="button"
-            >
-              {t("common.actions.cancel")}
-            </button>
-            <button
-              className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-surface hover:bg-accent-hover disabled:opacity-50"
-              disabled={update.isPending || !name.trim()}
-              type="submit"
-            >
-              {t(
-                update.isPending
-                  ? "common.actions.saving"
-                  : "common.actions.saveChanges",
-              )}
-            </button>
-          </div>
         </form>
       )}
+      {update.error && (
+        <p
+          className="rounded-md bg-danger-soft p-3 text-sm text-danger"
+          role="alert"
+        >
+          {update.error instanceof ApiError
+            ? update.error.message
+            : t("inventories.errors.update")}
+        </p>
+      )}
+      <div className="mt-5 flex justify-end gap-2 border-t border-shell pt-4">
+        <button
+          className="rounded-md border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover disabled:opacity-50"
+          disabled={update.isPending}
+          onClick={close}
+          type="button"
+        >
+          {t("common.actions.cancel")}
+        </button>
+        <button
+          className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-surface hover:bg-accent-hover disabled:opacity-50"
+          disabled={update.isPending || !name.trim()}
+          form={formId}
+          type="submit"
+        >
+          {t(
+            update.isPending
+              ? "common.actions.saving"
+              : "common.actions.saveChanges",
+          )}
+        </button>
+      </div>
     </Modal>
   );
 }

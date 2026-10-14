@@ -73,6 +73,65 @@ test("keeps metadata edits when switching between general settings and fields", 
   expect(updateInventory).not.toHaveBeenCalled();
 });
 
+// Test that the shared footer can dismiss field configuration without saving metadata.
+test("cancels from the fields section without saving metadata", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getInventoryFields).mockResolvedValue([]);
+  const close = renderEditor("fields");
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(close).toHaveBeenCalledOnce();
+  expect(updateInventory).not.toHaveBeenCalled();
+});
+
+// Test that the shared footer saves general edits even while fields are displayed.
+test("saves metadata changes from the fields section", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getInventoryFields).mockResolvedValue([]);
+  vi.mocked(updateInventory).mockResolvedValue({
+    ...inventory,
+    name: "Board games",
+  });
+  const close = renderEditor();
+  await user.clear(screen.getByLabelText("Name"));
+  await user.type(screen.getByLabelText("Name"), "Board games");
+  await user.click(screen.getByRole("button", { name: "Fields" }));
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(updateInventory).toHaveBeenCalledWith("games", {
+      name: "Board games",
+      description: null,
+    }),
+  );
+  await waitFor(() => expect(close).toHaveBeenCalledOnce());
+});
+
+// Test that failed saves remain visible outside the general settings form.
+test("shows save errors in the fields section", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getInventoryFields).mockResolvedValue([]);
+  vi.mocked(updateInventory).mockRejectedValue(new Error("Synthetic failure"));
+  const close = renderEditor("fields");
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  expect(await screen.findByRole("alert")).toBeInTheDocument();
+  expect(close).not.toHaveBeenCalled();
+});
+
+// Test that dismissal is blocked while metadata is being saved from the fields section.
+test("disables footer actions while saving from the fields section", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getInventoryFields).mockResolvedValue([]);
+  vi.mocked(updateInventory).mockImplementation(
+    () => new Promise<never>(() => {}),
+  );
+  const close = renderEditor("fields");
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+  await user.keyboard("{Escape}");
+  expect(close).not.toHaveBeenCalled();
+});
+
 // Test that canceling a child form leaves the inventory editor open.
 test("Escape closes the new field dialog without closing the editor", async () => {
   const user = userEvent.setup();
@@ -114,4 +173,5 @@ test("creates a field from the editor", async () => {
   await waitFor(() => expect(createInventoryField).toHaveBeenCalled());
   expect(await screen.findByText("Title")).toBeInTheDocument();
   expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  expect(updateInventory).not.toHaveBeenCalled();
 });
