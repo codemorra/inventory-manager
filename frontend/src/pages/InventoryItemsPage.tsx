@@ -28,7 +28,7 @@ export function InventoryItemsPage() {
 
   return (
     <div>
-      <div className="mx-auto max-w-7xl">
+      <div className="min-w-0 w-full">
         <header className="mb-5">
           <div>
             <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">

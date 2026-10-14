@@ -171,7 +171,7 @@ export function AppShell({ children }: AppShellProps) {
         </header>
 
         <main
-          className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8"
+          className="min-w-0 w-full px-4 py-6 sm:px-6 lg:py-8"
           id="page-content"
           tabIndex={-1}
         >
