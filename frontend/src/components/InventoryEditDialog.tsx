@@ -55,10 +55,14 @@ export function InventoryEditDialog({
   }
 
   return (
-    <Modal title={t("inventories.titles.edit")} onClose={close}>
+    <Modal
+      title={t("inventories.titles.edit")}
+      onClose={close}
+      contentClassName="flex min-h-0 flex-col"
+    >
       <nav
         aria-label={t("navigation.inventorySections")}
-        className="mb-5 flex gap-1 border-b border-shell"
+        className="mb-5 flex shrink-0 gap-1 border-b border-shell"
       >
         {(["general", "fields"] as const).map((entry) => (
           <button
@@ -83,7 +87,7 @@ export function InventoryEditDialog({
           <form id={formId} onSubmit={save} />
         </>
       ) : (
-        <form className="space-y-4" id={formId} onSubmit={save}>
+        <form className="shrink-0 space-y-4" id={formId} onSubmit={save}>
           <label className="block text-sm font-medium">
             {t("common.fields.name")}
             <input
@@ -109,7 +113,7 @@ export function InventoryEditDialog({
       )}
       {update.error && (
         <p
-          className="rounded-md bg-danger-soft p-3 text-sm text-danger"
+          className="shrink-0 rounded-md bg-danger-soft p-3 text-sm text-danger"
           role="alert"
         >
           {update.error instanceof ApiError
@@ -117,7 +121,7 @@ export function InventoryEditDialog({
             : t("inventories.errors.update")}
         </p>
       )}
-      <div className="mt-5 flex justify-end gap-2 border-t border-shell pt-4">
+      <div className="mt-5 flex shrink-0 flex-wrap justify-end gap-2 border-t border-shell pt-4">
         <button
           className="rounded-md border border-shell px-3 py-2 text-sm font-medium hover:bg-surface-hover disabled:opacity-50"
           disabled={update.isPending}

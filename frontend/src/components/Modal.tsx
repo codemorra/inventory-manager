@@ -8,6 +8,7 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   size?: "small" | "medium" | "large";
+  contentClassName?: string;
 }
 
 /**
@@ -16,6 +17,7 @@ interface ModalProps {
  * @param onClose The function to call when the modal should be closed.
  * @param title The title of the modal dialog.
  * @param size The content width appropriate for the form.
+ * @param contentClassName Optional layout classes for independently scrolling content.
  * @returns The modal overlay and dialog content.
  */
 export function Modal({
@@ -23,6 +25,7 @@ export function Modal({
   onClose,
   title,
   size = "large",
+  contentClassName = "",
 }: ModalProps) {
   const { t } = useTranslation();
   const titleId = useId();
@@ -66,10 +69,10 @@ export function Modal({
         ref={dialogRef}
         aria-labelledby={titleId}
         aria-modal="true"
-        className={`max-h-[90dvh] w-full overflow-y-auto rounded-2xl border border-shell bg-surface shadow-raised ${width}`}
+        className={`flex max-h-[90dvh] w-full flex-col overflow-y-auto rounded-2xl border border-shell bg-surface shadow-raised ${width}`}
         role="dialog"
       >
-        <div className="flex items-center justify-between gap-4 border-b border-shell bg-surface-muted px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-shell bg-surface-muted px-5 py-4">
           <h2
             className="text-lg font-semibold tracking-tight text-heading"
             id={titleId}
@@ -94,7 +97,7 @@ export function Modal({
             </svg>
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className={`p-5 ${contentClassName}`}>{children}</div>
       </section>
     </div>,
     document.body,
