@@ -1,10 +1,8 @@
 import { type SyntheticEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  useDeleteInventory,
-  useUpdateInventory,
-} from "../hooks/useInventories";
+import { useDeleteInventory } from "../hooks/useInventories";
+import { InventoryEditDialog } from "./InventoryEditDialog";
 import { useGroupMutations } from "../hooks/useInventoryGroups";
 import type { Inventory } from "../types/inventory";
 import type { InventoryGroup } from "../services/inventoryGroups";
@@ -45,22 +43,14 @@ export function SidebarContextActions({
   const location = useLocation();
   const [stage, setStage] = useState<"menu" | "edit" | "delete">("menu");
   const [name, setName] = useState(target.entry.name);
-  const [description, setDescription] = useState(
-    target.kind === "inventory" ? (target.entry.description ?? "") : "",
-  );
-  const updateInventory = useUpdateInventory();
   const deleteInventory = useDeleteInventory();
   const groups = useGroupMutations();
   const busy =
-    updateInventory.isPending ||
     deleteInventory.isPending ||
     groups.update.isPending ||
     groups.remove.isPending;
   const error =
-    updateInventory.error ??
-    deleteInventory.error ??
-    groups.update.error ??
-    groups.remove.error;
+    deleteInventory.error ?? groups.update.error ?? groups.remove.error;
   const group = target.kind === "group";
   const inputClass =
     "mt-1.5 w-full rounded-md border border-shell bg-surface px-3 py-2 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/20";
@@ -82,7 +72,7 @@ export function SidebarContextActions({
   }
 
   /**
-   * Persist the edited group name or inventory metadata.
+   * Persist the edited group name.
    * @param event The form submission event.
    */
   function save(event: SyntheticEvent<HTMLFormElement>) {
@@ -90,14 +80,6 @@ export function SidebarContextActions({
     if (group)
       groups.update.mutate(
         { id: target.entry.id, name: name.trim() },
-        { onSuccess: onClose },
-      );
-    else
-      updateInventory.mutate(
-        {
-          inventoryId: target.entry.id,
-          data: { name: name.trim(), description: description.trim() || null },
-        },
         { onSuccess: onClose },
       );
   }
@@ -136,6 +118,10 @@ export function SidebarContextActions({
       />
     );
 
+  if (stage === "edit" && target.kind === "inventory") {
+    return <InventoryEditDialog inventory={target.entry} onClose={close} />;
+  }
+
   return (
     <Modal
       size={group || stage === "delete" ? "small" : "medium"}
@@ -162,17 +148,6 @@ export function SidebarContextActions({
               onChange={(event) => setName(event.target.value)}
             />
           </label>
-          {!group && (
-            <label className="block text-sm font-medium">
-              {t("common.fields.description")}
-              <textarea
-                className={`${inputClass} min-h-24 resize-y`}
-                disabled={busy}
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-              />
-            </label>
-          )}
           {error && (
             <p
               className="rounded-md bg-danger-soft p-3 text-sm text-danger"

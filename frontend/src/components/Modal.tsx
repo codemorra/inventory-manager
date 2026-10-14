@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useId } from "react";
+import { type ReactNode, useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
@@ -26,6 +26,7 @@ export function Modal({
 }: ModalProps) {
   const { t } = useTranslation();
   const titleId = useId();
+  const dialogRef = useRef<HTMLElement>(null);
   const width = { small: "max-w-md", medium: "max-w-xl", large: "max-w-3xl" }[
     size
   ];
@@ -35,7 +36,14 @@ export function Modal({
      * @param event The keyboard event to handle.
      */
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      // A child field dialog must close before its parent inventory editor.
+      const dialogs = document.querySelectorAll(
+        '[role="dialog"][aria-modal="true"]',
+      );
+      if (
+        event.key === "Escape" &&
+        dialogs[dialogs.length - 1] === dialogRef.current
+      ) {
         onClose();
       }
     }
@@ -55,6 +63,7 @@ export function Modal({
       }}
     >
       <section
+        ref={dialogRef}
         aria-labelledby={titleId}
         aria-modal="true"
         className={`max-h-[90dvh] w-full overflow-y-auto rounded-2xl border border-shell bg-surface shadow-raised ${width}`}

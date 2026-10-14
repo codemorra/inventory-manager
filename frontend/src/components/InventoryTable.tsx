@@ -1,14 +1,11 @@
-import { type SyntheticEvent, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import {
-  useDeleteInventory,
-  useUpdateInventory,
-} from "../hooks/useInventories";
+import { useDeleteInventory } from "../hooks/useInventories";
 import { ApiError } from "../services/api";
 import type { Inventory } from "../types/inventory";
-import { Modal } from "./Modal";
+import { InventoryEditDialog } from "./InventoryEditDialog";
 
 // Define properties for the inventory table.
 interface InventoryTableProps {
@@ -24,11 +21,8 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
   const [editingInventoryId, setEditingInventoryId] = useState<string | null>(
     null,
   );
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const updateInventory = useUpdateInventory();
   const deleteInventory = useDeleteInventory();
-  const isMutating = updateInventory.isPending || deleteInventory.isPending;
+  const isMutating = deleteInventory.isPending;
   const editingInventory = inventories.find(
     (inventory) => inventory.id === editingInventoryId,
   );
@@ -39,38 +33,11 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
    */
   function startEditing(inventory: Inventory) {
     setEditingInventoryId(inventory.id);
-    setName(inventory.name);
-    setDescription(inventory.description ?? "");
   }
 
   // Cancel editing the current inventory.
   function cancelEditing() {
     setEditingInventoryId(null);
-    setName("");
-    setDescription("");
-  }
-
-  /**
-   * Handle the submission of the edit form for the current inventory.
-   * @param event The form submission event.
-   */
-  function handleUpdate(event: SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!editingInventory) {
-      return;
-    }
-
-    updateInventory.mutate(
-      {
-        inventoryId: editingInventory.id,
-        data: {
-          name: name.trim(),
-          description: description.trim() || null,
-        },
-      },
-      { onSuccess: cancelEditing },
-    );
   }
 
   /**
@@ -133,12 +100,6 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
                       >
                         {t("inventories.actions.items")}
                       </Link>
-                      <Link
-                        className="rounded-lg border border-shell px-3 py-2 font-medium transition hover:bg-surface-hover"
-                        to={`/inventories/${inventory.id}/fields`}
-                      >
-                        {t("inventories.actions.fields")}
-                      </Link>
                       <button
                         className="rounded-lg border border-shell px-3 py-2 font-medium transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isMutating}
@@ -178,74 +139,11 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
       </div>
 
       {editingInventory && (
-        <Modal
-          onClose={() => {
-            if (!isMutating) cancelEditing();
-          }}
-          title={t("inventories.titles.edit")}
-          size="medium"
-        >
-          <form className="space-y-4" onSubmit={handleUpdate}>
-            <label
-              className="block text-sm font-medium text-foreground"
-              htmlFor={`inventory-${editingInventory.id}-name`}
-            >
-              {t("common.fields.name")}
-              <input
-                autoFocus
-                className="mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
-                id={`inventory-${editingInventory.id}-name`}
-                maxLength={255}
-                onChange={(event) => setName(event.target.value)}
-                required
-                value={name}
-              />
-            </label>
-            <label
-              className="block text-sm font-medium text-foreground"
-              htmlFor={`inventory-${editingInventory.id}-description`}
-            >
-              {t("common.fields.description")}
-              <textarea
-                className="mt-1.5 min-h-28 w-full resize-y rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
-                id={`inventory-${editingInventory.id}-description`}
-                onChange={(event) => setDescription(event.target.value)}
-                value={description}
-              />
-            </label>
-
-            {updateInventory.error && (
-              <p
-                className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
-                role="alert"
-              >
-                {updateInventory.error instanceof ApiError
-                  ? updateInventory.error.message
-                  : t("inventories.errors.update")}
-              </p>
-            )}
-
-            <div className="flex flex-wrap justify-end gap-3 pt-1">
-              <button
-                className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isMutating || !name.trim()}
-                type="submit"
-              >
-                {updateInventory.isPending
-                  ? t("common.actions.saving")
-                  : t("common.actions.saveChanges")}
-              </button>
-              <button
-                className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isMutating}
-                onClick={cancelEditing}
-                type="button"
-              >
-                {t("common.actions.cancel")}
-              </button>
-            </div>
-          </form>
-        </Modal>
+        <InventoryEditDialog
+          key={editingInventory.id}
+          inventory={editingInventory}
+          onClose={cancelEditing}
+        />
       )}
     </>
   );
