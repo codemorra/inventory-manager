@@ -74,6 +74,228 @@ function snapshot(connection: DatabaseConnection) {
   );
 }
 
+// Test one atomic order containing saved and new fields without rewriting existing entries.
+test("saves field order and settings with new draft fields and preserves old items", async (context) => {
+  const f = fixture(context);
+  const response = await f.api
+    .patch(`/inventories/${f.inventory.id}/configuration`)
+    .send({
+      inventory: { name: "Cable collection" },
+      fields: [
+        {
+          action: "update",
+          field_id: f.title.id,
+          data: { is_required: true, is_sortable: false },
+        },
+        {
+          action: "create",
+          client_id: "draft-link",
+          data: {
+            name: "Manual",
+            field_type: "url",
+            is_required: true,
+            is_sortable: false,
+          },
+        },
+        {
+          action: "create",
+          client_id: "draft-duration",
+          data: { name: "Usage", field_type: "duration" },
+        },
+      ],
+      field_order: [
+        { client_id: "draft-duration" },
+        { field_id: f.type.id },
+        { client_id: "draft-link" },
+        { field_id: f.title.id },
+      ],
+    })
+    .expect(200);
+  assert.deepEqual(
+    response.body.fields.map((field: { name: string; position: number }) => [
+      field.name,
+      field.position,
+    ]),
+    [
+      ["Usage", 0],
+      ["Type", 1],
+      ["Manual", 2],
+      ["Title", 3],
+    ],
+  );
+  assert.equal(response.body.fields[2].is_required, true);
+  assert.equal(response.body.fields[2].is_sortable, false);
+  assert.equal(response.body.fields[3].is_required, true);
+  assert.equal(response.body.fields[3].is_sortable, false);
+  assert.notEqual(response.body.fields[2].id, "draft-link");
+  assert.deepEqual(f.services.items.read(f.inventory.id, f.item.id), f.item);
+  assert.equal(response.body.inventory.group_id, f.group.id);
+  assert.deepEqual(
+    f.services.fields.list(f.inventory.id).map((field) => field.id),
+    response.body.fields.map((field: { id: string }) => field.id),
+  );
+});
+
+// Test normalized positions, unchanged no-op timestamps, and deleting the last active fields.
+test("reorders surviving fields and preserves no-op order saves", async (context) => {
+  const f = fixture(context);
+  await f.api
+    .patch(`/inventories/${f.inventory.id}/configuration`)
+    .send({
+      fields: [{ action: "delete", field_id: f.title.id }],
+      field_order: [{ field_id: f.type.id }],
+    })
+    .expect(200);
+  assert.equal(f.services.fields.get(f.inventory.id, f.type.id).position, 0);
+  const before = snapshot(f);
+  await f.api
+    .patch(`/inventories/${f.inventory.id}/configuration`)
+    .send({
+      field_order: [{ field_id: f.type.id }],
+    })
+    .expect(200);
+  assert.deepEqual(snapshot(f), before);
+  await f.api
+    .patch(`/inventories/${f.inventory.id}/configuration`)
+    .send({
+      fields: [{ action: "delete", field_id: f.type.id }],
+      field_order: [],
+    })
+    .expect(200);
+  assert.deepEqual(f.services.fields.list(f.inventory.id), []);
+});
+
+// Test strict references, final-set completeness, and rollback of metadata, flags, fields, and options.
+test("rejects invalid field orders without persisting any draft changes", async (context) => {
+  const f = fixture(context);
+  const other = f.services.inventories.create({ name: "Other" });
+  const foreign = f.services.fields.create(other.id, {
+    name: "Foreign",
+    field_type: "number",
+  });
+  const before = snapshot(f);
+  const orders = [
+    [],
+    [{ field_id: f.title.id }],
+    [
+      { field_id: f.title.id },
+      { field_id: f.title.id },
+      { client_id: "draft" },
+    ],
+    [
+      { field_id: f.title.id },
+      { field_id: foreign.id },
+      { client_id: "draft" },
+    ],
+    [{ field_id: f.title.id }, { field_id: "missing" }, { client_id: "draft" }],
+    [
+      { field_id: f.title.id },
+      { field_id: f.type.id },
+      { client_id: "missing" },
+    ],
+    [{ field_id: f.title.id }, { field_id: f.type.id }, { field_id: "draft" }],
+    [
+      { field_id: f.title.id, client_id: "draft" },
+      { field_id: f.type.id },
+      { client_id: "draft" },
+    ],
+    [f.title.id, f.type.id, "draft"],
+  ];
+  for (const field_order of orders) {
+    await f.api
+      .patch(`/inventories/${f.inventory.id}/configuration`)
+      .send({
+        inventory: { name: "Changed" },
+        fields: [
+          {
+            action: "update",
+            field_id: f.title.id,
+            data: { is_required: true, is_sortable: false },
+          },
+          {
+            action: "create",
+            client_id: "draft",
+            data: { name: "New", field_type: "number" },
+          },
+        ],
+        options: [
+          {
+            action: "update",
+            field_id: f.type.id,
+            option_id: f.usb.id,
+            data: { name: "Changed" },
+          },
+        ],
+        field_order,
+      })
+      .expect(422);
+    assert.deepEqual(snapshot(f), before);
+  }
+  const invalidDrafts = [
+    {
+      fields: [{ action: "delete", field_id: f.title.id }],
+      field_order: [{ field_id: f.title.id }, { field_id: f.type.id }],
+    },
+    {
+      fields: [
+        { action: "update", field_id: f.title.id, data: { position: 1 } },
+      ],
+      field_order: [{ field_id: f.type.id }, { field_id: f.title.id }],
+    },
+    {
+      fields: [
+        {
+          action: "create",
+          client_id: "same",
+          data: { name: "One", field_type: "number" },
+        },
+        {
+          action: "create",
+          client_id: "same",
+          data: { name: "Two", field_type: "number" },
+        },
+      ],
+    },
+    {
+      fields: [
+        {
+          action: "create",
+          data: { name: "Unreferenced", field_type: "number" },
+        },
+      ],
+      field_order: [{ field_id: f.title.id }, { field_id: f.type.id }],
+    },
+  ];
+  for (const draft of invalidDrafts) {
+    await f.api
+      .patch(`/inventories/${f.inventory.id}/configuration`)
+      .send(draft)
+      .expect(422);
+    assert.deepEqual(snapshot(f), before);
+  }
+});
+
+// Test that a database failure during reordering rolls back earlier field and metadata changes.
+test("rolls back the entire draft when writing a field position fails", async (context) => {
+  const f = fixture(context);
+  const before = snapshot(f);
+  f.sqlite
+    .exec(`CREATE TRIGGER reject_reorder BEFORE UPDATE OF position ON inventory_fields
+    WHEN NEW.position = 1 BEGIN SELECT RAISE(ABORT, 'Position write failed'); END`);
+  await f.api
+    .patch(`/inventories/${f.inventory.id}/configuration`)
+    .send({
+      inventory: { name: "Changed" },
+      fields: [
+        { action: "update", field_id: f.title.id, data: { is_required: true } },
+      ],
+      field_order: [{ field_id: f.type.id }, { field_id: f.title.id }],
+    })
+    .expect(500);
+  assert.deepEqual(snapshot(f), before);
+  assert.equal(f.errors.length, 1);
+});
+
 // Test a mixed save, stable identifiers, public DTOs, and preservation of unrelated data.
 test("saves metadata, new fields, renames, deletions, and options together", async (context) => {
   const f = fixture(context);

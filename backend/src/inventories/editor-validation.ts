@@ -10,7 +10,11 @@ const identifier = z.string().min(1);
 
 // New fields include their initial options; existing fields retain their type and text limit.
 const fieldChangeSchema = z.discriminatedUnion("action", [
-  z.strictObject({ action: z.literal("create"), data: fieldCreateSchema }),
+  z.strictObject({
+    action: z.literal("create"),
+    client_id: identifier.optional(),
+    data: fieldCreateSchema,
+  }),
   z.strictObject({
     action: z.literal("update"),
     field_id: identifier,
@@ -48,12 +52,46 @@ export const inventoryEditorSchema = z
       .default({}),
     fields: z.array(fieldChangeSchema).max(1000).default([]),
     options: z.array(optionChangeSchema).max(1000).default([]),
+    // Explicit references distinguish saved IDs from temporary draft identifiers.
+    field_order: z
+      .array(
+        z.union([
+          z.strictObject({ field_id: identifier }),
+          z.strictObject({ client_id: identifier }),
+        ]),
+      )
+      .max(1000)
+      .optional(),
   })
   .superRefine((data, context) => {
     const fields = new Set<string>();
     const deletedFields = new Set<string>();
+    const clientIds = new Set<string>();
     for (const [index, change] of data.fields.entries()) {
-      if (change.action === "create") continue;
+      if (change.action === "create") {
+        if (change.client_id !== undefined) {
+          if (clientIds.has(change.client_id))
+            context.addIssue({
+              code: "custom",
+              path: ["fields", index, "client_id"],
+              message: "A draft field identifier must be unique.",
+            });
+          clientIds.add(change.client_id);
+        }
+        continue;
+      }
+      if (
+        data.field_order !== undefined &&
+        change.action === "update" &&
+        change.data.position !== undefined
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["fields", index, "data", "position"],
+          message:
+            "Use field_order instead of individual positions when reordering a draft.",
+        });
+      }
       if (fields.has(change.field_id)) {
         context.addIssue({
           code: "custom",
