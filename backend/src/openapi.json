@@ -1239,6 +1239,16 @@
             "type": "array",
             "maxItems": 100,
             "title": "Options"
+          },
+          "is_required": {
+            "type": "boolean",
+            "description": "Require a value on item creation or replacement. Existing items remain readable until their next save; false and zero are valid values.",
+            "default": false
+          },
+          "is_sortable": {
+            "type": "boolean",
+            "description": "Whether the UI permits sorting the item table by this field.",
+            "default": true
           }
         },
         "type": "object",
@@ -1369,6 +1379,14 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "is_required": {
+            "type": "boolean",
+            "description": "Require a value on item creation or replacement. Existing items remain readable until their next save; false and zero are valid values."
+          },
+          "is_sortable": {
+            "type": "boolean",
+            "description": "Whether the UI permits sorting the item table by this field."
           }
         },
         "type": "object",
@@ -1380,7 +1398,9 @@
           "max_length",
           "position",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "is_required",
+          "is_sortable"
         ],
         "title": "InventoryFieldRead",
         "description": "Represent an active configured inventory field in API responses."
@@ -1396,10 +1416,11 @@
           "datetime",
           "duration",
           "select",
-          "multiselect"
+          "multiselect",
+          "url"
         ],
         "title": "InventoryFieldType",
-        "description": "Represent the field types supported by the MVP."
+        "description": "Supported inventory field types; URL values use an address with optional display text."
       },
       "InventoryFieldUpdate": {
         "properties": {
@@ -1427,6 +1448,14 @@
               }
             ],
             "title": "Position"
+          },
+          "is_required": {
+            "type": "boolean",
+            "description": "Require a value on item creation or replacement. Existing items remain readable until their next save; false and zero are valid values."
+          },
+          "is_sortable": {
+            "type": "boolean",
+            "description": "Whether the UI permits sorting the item table by this field."
           }
         },
         "type": "object",
@@ -1501,7 +1530,17 @@
             "title": "Field Id"
           },
           "value": {
-            "title": "Value"
+            "title": "Value",
+            "description": "Value matching the field type. URL fields use InventoryUrlValue. Duration uses non-negative integer seconds up to 9007199254740991. Required fields must be supplied when creating or replacing an item.",
+            "examples": [
+              {
+                "url": "https://example.com",
+                "label": "Documentation"
+              },
+              450000,
+              false,
+              0
+            ]
           }
         },
         "type": "object",
@@ -1793,6 +1832,14 @@
                             }
                           ],
                           "title": "Position"
+                        },
+                        "is_required": {
+                          "type": "boolean",
+                          "description": "Require a value on item creation or replacement. Existing items remain readable until their next save; false and zero are valid values."
+                        },
+                        "is_sortable": {
+                          "type": "boolean",
+                          "description": "Whether the UI permits sorting the item table by this field."
                         }
                       },
                       "type": "object",
@@ -1936,6 +1983,24 @@
           }
         },
         "required": ["inventory", "fields"]
+      },
+      "InventoryUrlValue": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?://[^\\s]+$",
+            "description": "An explicit HTTP or HTTPS address with a host; spaces and control characters are not accepted."
+          },
+          "label": {
+            "type": "string",
+            "description": "Optional display text. The URL is displayed when the text is absent or empty."
+          }
+        },
+        "required": ["url"],
+        "description": "Value stored by a URL field. No network request is made to validate or fetch this address."
       }
     }
   }

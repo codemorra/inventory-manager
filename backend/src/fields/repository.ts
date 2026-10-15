@@ -40,7 +40,12 @@ export function createFieldRepository(db: AppDatabase) {
     update: (
       inventoryId: string,
       fieldId: string,
-      changes: { name?: string; position?: number },
+      changes: {
+        name?: string;
+        position?: number;
+        isRequired?: boolean;
+        isSortable?: boolean;
+      },
     ) =>
       db
         .update(inventoryFields)

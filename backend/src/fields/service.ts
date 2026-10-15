@@ -79,6 +79,8 @@ export function createFieldService(
           name: data.name,
           fieldType: data.field_type,
           maxLength: data.max_length,
+          isRequired: data.is_required,
+          isSortable: data.is_sortable,
           position: fields.count(inventoryId),
         });
         createOptionRepository(transaction).createInitial(
@@ -94,11 +96,26 @@ export function createFieldService(
     update(inventoryId: string, fieldId: string, input: unknown) {
       const data = fieldUpdateSchema.parse(input);
       const field = get(inventoryId, fieldId);
-      const changes: { name?: string; position?: number } = {};
+      const changes: {
+        name?: string;
+        position?: number;
+        isRequired?: boolean;
+        isSortable?: boolean;
+      } = {};
       if (data.name != null && data.name !== field.name)
         changes.name = data.name;
       if (data.position != null && data.position !== field.position)
         changes.position = data.position;
+      if (
+        data.is_required !== undefined &&
+        data.is_required !== field.isRequired
+      )
+        changes.isRequired = data.is_required;
+      if (
+        data.is_sortable !== undefined &&
+        data.is_sortable !== field.isSortable
+      )
+        changes.isSortable = data.is_sortable;
       const updated = Object.keys(changes).length
         ? repository.update(inventoryId, fieldId, changes)
         : field;

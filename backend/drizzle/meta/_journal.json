@@ -15,6 +15,13 @@
       "when": 1791971687274,
       "tag": "0001_inventory_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792062185845,
+      "tag": "0002_field_configuration",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { inventoryFields, inventoryFieldOptions } from "../db/schema.js";
 import { DomainError } from "../errors.js";
+import { urlValueSchema } from "./url.js";
 import {
   InvalidTemporalValueError,
   validateTemporalValue,
@@ -58,6 +59,21 @@ export function validateValues(
       invalidValue();
     seen.add(input.field_id);
   }
+  // Validate required fields are present
+  const submitted = new Map(
+    values.map((input) => [input.field_id, input.value]),
+  );
+  for (const field of fields) {
+    if (!field.isRequired) continue;
+    const value = submitted.get(field.id);
+    if (
+      value === undefined ||
+      value === null ||
+      (typeof value === "string" && !value.trim()) ||
+      (Array.isArray(value) && value.length === 0)
+    )
+      invalidValue();
+  }
   for (const { field_id, value } of values) {
     const field = definitions.get(field_id)!;
     switch (field.fieldType) {
@@ -79,10 +95,13 @@ export function validateValues(
         if (
           typeof value !== "number" ||
           !Number.isFinite(value) ||
-          !Number.isInteger(value) ||
+          !Number.isSafeInteger(value) ||
           value < 0
         )
           invalidValue();
+        break;
+      case "url":
+        if (!urlValueSchema.safeParse(value).success) invalidValue();
         break;
       case "date":
       case "time":
