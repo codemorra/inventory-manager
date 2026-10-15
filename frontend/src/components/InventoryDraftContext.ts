@@ -19,6 +19,7 @@ export interface InventoryDraftActions {
       name: string;
       is_required: boolean;
       is_sortable: boolean;
+      reuse_deleted_ids?: boolean;
       options?: InventoryFieldOption[];
     },
   ) => void;

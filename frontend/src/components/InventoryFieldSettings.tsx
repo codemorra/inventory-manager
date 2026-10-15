@@ -6,6 +6,7 @@ interface InventoryFieldSettingsProps {
   required: boolean;
   sortable: boolean;
   disabled?: boolean;
+  automatic?: boolean;
   children?: ReactNode;
   onRequiredChange: (value: boolean) => void;
   onSortableChange: (value: boolean) => void;
@@ -16,6 +17,7 @@ interface InventoryFieldSettingsProps {
  * @param required Whether item values must be provided for this field.
  * @param sortable Whether the item table can be sorted by this field.
  * @param disabled Whether the controls are disabled during saving.
+ * @param automatic Whether values are generated rather than required from the user.
  * @param children Type-specific configuration shown above the shared settings.
  * @param onRequiredChange Update the local requirement setting.
  * @param onSortableChange Update the local sorting setting.
@@ -25,6 +27,7 @@ export function InventoryFieldSettings({
   required,
   sortable,
   disabled = false,
+  automatic = false,
   children,
   onRequiredChange,
   onSortableChange,
@@ -45,21 +48,23 @@ export function InventoryFieldSettings({
         {typeSettings.length > 0 && (
           <div className="border-b border-shell pb-3">{typeSettings}</div>
         )}
-        <div>
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input
-              className="size-4 accent-accent"
-              type="checkbox"
-              checked={required}
-              aria-describedby={`${id}-required`}
-              onChange={(event) => onRequiredChange(event.target.checked)}
-            />
-            {t("fields.settings.required")}
-          </label>
-          <p className="mt-1 text-xs text-muted" id={`${id}-required`}>
-            {t("fields.settings.requiredHelp")}
-          </p>
-        </div>
+        {!automatic && (
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                className="size-4 accent-accent"
+                type="checkbox"
+                checked={required}
+                aria-describedby={`${id}-required`}
+                onChange={(event) => onRequiredChange(event.target.checked)}
+              />
+              {t("fields.settings.required")}
+            </label>
+            <p className="mt-1 text-xs text-muted" id={`${id}-required`}>
+              {t("fields.settings.requiredHelp")}
+            </p>
+          </div>
+        )}
         <div>
           <label className="flex items-center gap-2 text-sm font-medium">
             <input

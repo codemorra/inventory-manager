@@ -132,6 +132,34 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// Test table display and read-only editing retain the server-owned ID outside replacement payloads.
+test("shows automatic numbers and never submits them while editing an item", async () => {
+  const user = userEvent.setup();
+  const automatic = {
+    ...fields[0],
+    name: "Reference",
+    field_type: "id" as const,
+  };
+  const item = { ...items[0], values: [{ ...items[0].values[0], value: 42 }] };
+  mockedUpdateInventoryItem.mockResolvedValue(item);
+  renderInventoryItemList([item], [automatic]);
+  expect(screen.getByRole("cell", { name: "42" })).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  const input = screen.getByLabelText("Reference");
+  expect(input).toHaveValue("42");
+  expect(input).toHaveAttribute("readonly");
+  await user.type(input, "99");
+  expect(input).toHaveValue("42");
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
+      "inventory-1",
+      "item-1",
+      { values: [] },
+    ),
+  );
+});
+
 // Test readable table durations and complete replacement after changing elapsed hours.
 test("formats durations and edits their stored seconds without wrapping hours", async () => {
   const user = userEvent.setup();

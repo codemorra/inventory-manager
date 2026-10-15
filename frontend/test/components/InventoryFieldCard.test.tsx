@@ -5,6 +5,37 @@ import { InventoryFieldCard } from "../../src/components/InventoryFieldCard";
 import { renderDraftControl, field } from "../helpers/inventoryDraft";
 afterEach(cleanup);
 
+// Test the reuse preference is editable without changing the sequence or immutable field type.
+test("adopts ID reuse changes only when the field edit is saved", async () => {
+  const user = userEvent.setup();
+  const automatic = {
+    ...field,
+    field_type: "id" as const,
+    max_length: null,
+    reuse_deleted_ids: false,
+  };
+  const { actions } = renderDraftControl(
+    <InventoryFieldCard inventoryField={automatic} />,
+  );
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  expect(screen.queryByLabelText("Required field")).not.toBeInTheDocument();
+  await user.click(screen.getByLabelText("Reuse numbers from deleted items"));
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(actions.updateField).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  expect(
+    screen.getByLabelText("Reuse numbers from deleted items"),
+  ).not.toBeChecked();
+  await user.click(screen.getByLabelText("Reuse numbers from deleted items"));
+  await user.click(screen.getByRole("button", { name: "Save" }));
+  expect(actions.updateField).toHaveBeenCalledWith(field.id, {
+    name: field.name,
+    is_required: false,
+    is_sortable: true,
+    reuse_deleted_ids: true,
+  });
+});
+
 // Test that renaming retains the saved identifier and immutable field definition.
 test("renames a field only in the draft", async () => {
   const user = userEvent.setup();

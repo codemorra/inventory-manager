@@ -9,6 +9,40 @@ import { field, option } from "../helpers/inventoryDraft";
 
 const inventory = { name: "Cables", description: null };
 
+// Test local automatic field configuration survives creation, editing, and undo without counter data.
+test("serializes automatic numbering preferences without client-owned assignments", () => {
+  const automatic = createDraftField(field.inventory_id, {
+    name: "Reference",
+    field_type: "id",
+  });
+  expect(automatic.reuse_deleted_ids).toBe(false);
+  expect(buildInventoryEditorInput([], [automatic], inventory).fields).toEqual([
+    {
+      action: "create",
+      data: {
+        name: "Reference",
+        field_type: "id",
+        is_required: false,
+        is_sortable: true,
+        reuse_deleted_ids: false,
+      },
+    },
+  ]);
+  const updated = { ...automatic, reuse_deleted_ids: true };
+  expect(
+    buildInventoryEditorInput([automatic], [updated], inventory).fields,
+  ).toEqual([
+    {
+      action: "update",
+      field_id: automatic.id,
+      data: { reuse_deleted_ids: true },
+    },
+  ]);
+  expect(
+    buildInventoryEditorInput([automatic], [automatic], inventory).fields,
+  ).toEqual([]);
+});
+
 // Test insertion relative to targets in either direction without mutating saved definitions.
 test.each([
   ["a", "c", "after", ["b", "c", "a"]],

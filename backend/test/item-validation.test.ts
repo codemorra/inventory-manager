@@ -26,6 +26,8 @@ const field: typeof inventoryFields.$inferSelect = {
   maxLength: 3,
   isRequired: false,
   isSortable: true,
+  reuseDeletedIds: false,
+  lastAssignedId: 0,
   position: 0,
 };
 const option: typeof inventoryFieldOptions.$inferSelect = {

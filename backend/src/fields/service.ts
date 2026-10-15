@@ -1,10 +1,13 @@
 import type { AppDatabase } from "../db/types.js";
 import type { inventoryFieldOptions, inventoryFields } from "../db/schema.js";
+import { inventoryItemValues } from "../db/schema.js";
+import { and, eq, isNull } from "drizzle-orm";
 import { DomainError } from "../errors.js";
 import type { InventoryService } from "../inventories/service.js";
 import { createOptionRepository } from "../options/repository.js";
 import { createFieldRepository } from "./repository.js";
 import { fieldCreateSchema, fieldUpdateSchema } from "./validation.js";
+import { backfillAutomaticIds } from "../items/automatic-ids.js";
 
 type Field = typeof inventoryFields.$inferSelect;
 type Option = typeof inventoryFieldOptions.$inferSelect;
@@ -81,12 +84,15 @@ export function createFieldService(
           maxLength: data.max_length,
           isRequired: data.is_required,
           isSortable: data.is_sortable,
+          reuseDeletedIds: data.reuse_deleted_ids,
           position: fields.count(inventoryId),
         });
         createOptionRepository(transaction).createInitial(
           field.id,
           data.options,
         );
+        if (field.fieldType === "id")
+          backfillAutomaticIds(transaction, inventoryId, field.id);
         return {
           ...field,
           options: createOptionRepository(transaction).list(field.id),
@@ -96,11 +102,17 @@ export function createFieldService(
     update(inventoryId: string, fieldId: string, input: unknown) {
       const data = fieldUpdateSchema.parse(input);
       const field = get(inventoryId, fieldId);
+      if (data.reuse_deleted_ids !== undefined && field.fieldType !== "id")
+        throw new DomainError(
+          "invalid_inventory_field_configuration",
+          "Only ID fields can configure number reuse.",
+        );
       const changes: {
         name?: string;
         position?: number;
         isRequired?: boolean;
         isSortable?: boolean;
+        reuseDeletedIds?: boolean;
       } = {};
       if (data.name != null && data.name !== field.name)
         changes.name = data.name;
@@ -116,14 +128,34 @@ export function createFieldService(
         data.is_sortable !== field.isSortable
       )
         changes.isSortable = data.is_sortable;
+      if (
+        data.reuse_deleted_ids !== undefined &&
+        data.reuse_deleted_ids !== field.reuseDeletedIds
+      )
+        changes.reuseDeletedIds = data.reuse_deleted_ids;
       const updated = Object.keys(changes).length
         ? repository.update(inventoryId, fieldId, changes)
         : field;
       return { ...updated, options: options.list(fieldId) };
     },
     delete(inventoryId: string, fieldId: string) {
-      get(inventoryId, fieldId);
-      repository.tombstone(inventoryId, fieldId);
+      const field = get(inventoryId, fieldId);
+      db.transaction((transaction) => {
+        createFieldRepository(transaction).tombstone(inventoryId, fieldId);
+        if (field.fieldType === "id") {
+          // Remove automatic number content along with the field, retaining deletion indicators.
+          transaction
+            .update(inventoryItemValues)
+            .set({ value: null, deletedAt: new Date().toISOString() })
+            .where(
+              and(
+                eq(inventoryItemValues.fieldId, fieldId),
+                isNull(inventoryItemValues.deletedAt),
+              ),
+            )
+            .run();
+        }
+      });
     },
   };
 }

@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { afterEach } from "node:test";
 import { openDatabase, type DatabaseConnection } from "../src/db/connection.js";
+import { createServices } from "../src/services.js";
 import {
   inventories,
   inventoryFields,
@@ -118,9 +119,17 @@ test("adds field settings with compatible defaults without rewriting legacy rows
       upgraded.sqlite.prepare("SELECT * FROM " + table + " ORDER BY id").all(),
     );
     after[1] = (after[1] as Record<string, unknown>[]).map((row) => {
-      const { is_required, is_sortable, ...existing } = row;
+      const {
+        is_required,
+        is_sortable,
+        reuse_deleted_ids,
+        last_assigned_id,
+        ...existing
+      } = row;
       assert.equal(is_required, 0);
       assert.equal(is_sortable, 1);
+      assert.equal(reuse_deleted_ids, 0);
+      assert.equal(last_assigned_id, 0);
       return existing;
     });
     assert.deepEqual(after, before);
@@ -172,7 +181,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     assert.deepEqual(db.select().from(table).all(), []);
   assert.deepEqual(
     sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get(),
-    { count: 3 },
+    { count: 4 },
   );
 
   const inventory = db
@@ -233,8 +242,30 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     reopened.sqlite
       .prepare("SELECT count(*) AS count FROM __drizzle_migrations")
       .get(),
-    { count: 3 },
+    { count: 4 },
   );
+});
+
+// Test the high-water mark survives restarts even when every assigned item was deleted.
+test("persists automatic numbering across database reopen and migration retries", () => {
+  const { connection, path } = openTemporaryDatabase();
+  const services = createServices(connection.db);
+  const inventory = services.inventories.create({ name: "Number persistence" });
+  const field = services.fields.create(inventory.id, {
+    name: "Number",
+    field_type: "id",
+  });
+  const first = services.items.create(inventory.id, {});
+  services.items.delete(inventory.id, first.id);
+  connection.close();
+  const reopened = openDatabase(path);
+  connections.push(reopened);
+  const nextServices = createServices(reopened.db);
+  assert.equal(
+    nextServices.fields.get(inventory.id, field.id).reuseDeletedIds,
+    false,
+  );
+  assert.equal(nextServices.items.create(inventory.id, {}).values[0]?.value, 2);
 });
 
 // Test that foreign key constraints are enforced without cascades and that a failed transaction is rolled back.

@@ -21,6 +21,8 @@ export function errorHandler(
     if (error instanceof DomainError) {
       const status =
         error.code === "inventory_field_options_not_supported" ||
+        error.code === "automatic_id_exhausted" ||
+        error.code === "invalid_inventory_field_configuration" ||
         error.code === "invalid_inventory_item_value"
           ? 422
           : 404;

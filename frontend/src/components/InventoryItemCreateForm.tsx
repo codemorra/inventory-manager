@@ -47,6 +47,19 @@ export function InventoryItemFieldInput({
 }: InventoryItemFieldInputProps) {
   const { t } = useTranslation();
   const inputId = `${idPrefix}-${field.id}`;
+  if (field.field_type === "id")
+    return (
+      <label className="block text-sm font-medium" htmlFor={inputId}>
+        {field.name}
+        <input
+          id={inputId}
+          className="mt-1.5 w-full rounded-lg border border-shell bg-surface-muted px-3 py-2.5 text-muted"
+          readOnly
+          value={typeof value === "string" ? value : ""}
+          placeholder={t("items.automaticId")}
+        />
+      </label>
+    );
   const fieldLabel = (
     <>
       {field.name}

@@ -151,7 +151,8 @@
       "number": "Zahl",
       "select": "Einfachauswahl",
       "text": "Text",
-      "time": "Uhrzeit"
+      "time": "Uhrzeit",
+      "id": "Laufende Nummer"
     },
     "typeHelp": {
       "text": "Text mit einstellbarer Zeichenbegrenzung, zum Beispiel ein Titel oder Notizen.",
@@ -162,7 +163,8 @@
       "datetime": "Ein Kalenderdatum mit Uhrzeit, zum Beispiel ein Termin.",
       "duration": "Eine verstrichene Zeitspanne, zum Beispiel die Nutzungszeit.",
       "select": "Für jeden Eintrag kann eine Option ausgewählt werden.",
-      "multiselect": "Für jeden Eintrag können mehrere Optionen ausgewählt werden."
+      "multiselect": "Für jeden Eintrag können mehrere Optionen ausgewählt werden.",
+      "id": "Eine automatisch vergebene, unveränderliche Nummer für jeden Eintrag."
     },
     "settings": {
       "title": "Feldeinstellungen",
@@ -170,7 +172,10 @@
       "requiredHelp": "Erforderlich bei neuen Einträgen und beim Speichern bestehender Einträge. Bisherige Einträge bleiben bis zur Bearbeitung unverändert.",
       "sortable": "Spaltensortierung erlauben",
       "sortableHelp": "Erlaubt das Sortieren der Eintragstabelle nach den Werten dieses Feldes.",
-      "notSortable": "Sortierung deaktiviert"
+      "notSortable": "Sortierung deaktiviert",
+      "automaticIdHelp": "Die Nummerierung beginnt bei 1. Bestehende Einträge erhalten beim Speichern ebenfalls eine Nummer.",
+      "reuseDeletedIds": "Nummern gelöschter Einträge wiederverwenden",
+      "reuseDeletedIdsHelp": "Vergibt die kleinste freie Nummer erneut. Alte Verweise können dadurch auf einen anderen Eintrag zeigen."
     }
   },
   "items": {
@@ -217,7 +222,8 @@
       "create": "Inventareintrag hinzufügen",
       "delete": "Inventareintrag löschen",
       "edit": "Inventareintrag bearbeiten"
-    }
+    },
+    "automaticId": "Wird automatisch vergeben"
   },
   "navigation": {
     "searchInventories": "Inventare nach Titel durchsuchen",

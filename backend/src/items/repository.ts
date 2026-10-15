@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, notInArray } from "drizzle-orm";
 import { inventoryItems, inventoryItemValues } from "../db/schema.js";
 import type { AppDatabase } from "../db/types.js";
 import type { ValueInput } from "./validation.js";
@@ -67,11 +67,18 @@ export function createItemRepository(db: AppDatabase) {
           .run();
       }
     },
-    tombstoneValues: (itemId: string) =>
+    tombstoneValues: (itemId: string, preservedFields: string[] = []) =>
       db
         .update(inventoryItemValues)
         .set({ value: null, deletedAt: new Date().toISOString() })
-        .where(activeValues(itemId))
+        .where(
+          and(
+            activeValues(itemId),
+            preservedFields.length
+              ? notInArray(inventoryItemValues.fieldId, preservedFields)
+              : undefined,
+          ),
+        )
         .run(),
     tombstone: (inventoryId: string, itemId: string) =>
       db
