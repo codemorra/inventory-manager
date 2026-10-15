@@ -45,6 +45,8 @@ export function renderDraftControl(
   const actions = {
     fields: [field],
     disabled: false,
+    canReorder: true,
+    moveField: vi.fn(),
     addField: vi.fn(),
     updateField: vi.fn(),
     removeField: vi.fn(),

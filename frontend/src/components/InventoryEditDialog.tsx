@@ -11,6 +11,7 @@ import {
   buildInventoryEditorInput,
   createDraftField,
   isValidFieldDraft,
+  moveDraftField,
 } from "./inventoryEditorDraft";
 import { ApiError } from "../services/api";
 import type { Inventory } from "../types/inventory";
@@ -118,6 +119,13 @@ function InventoryEditorSession({
   const draft: InventoryDraftActions = {
     fields,
     disabled: update.isPending,
+    canReorder: !update.isPending && pendingEditors.length === 0,
+    moveField: (sourceId, targetId, side) => {
+      if (!update.isPending && pendingEditors.length === 0)
+        setFields((current) =>
+          moveDraftField(current, sourceId, targetId, side),
+        );
+    },
     setPendingEditor,
     addField: (data) => {
       const field = createDraftField(inventory.id, data);

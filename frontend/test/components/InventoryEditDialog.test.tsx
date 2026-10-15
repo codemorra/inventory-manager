@@ -16,6 +16,11 @@ import { saveInventoryConfiguration } from "../../src/services/inventoryEditor";
 import { ApiError } from "../../src/services/api";
 import type { InventoryField } from "../../src/types/inventoryField";
 import { selectFieldType } from "../helpers/inventoryDraft";
+import {
+  dragField,
+  fieldDragEvent,
+  startFieldDrag,
+} from "../helpers/fieldDrag";
 
 vi.mock("../../src/services/inventoryEditor", () => ({
   saveInventoryConfiguration: vi.fn(),
@@ -134,6 +139,175 @@ async function addTextField(
   await user.type(screen.getByLabelText("Field name"), name);
   await user.click(screen.getByRole("button", { name: "Add field" }));
 }
+
+// Test that row order stays local across tabs and becomes the saved field query order only on save.
+test("saves a dragged field order without touching item data or the query cache beforehand", async () => {
+  const user = userEvent.setup();
+  vi.mocked(fieldApi.getInventoryFields).mockResolvedValue([title, type]);
+  const { client, close } = renderEditor("fields");
+  await screen.findByText("Title");
+  dragField(
+    screen.getByText("Type").closest("li")!,
+    screen.getByText("Title").closest("li")!,
+    "before",
+  );
+  const list = screen.getByRole("list", { name: "Inventory fields" });
+  expect(
+    within(list)
+      .getAllByRole("heading")
+      .map((heading) => heading.textContent),
+  ).toEqual(["Type", "Title"]);
+  expect(saveInventoryConfiguration).not.toHaveBeenCalled();
+  expect(client.getQueryData(["inventories", inventory.id, "fields"])).toEqual([
+    title,
+    type,
+  ]);
+  await user.click(screen.getByRole("button", { name: "General" }));
+  await user.click(screen.getByRole("button", { name: "Fields" }));
+  const reordered = [
+    { ...type, position: 0 },
+    { ...title, position: 1 },
+  ];
+  vi.mocked(saveInventoryConfiguration).mockResolvedValue({
+    inventory,
+    fields: reordered,
+  });
+  vi.mocked(fieldApi.getInventoryFields).mockResolvedValue(reordered);
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+      inventory: { name: "Games", description: null },
+      fields: [],
+      options: [],
+      field_order: [{ field_id: type.id }, { field_id: title.id }],
+    }),
+  );
+  await waitFor(() => expect(close).toHaveBeenCalledOnce());
+  expect(client.getQueryData(["inventories", inventory.id, "fields"])).toEqual(
+    reordered,
+  );
+});
+
+// Test Escape cancels a live preview without closing the inventory editor or modifying its draft.
+test("cancels only the active field drag when Escape is pressed", async () => {
+  vi.mocked(fieldApi.getInventoryFields).mockResolvedValue([title, type]);
+  const { close } = renderEditor("fields");
+  await screen.findByText("Title");
+  const source = screen.getByText("Type").closest("li")!;
+  const target = screen.getByText("Title").closest("li")!;
+  const transfer = startFieldDrag(source);
+  fieldDragEvent("dragOver", target, transfer, "before");
+  const list = screen.getByRole("list", { name: "Inventory fields" });
+  expect(
+    within(list)
+      .getAllByRole("heading")
+      .map((heading) => heading.textContent),
+  ).toEqual(["Type", "Title"]);
+  fireEvent.keyDown(window, { key: "Escape" });
+  expect(close).not.toHaveBeenCalled();
+  expect(saveInventoryConfiguration).not.toHaveBeenCalled();
+  expect(
+    within(list)
+      .getAllByRole("heading")
+      .map((heading) => heading.textContent),
+  ).toEqual(["Title", "Type"]);
+  fireEvent.keyDown(window, { key: "Escape" });
+  expect(close).toHaveBeenCalledOnce();
+});
+
+// Test that canceling a drag-edited session discards its order rather than leaking into a new session.
+test("discards an unsaved field order when canceling the inventory editor", async () => {
+  const user = userEvent.setup();
+  vi.mocked(fieldApi.getInventoryFields).mockResolvedValue([title, type]);
+  const view = renderEditor("fields");
+  await screen.findByText("Title");
+  dragField(
+    screen.getByText("Type").closest("li")!,
+    screen.getByText("Title").closest("li")!,
+    "before",
+  );
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(saveInventoryConfiguration).not.toHaveBeenCalled();
+  expect(view.close).toHaveBeenCalledOnce();
+  view.unmount();
+  renderEditor("fields");
+  const list = await screen.findByRole("list", { name: "Inventory fields" });
+  expect(
+    within(list)
+      .getAllByRole("heading")
+      .map((heading) => heading.textContent),
+  ).toEqual(["Title", "Type"]);
+});
+
+// Test temporary-field references and an identical retry after a failed combined create/reorder save.
+test("retries a mixed new-field reorder without replacing temporary identifiers", async () => {
+  const user = userEvent.setup();
+  vi.mocked(fieldApi.getInventoryFields).mockResolvedValue([title, type]);
+  vi.mocked(saveInventoryConfiguration).mockRejectedValueOnce(
+    new ApiError(500, "Save failed."),
+  );
+  renderEditor("fields");
+  await addTextField(user);
+  dragField(
+    screen.getByText("Notes").closest("li")!,
+    screen.getByText("Title").closest("li")!,
+    "before",
+  );
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Save failed.");
+  expect(
+    within(screen.getByRole("list", { name: "Inventory fields" }))
+      .getAllByRole("heading")
+      .map((heading) => heading.textContent),
+  ).toEqual(["Notes", "Title", "Type"]);
+  const first = vi.mocked(saveInventoryConfiguration).mock.calls[0]?.[1];
+  expect(first?.field_order).toEqual([
+    { client_id: expect.any(String) },
+    { field_id: title.id },
+    { field_id: type.id },
+  ]);
+  expect(first?.fields).toEqual([
+    {
+      action: "create",
+      client_id: expect.any(String),
+      data: {
+        name: "Notes",
+        field_type: "text",
+        max_length: 255,
+        is_required: false,
+        is_sortable: true,
+      },
+    },
+  ]);
+  const created = first?.fields[0];
+  expect(created?.action === "create" && first?.field_order?.[0]).toEqual({
+    client_id: created?.action === "create" ? created.client_id : undefined,
+  });
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(saveInventoryConfiguration).toHaveBeenCalledTimes(2),
+  );
+  expect(vi.mocked(saveInventoryConfiguration).mock.calls[1]?.[1]).toEqual(
+    first,
+  );
+});
+
+// Test that an unfinished child form disables native field drags until it is dismissed.
+test("blocks field dragging while a child editor has unfinished input", async () => {
+  const user = userEvent.setup();
+  vi.mocked(fieldApi.getInventoryFields).mockResolvedValue([title, type]);
+  renderEditor("fields");
+  await user.click(await screen.findByRole("button", { name: "New field" }));
+  expect(screen.getByRole("button", { name: "Reorder Title" })).toHaveAttribute(
+    "draggable",
+    "false",
+  );
+  await user.keyboard("{Escape}");
+  expect(screen.getByRole("button", { name: "Reorder Title" })).toHaveAttribute(
+    "draggable",
+    "true",
+  );
+});
 
 // Test that the editor never saves a configuration it has not loaded successfully.
 test("waits for fields to load and allows retry after a load error", async () => {

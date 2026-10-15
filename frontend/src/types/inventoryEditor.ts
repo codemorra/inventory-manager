@@ -7,7 +7,7 @@ import type {
 
 // Describe changes to saved fields or complete definitions for new draft fields.
 export type FieldChange =
-  | { action: "create"; data: CreateInventoryFieldInput }
+  | { action: "create"; client_id?: string; data: CreateInventoryFieldInput }
   | { action: "update"; field_id: string; data: UpdateInventoryFieldInput }
   | { action: "delete"; field_id: string };
 
@@ -27,6 +27,7 @@ export interface InventoryEditorInput {
   inventory: { name: string; description: string | null };
   fields: FieldChange[];
   options: OptionChange[];
+  field_order?: ({ field_id: string } | { client_id: string })[];
 }
 
 // Represent the saved inventory and its complete active field configuration.
