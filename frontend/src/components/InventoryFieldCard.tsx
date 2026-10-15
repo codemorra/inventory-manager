@@ -27,6 +27,11 @@ export function InventoryFieldCard({
   const [name, setName] = useState(inventoryField.name);
   const [isRequired, setIsRequired] = useState(inventoryField.is_required);
   const [isSortable, setIsSortable] = useState(inventoryField.is_sortable);
+  const [options, setOptions] = useState(inventoryField.options);
+  const [pendingOption, setPendingOption] = useState(false);
+  const supportsOptions =
+    inventoryField.field_type === "select" ||
+    inventoryField.field_type === "multiselect";
 
   const {
     updateField,
@@ -40,6 +45,8 @@ export function InventoryFieldCard({
     setName(inventoryField.name);
     setIsRequired(inventoryField.is_required);
     setIsSortable(inventoryField.is_sortable);
+    setOptions(inventoryField.options);
+    setPendingOption(false);
     setIsEditing(true);
   }
 
@@ -49,16 +56,18 @@ export function InventoryFieldCard({
   }
 
   /**
-   * Apply the field name and settings locally without changing its type or text limit.
+   * Apply the field name, settings, and options to the inventory draft without changing its type.
    * @param event The form submission event.
    */
   function handleUpdate(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isMutating || pendingOption || !name.trim()) return;
 
     updateField(inventoryField.id, {
       name: name.trim(),
       is_required: isRequired,
       is_sortable: isSortable,
+      ...(supportsOptions && { options }),
     });
     setIsEditing(false);
   }
@@ -108,11 +117,21 @@ export function InventoryFieldCard({
               disabled={isMutating}
               onRequiredChange={setIsRequired}
               onSortableChange={setIsSortable}
-            />
+            >
+              {supportsOptions && (
+                <InventoryFieldOptions
+                  fieldId={inventoryField.id}
+                  options={options}
+                  onChange={setOptions}
+                  disabled={isMutating}
+                  onPendingChange={setPendingOption}
+                />
+              )}
+            </InventoryFieldSettings>
             <div className="flex justify-end gap-2">
               <button
                 className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isMutating || !name.trim()}
+                disabled={isMutating || pendingOption || !name.trim()}
                 type="submit"
               >
                 {t("common.actions.save")}
@@ -180,13 +199,6 @@ export function InventoryFieldCard({
         </div>
       </div>
 
-      {(inventoryField.field_type === "select" ||
-        inventoryField.field_type === "multiselect") && (
-        <InventoryFieldOptions
-          fieldId={inventoryField.id}
-          options={inventoryField.options}
-        />
-      )}
       {isDeleting && (
         <DeleteConfirmationDialog
           title={t("fields.titles.delete")}

@@ -5,6 +5,8 @@ import { useInventoryDraft, useDraftEditorLock } from "./InventoryDraftContext";
 import type { InventoryFieldType } from "../types/inventoryField";
 import { Modal } from "./Modal";
 import { InventoryFieldSettings } from "./InventoryFieldSettings";
+import { SingleSelect } from "./SingleSelect";
+import { IntegerSpinbox } from "./IntegerSpinbox";
 
 // Define the field types available during field creation.
 const fieldTypes: InventoryFieldType[] = [
@@ -46,7 +48,10 @@ export function InventoryFieldCreateForm() {
   useDraftEditorLock("create-field", isOpen);
   const canSubmit =
     name.trim() &&
-    ((fieldType === "text" && Number(maxLength) > 0) ||
+    ((fieldType === "text" &&
+      Number.isInteger(Number(maxLength)) &&
+      Number(maxLength) >= 1 &&
+      Number(maxLength) <= 1_000) ||
       (!supportsOptions(fieldType) && fieldType !== "text") ||
       (supportsOptions(fieldType) &&
         options.length > 0 &&
@@ -86,6 +91,7 @@ export function InventoryFieldCreateForm() {
    */
   function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (disabled || !canSubmit) return;
     addField({
       name: name.trim(),
       field_type: fieldType,
@@ -132,23 +138,20 @@ export function InventoryFieldCreateForm() {
                   value={name}
                 />
               </label>
-              <label className="text-sm font-medium text-foreground">
-                {t("fields.form.fieldType")}
-                <select
-                  aria-describedby={typeHelpId}
-                  className="mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
-                  onChange={(event) =>
-                    changeFieldType(event.target.value as InventoryFieldType)
-                  }
-                  value={fieldType}
-                >
-                  {fieldTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {t(`fields.types.${type}`)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <SingleSelect
+                id={`${typeHelpId}-type`}
+                label={t("fields.form.fieldType")}
+                describedBy={typeHelpId}
+                disabled={disabled}
+                options={fieldTypes.map((type) => ({
+                  value: type,
+                  label: t(`fields.types.${type}`),
+                }))}
+                value={fieldType}
+                onChange={(value) =>
+                  changeFieldType(value as InventoryFieldType)
+                }
+              />
             </div>
             <p className="mt-3 text-sm text-muted" id={typeHelpId}>
               {t(`fields.typeHelp.${fieldType}`)}
@@ -161,18 +164,25 @@ export function InventoryFieldCreateForm() {
               onSortableChange={setIsSortable}
             >
               {fieldType === "text" && (
-                <label className="block max-w-xs text-sm font-medium text-foreground">
-                  {t("fields.form.maximumLength")}
-                  <input
-                    className="mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
-                    max={10000}
+                <div>
+                  <IntegerSpinbox
+                    id={`${typeHelpId}-limit-input`}
+                    label={t("fields.form.maximumLength")}
+                    describedBy={`${typeHelpId}-limit`}
                     min={1}
-                    onChange={(event) => setMaxLength(event.target.value)}
+                    max={1000}
+                    onChange={setMaxLength}
+                    disabled={disabled}
                     required
-                    type="number"
                     value={maxLength}
                   />
-                </label>
+                  <span
+                    className="mt-1 block text-xs font-normal text-muted"
+                    id={`${typeHelpId}-limit`}
+                  >
+                    {t("fields.form.textLimitHelp")}
+                  </span>
+                </div>
               )}
               {supportsOptions(fieldType) && (
                 <fieldset className="min-w-0">

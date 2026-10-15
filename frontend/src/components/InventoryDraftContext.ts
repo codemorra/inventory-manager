@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect } from "react";
 import type {
   CreateInventoryFieldInput,
   InventoryField,
+  InventoryFieldOption,
 } from "../types/inventoryField";
 
 // Expose local draft operations without any network mutation fallback.
@@ -11,12 +12,14 @@ export interface InventoryDraftActions {
   addField: (data: CreateInventoryFieldInput) => void;
   updateField: (
     id: string,
-    changes: { name: string; is_required: boolean; is_sortable: boolean },
+    changes: {
+      name: string;
+      is_required: boolean;
+      is_sortable: boolean;
+      options?: InventoryFieldOption[];
+    },
   ) => void;
   removeField: (id: string) => void;
-  addOption: (fieldId: string, name: string) => void;
-  renameOption: (fieldId: string, id: string, name: string) => void;
-  removeOption: (fieldId: string, id: string) => void;
   setPendingEditor: (id: string, active: boolean) => void;
 }
 

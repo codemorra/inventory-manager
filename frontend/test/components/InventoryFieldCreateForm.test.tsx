@@ -1,10 +1,92 @@
-import { cleanup, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test } from "vitest";
 import { InventoryFieldCreateForm } from "../../src/components/InventoryFieldCreateForm";
-import { renderDraftControl } from "../helpers/inventoryDraft";
+import { renderDraftControl, selectFieldType } from "../helpers/inventoryDraft";
 import i18n from "../../src/i18n";
 afterEach(cleanup);
+
+// Test compact sizing and frontend limits matching the backend's accepted text configuration.
+test.each(["", "0", "-1", "+1", "1.5", "1,5", "1e2", "abc", " 10", "001"])(
+  "rejects an invalid text limit: %s",
+  async (limit) => {
+    const user = userEvent.setup();
+    const { actions } = renderDraftControl(<InventoryFieldCreateForm />);
+    await user.click(screen.getByRole("button", { name: "New field" }));
+    await user.type(screen.getByLabelText("Field name"), "Notes");
+    const input = screen.getByLabelText("Maximum length");
+    expect(input.parentElement).toHaveClass("w-24", "max-w-full");
+    expect(input).toHaveAttribute("role", "spinbutton");
+    expect(input).toHaveAttribute("aria-valuemin", "1");
+    expect(input).toHaveAttribute("aria-valuemax", "1000");
+    expect(input).toHaveAttribute("inputmode", "numeric");
+    expect(input).toHaveAttribute("maxlength", "4");
+    expect(input).toHaveAccessibleDescription("1 to 1,000 characters.");
+    await user.clear(input);
+    if (limit) await user.paste(limit);
+    expect(input).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Add field" })).toBeDisabled();
+    fireEvent.submit(input.closest("form")!);
+    expect(actions.addField).not.toHaveBeenCalled();
+  },
+);
+
+// Test both accepted boundaries rather than relying only on the native input attributes.
+test.each([1, 1000])("accepts the text limit boundary %i", async (limit) => {
+  const user = userEvent.setup();
+  const { actions } = renderDraftControl(<InventoryFieldCreateForm />);
+  await user.click(screen.getByRole("button", { name: "New field" }));
+  await user.type(screen.getByLabelText("Field name"), "Notes");
+  await user.clear(screen.getByLabelText("Maximum length"));
+  await user.type(screen.getByLabelText("Maximum length"), String(limit));
+  await user.click(screen.getByRole("button", { name: "Add field" }));
+  expect(actions.addField).toHaveBeenCalledWith(
+    expect.objectContaining({ max_length: limit }),
+  );
+});
+
+// Test immediate rejection for typing, paste, and programmatic change events.
+test("prevents entering a text limit above 1000", async () => {
+  const user = userEvent.setup();
+  const { actions } = renderDraftControl(<InventoryFieldCreateForm />);
+  await user.click(screen.getByRole("button", { name: "New field" }));
+  await user.type(screen.getByLabelText("Field name"), "Notes");
+  const input = screen.getByLabelText("Maximum length");
+  await user.clear(input);
+  await user.type(input, "1000");
+  await user.type(input, "1");
+  expect(input).toHaveValue("1000");
+  fireEvent.change(input, { target: { value: "1001" } });
+  expect(input).toHaveValue("1000");
+  await user.clear(input);
+  await user.paste("1001");
+  expect(input).toHaveValue("");
+  expect(screen.getByRole("button", { name: "Add field" })).toBeDisabled();
+  await user.paste("1000");
+  expect(input).toHaveValue("1000");
+  await user.click(screen.getByRole("button", { name: "Add field" }));
+  expect(actions.addField).toHaveBeenCalledWith(
+    expect.objectContaining({ max_length: 1000 }),
+  );
+});
+
+// Test character filtering without interfering with normal selection, deletion, and replacement.
+test("blocks non-digit typing while allowing text editing and valid pasted limits", async () => {
+  const user = userEvent.setup();
+  renderDraftControl(<InventoryFieldCreateForm />);
+  await user.click(screen.getByRole("button", { name: "New field" }));
+  const input = screen.getByLabelText("Maximum length");
+  await user.type(input, "abc.eE+-, ");
+  expect(input).toHaveValue("255");
+  await user.keyboard("{Control>}a{/Control}");
+  await user.paste("500");
+  expect(input).toHaveValue("500");
+  await user.keyboard("{Backspace}");
+  expect(input).toHaveValue("50");
+  await user.clear(input);
+  await user.type(input, "1");
+  expect(input).toHaveValue("1");
+});
 
 // Test that type-specific options share the same settings box as requirements and sorting.
 test("groups the text limit and selection options inside field settings", async () => {
@@ -21,10 +103,7 @@ test("groups the text limit and selection options inside field settings", async 
     within(settings).getByRole("checkbox", { name: "Allow column sorting" }),
   ).toBeVisible();
   for (const type of ["select", "multiselect"]) {
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: "Field type" }),
-      type,
-    );
+    await selectFieldType(user, type);
     expect(
       within(settings).queryByLabelText("Maximum length"),
     ).not.toBeInTheDocument();
@@ -46,10 +125,7 @@ test("groups the text limit and selection options inside field settings", async 
     "datetime",
     "duration",
   ]) {
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: "Field type" }),
-      type,
-    );
+    await selectFieldType(user, type);
     expect(settings.querySelector(".border-b")).not.toBeInTheDocument();
   }
   expect(
@@ -85,7 +161,7 @@ test("adds a selection field with its options", async () => {
   const { actions } = renderDraftControl(<InventoryFieldCreateForm />);
   await user.click(screen.getByRole("button", { name: "New field" }));
   await user.type(screen.getByLabelText("Field name"), "Played");
-  await user.selectOptions(screen.getByLabelText("Field type"), "select");
+  await selectFieldType(user, "select");
   await user.type(screen.getByLabelText("Option 1"), "Not started");
   await user.click(screen.getByRole("button", { name: "Add option" }));
   await user.type(screen.getByLabelText("Option 2"), "Completed");
@@ -184,7 +260,7 @@ test.each(["en", "de"])(
       "select",
       "multiselect",
     ]) {
-      await user.selectOptions(select, type);
+      await selectFieldType(user, type);
       expect(select).toHaveAccessibleDescription(
         i18n.t(`fields.typeHelp.${type}`),
       );

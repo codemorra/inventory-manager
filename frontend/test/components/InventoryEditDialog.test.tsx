@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -14,6 +15,7 @@ import * as fieldApi from "../../src/services/inventoryFields";
 import { saveInventoryConfiguration } from "../../src/services/inventoryEditor";
 import { ApiError } from "../../src/services/api";
 import type { InventoryField } from "../../src/types/inventoryField";
+import { selectFieldType } from "../helpers/inventoryDraft";
 
 vi.mock("../../src/services/inventoryEditor", () => ({
   saveInventoryConfiguration: vi.fn(),
@@ -210,6 +212,56 @@ test.each(["Cancel", "Close dialog", "Escape", "Backdrop"])(
   },
 );
 
+// Test that options are hidden from the field overview and dismissed child edits never leak.
+test.each(["Cancel", "Close dialog", "Escape", "Backdrop"])(
+  "discards field option changes through %s",
+  async (method) => {
+    const user = userEvent.setup();
+    vi.mocked(fieldApi.getInventoryFields).mockResolvedValue([type]);
+    renderEditor("fields");
+    await screen.findByText("Type");
+    expect(screen.queryByText("USB")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("New option name")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    const dialog = screen.getByRole("dialog", { name: "Edit inventory field" });
+    expect(dialog.querySelector("form form")).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText("New option name"), "Discarded");
+    expect(within(dialog).getByRole("button", { name: "Save" })).toBeDisabled();
+    await user.keyboard("{Enter}");
+    expect(screen.getByText("Discarded")).toBeVisible();
+    expect(
+      screen.getByRole("dialog", { name: "Edit inventory field" }),
+    ).toBeVisible();
+    const usbRow = screen.getByText("USB").closest("li")!;
+    await user.click(within(usbRow).getByRole("button", { name: "Edit" }));
+    await user.clear(screen.getByLabelText("Option name"));
+    await user.type(screen.getByLabelText("Option name"), "Renamed{Enter}");
+    if (method === "Escape") await user.keyboard("{Escape}");
+    else if (method === "Backdrop") fireEvent.mouseDown(dialog.parentElement!);
+    else await user.click(within(dialog).getByRole("button", { name: method }));
+    expect(
+      screen.queryByRole("dialog", { name: "Edit inventory field" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.getByText("USB")).toBeVisible();
+    expect(screen.queryByText("Renamed")).not.toBeInTheDocument();
+    expect(screen.queryByText("Discarded")).not.toBeInTheDocument();
+    await user.click(
+      within(
+        screen.getByRole("dialog", { name: "Edit inventory field" }),
+      ).getByRole("button", { name: "Save" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() =>
+      expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+        inventory: { name: "Games", description: null },
+        fields: [],
+        options: [],
+      }),
+    );
+  },
+);
+
 // Test mixed changes to saved objects while preserving identifiers and untouched configuration.
 test("submits field renames and option changes together", async () => {
   const user = userEvent.setup();
@@ -221,11 +273,16 @@ test("submits field renames and option changes together", async () => {
   await user.clear(screen.getByLabelText("Field name"));
   await user.type(screen.getByLabelText("Field name"), "Cable");
   await user.click(screen.getByRole("button", { name: "Save" }));
+  await user.click(
+    within(screen.getByText("Type").closest("article")!).getByRole("button", {
+      name: "Edit",
+    }),
+  );
   const usbRow = screen.getByText("USB").closest("li")!;
   await user.click(within(usbRow).getByRole("button", { name: "Edit" }));
   await user.clear(screen.getByLabelText("Option name"));
   await user.type(screen.getByLabelText("Option name"), "USB-C");
-  await user.click(screen.getByRole("button", { name: "Save" }));
+  await user.click(within(usbRow).getByRole("button", { name: "Save" }));
   await user.click(
     within(screen.getByText("HDMI").closest("li")!).getByRole("button", {
       name: "Delete",
@@ -240,6 +297,11 @@ test("submits field renames and option changes together", async () => {
   await user.type(screen.getByLabelText("New option name"), "DisplayPort");
   expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Add" }));
+  await user.click(
+    within(
+      screen.getByRole("dialog", { name: "Edit inventory field" }),
+    ).getByRole("button", { name: "Save" }),
+  );
   expect(saveInventoryConfiguration).not.toHaveBeenCalled();
   expect(JSON.stringify([title, type])).toBe(before);
   expect(
@@ -360,9 +422,10 @@ test("keeps options on new selection fields local and saves only their final sta
   renderEditor("fields");
   await user.click(await screen.findByRole("button", { name: "New field" }));
   await user.type(screen.getByLabelText("Field name"), "Status");
-  await user.selectOptions(screen.getByLabelText("Field type"), "select");
+  await selectFieldType(user, "select");
   await user.type(screen.getByLabelText("Option 1"), "Backlog");
   await user.click(screen.getByRole("button", { name: "Add field" }));
+  await user.click(screen.getByRole("button", { name: "Edit" }));
   await user.click(
     within(screen.getByText("Backlog").closest("li")!).getByRole("button", {
       name: "Delete",
@@ -375,12 +438,16 @@ test("keeps options on new selection fields local and saves only their final sta
     ),
   );
   expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
-  expect(screen.getByRole("alert")).toHaveTextContent("New selection fields");
   await user.type(screen.getByLabelText("New option name"), "Playing");
   await user.click(screen.getByRole("button", { name: "Add" }));
+  await user.click(
+    within(
+      screen.getByRole("dialog", { name: "Edit inventory field" }),
+    ).getByRole("button", { name: "Save" }),
+  );
   await user.click(screen.getByRole("button", { name: "General" }));
   await user.click(screen.getByRole("button", { name: "Fields" }));
-  expect(screen.getByText("Playing")).toBeInTheDocument();
+  expect(screen.queryByText("Playing")).not.toBeInTheDocument();
   expect(saveInventoryConfiguration).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() =>

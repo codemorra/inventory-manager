@@ -12,6 +12,8 @@
       "orange": "Orange"
     },
     "actions": {
+      "increase": "Increase {{field}}",
+      "decrease": "Decrease {{field}}",
       "add": "Add",
       "retry": "Retry",
       "cancel": "Cancel",
@@ -121,6 +123,7 @@
       "fieldName": "Field name",
       "fieldType": "Field type",
       "maximumLength": "Maximum length",
+      "textLimitHelp": "1 to 1,000 characters.",
       "option": "Option {{number}}",
       "options": "Options"
     },
