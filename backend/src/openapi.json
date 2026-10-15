@@ -1744,6 +1744,31 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "field_order": {
+            "type": "array",
+            "maxItems": 1000,
+            "description": "Optional complete final field order. Reference each surviving or created field exactly once. Saved fields use field_id; new fields use their creation operation's unique client_id. Positions become consecutive starting at zero. Cannot be combined with individual position updates. Invalid references roll back the entire draft. Omit to preserve existing append behavior.",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "field_id": { "type": "string", "minLength": 1 }
+                  },
+                  "required": ["field_id"]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "client_id": { "type": "string", "minLength": 1 }
+                  },
+                  "required": ["client_id"]
+                }
+              ]
+            }
+          },
           "inventory": {
             "properties": {
               "name": {
@@ -1790,6 +1815,11 @@
                     },
                     "data": {
                       "$ref": "#/components/schemas/InventoryFieldCreate"
+                    },
+                    "client_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Unique temporary identifier within this draft, used by field_order. Never stored as a database identifier."
                     }
                   },
                   "required": ["action", "data"]
