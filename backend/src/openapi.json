@@ -1428,10 +1428,11 @@
           "select",
           "multiselect",
           "url",
-          "id"
+          "id",
+          "checkbox"
         ],
         "title": "InventoryFieldType",
-        "description": "Supported inventory field types; URL values use an address with optional display text. ID fields assign immutable, inventory-local numbers starting at 1; each ID field has its own sequence."
+        "description": "Supported inventory field types; URL values use an address with optional display text. ID fields assign immutable, inventory-local numbers starting at 1; each ID field has its own sequence. Checkbox fields store booleans and can be toggled directly in the item table; unchecked is a valid value, including for required fields."
       },
       "InventoryFieldUpdate": {
         "properties": {
@@ -1546,7 +1547,7 @@
           },
           "value": {
             "title": "Value",
-            "description": "Value matching the field type. URL fields use InventoryUrlValue. Duration uses non-negative integer seconds up to 9007199254740991. Required fields must be supplied when creating or replacing an item. Never submit ID field values; the server generates them and preserves them during complete replacement.",
+            "description": "Value matching the field type. URL fields use InventoryUrlValue. Duration uses non-negative integer seconds up to 9007199254740991. Required fields must be supplied when creating or replacing an item. Never submit ID field values; the server generates them and preserves them during complete replacement. Checkbox values must be true or false, never strings or numbers. Table toggles submit a complete replacement of editable values and must satisfy all current required fields.",
             "examples": [
               {
                 "url": "https://example.com",

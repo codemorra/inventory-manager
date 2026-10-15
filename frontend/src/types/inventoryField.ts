@@ -5,6 +5,7 @@ export type InventoryFieldType =
   | "id"
   | "url"
   | "boolean"
+  | "checkbox"
   | "date"
   | "time"
   | "datetime"

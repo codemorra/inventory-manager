@@ -1,5 +1,6 @@
 import type { InventoryField } from "../types/inventoryField";
 import type { InventoryItemValueInput } from "../types/inventoryItem";
+import type { InventoryItem, InventoryItemInput } from "../types/inventoryItem";
 import { isUrlInput, isWebAddress, type UrlInput } from "./url";
 import {
   durationFromSeconds,
@@ -19,6 +20,7 @@ export type InventoryItemFormValue =
  * @returns An empty value, or false for an optional checkbox.
  */
 export function getInitialValue(field: InventoryField): InventoryItemFormValue {
+  if (field.field_type === "checkbox") return false;
   if (field.field_type === "boolean") {
     return field.is_required ? "" : false;
   }
@@ -51,7 +53,8 @@ export function hasRequiredItemValues(
       return isUrlInput(value) && isWebAddress(value.url);
     if (field.field_type === "duration")
       return isDurationInput(value) && durationSeconds(value) !== null;
-    if (field.field_type === "boolean") return typeof value === "boolean";
+    if (field.field_type === "boolean" || field.field_type === "checkbox")
+      return typeof value === "boolean";
     if (Array.isArray(value)) return value.length > 0;
     return typeof value === "string" && value.trim().length > 0;
   });
@@ -100,7 +103,7 @@ export function getEditableValue(
   if (field.field_type === "duration") return durationFromSeconds(value);
   if (field.field_type === "url")
     return isUrlInput(value) ? { ...value } : { url: "", label: "" };
-  if (field.field_type === "boolean")
+  if (field.field_type === "boolean" || field.field_type === "checkbox")
     return typeof value === "boolean" ? value : getInitialValue(field);
   if (field.field_type === "multiselect")
     return Array.isArray(value)
@@ -128,7 +131,7 @@ export function createValueInput(
       value: { url: value.url, ...(value.label && { label: value.label }) },
     };
   }
-  if (field.field_type === "boolean") {
+  if (field.field_type === "boolean" || field.field_type === "checkbox") {
     return typeof value === "boolean" ? { field_id: field.id, value } : null;
   }
 
@@ -150,4 +153,30 @@ export function createValueInput(
   }
 
   return { field_id: field.id, value };
+}
+
+/**
+ * Toggle one checkbox using full replacement without coercing any other stored values.
+ * @param fields The active definitions, excluding removed fields from the payload.
+ * @param item The complete saved item whose editable values must be retained.
+ * @param fieldId The checkbox field being changed.
+ * @param checked The requested checked state, including explicit false.
+ * @returns The complete replacement payload without server-owned automatic IDs.
+ */
+export function createCheckboxReplacement(
+  fields: InventoryField[],
+  item: InventoryItem,
+  fieldId: string,
+  checked: boolean,
+): InventoryItemInput {
+  const values = fields.flatMap((field) => {
+    if (field.field_type === "id") return [];
+    if (field.id === fieldId) return [{ field_id: field.id, value: checked }];
+    const stored = item.values.find((value) => value.field_id === field.id);
+    // Required checkbox controls have an explicit unchecked default, just like the edit dialog.
+    if (!stored && field.field_type === "checkbox" && field.is_required)
+      return [{ field_id: field.id, value: false }];
+    return stored ? [{ field_id: field.id, value: stored.value }] : [];
+  });
+  return { values };
 }

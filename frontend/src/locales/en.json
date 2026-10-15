@@ -153,7 +153,8 @@
       "text": "Text",
       "time": "Time",
       "id": "Automatic ID",
-      "url": "URL"
+      "url": "URL",
+      "checkbox": "Checkbox"
     },
     "typeHelp": {
       "text": "Text with a configurable character limit, for example a title or notes.",
@@ -166,7 +167,8 @@
       "select": "One option can be selected for each item.",
       "multiselect": "Multiple options can be selected for each item.",
       "id": "An automatically assigned, read-only number for each item.",
-      "url": "A web address with optional link text."
+      "url": "A web address with optional link text.",
+      "checkbox": "A checkbox that can be toggled directly in the table."
     },
     "settings": {
       "title": "Field settings",
@@ -231,6 +233,10 @@
       "label": "Link text (optional)",
       "help": "HTTP or HTTPS address. Without link text, the address is displayed.",
       "invalid": "Enter a valid HTTP or HTTPS address without spaces."
+    },
+    "checkbox": {
+      "toggle": "Toggle {{field}}",
+      "completeRequired": "Complete the missing or invalid values before saving this item. The checkbox change has not been saved yet."
     }
   },
   "navigation": {

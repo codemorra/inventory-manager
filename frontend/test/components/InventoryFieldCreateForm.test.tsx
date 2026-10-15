@@ -6,6 +6,27 @@ import { renderDraftControl, selectFieldType } from "../helpers/inventoryDraft";
 import i18n from "../../src/i18n";
 afterEach(cleanup);
 
+// Test a checkbox is a distinct configurable field rather than a renamed yes/no field.
+test("creates a checkbox field with shared requirement and sorting settings", async () => {
+  const user = userEvent.setup();
+  const { actions } = renderDraftControl(<InventoryFieldCreateForm />);
+  await user.click(screen.getByRole("button", { name: "New field" }));
+  await user.type(screen.getByLabelText("Field name"), "Checked");
+  await selectFieldType(user, "checkbox");
+  expect(
+    screen.getByText(/A checkbox that can be toggled directly/),
+  ).toBeVisible();
+  await user.click(screen.getByLabelText("Required field"));
+  await user.click(screen.getByLabelText("Allow column sorting"));
+  await user.click(screen.getByRole("button", { name: "Add field" }));
+  expect(actions.addField).toHaveBeenCalledWith({
+    name: "Checked",
+    field_type: "checkbox",
+    is_required: true,
+    is_sortable: false,
+  });
+});
+
 // Test the new URL definition remains a local draft and exposes only shared field settings.
 test("creates a required URL field using the themed type selector", async () => {
   const user = userEvent.setup();

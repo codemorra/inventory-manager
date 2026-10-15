@@ -21,6 +21,71 @@ function fixture(context: TestContext) {
   return { ...connection, services, api, inventory };
 }
 
+// Test checkbox definitions, strict boolean values, false as a valid requirement, and atomic errors.
+test("checkbox fields accept only booleans and preserve required-field replacement rules", async (context) => {
+  const { services, inventory, api, sqlite } = fixture(context);
+  const base = `/inventories/${inventory.id}`;
+  const old = services.items.create(inventory.id, {});
+  const created = await api
+    .post(`${base}/fields`)
+    .send({ name: "Checked", field_type: "checkbox", is_required: true })
+    .expect(201);
+  const id = created.body.id as string;
+  assert.equal(created.body.field_type, "checkbox");
+  assert.deepEqual(services.items.read(inventory.id, old.id).values, []);
+  await api.post(`${base}/items`).send({}).expect(422);
+  await api.patch(`${base}/items/${old.id}`).send({}).expect(422);
+  await api
+    .patch(`${base}/items/${old.id}`)
+    .send({ values: [{ field_id: id, value: false }] })
+    .expect(200);
+  for (const value of [false, true]) {
+    const result = await api
+      .post(`${base}/items`)
+      .send({ values: [{ field_id: id, value }] })
+      .expect(201);
+    assert.equal(result.body.values[0].value, value);
+  }
+  const before = sqlite
+    .prepare("SELECT * FROM inventory_item_values ORDER BY id")
+    .all();
+  for (const value of [0, 1, "true", "false", null, "", [], {}]) {
+    await api
+      .post(`${base}/items`)
+      .send({ values: [{ field_id: id, value }] })
+      .expect(422);
+    await api
+      .patch(`${base}/items/${old.id}`)
+      .send({ values: [{ field_id: id, value }] })
+      .expect(422);
+  }
+  assert.deepEqual(
+    sqlite.prepare("SELECT * FROM inventory_item_values ORDER BY id").all(),
+    before,
+  );
+  await api
+    .post(`${base}/fields`)
+    .send({
+      name: "Invalid",
+      field_type: "checkbox",
+      options: [{ name: "Not applicable" }],
+    })
+    .expect(422);
+  await api
+    .post(`${base}/fields`)
+    .send({ name: "Invalid", field_type: "checkbox", max_length: 10 })
+    .expect(422);
+  await api
+    .patch(`${base}/fields/${id}`)
+    .send({ is_required: false })
+    .expect(200);
+  const cleared = await api
+    .patch(`${base}/items/${old.id}`)
+    .send({ values: [] })
+    .expect(200);
+  assert.deepEqual(cleared.body.values, []);
+});
+
 // Test strict flags, compatible defaults, explicit false values, and stable field identities.
 test("creates and updates required and sortable flags without changing the field type", async (context) => {
   const { api, services, inventory } = fixture(context);

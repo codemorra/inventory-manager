@@ -132,6 +132,33 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+// Test required checkboxes can be saved unchecked instead of forcing an affirmative answer.
+test.each([false, true])(
+  "creates a required checkbox with state %s",
+  async (checked) => {
+    const user = userEvent.setup();
+    renderInventoryItemCreateForm([
+      {
+        ...fields[0],
+        name: "Checked",
+        field_type: "checkbox",
+        is_required: true,
+      },
+    ]);
+    await user.click(screen.getByRole("button", { name: "New item" }));
+    const checkbox = screen.getByRole("checkbox", { name: "Checked" });
+    expect(checkbox).not.toBeChecked();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    if (checked) await user.click(checkbox);
+    await user.click(screen.getByRole("button", { name: "Add item" }));
+    await waitFor(() =>
+      expect(mockedCreateInventoryItem).toHaveBeenCalledWith("inventory-1", {
+        values: [{ field_id: fields[0].id, value: checked }],
+      }),
+    );
+  },
+);
+
 // Test the item form rejects incomplete or unsafe links and submits optional display text structurally.
 test("creates a URL item only after entering a valid web address", async () => {
   const user = userEvent.setup();

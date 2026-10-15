@@ -18,6 +18,7 @@ export const fieldTypes = [
   "text",
   "number",
   "boolean",
+  "checkbox",
   "date",
   "time",
   "datetime",

@@ -92,6 +92,7 @@ export function validateValues(
           invalidValue();
         break;
       case "boolean":
+      case "checkbox":
         if (typeof value !== "boolean") invalidValue();
         break;
       case "duration":
