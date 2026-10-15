@@ -100,6 +100,8 @@ test("select and multiselect HTTP CRUD embeds options and permits later duplicat
       "field_type",
       "id",
       "inventory_id",
+      "is_required",
+      "is_sortable",
       "max_length",
       "name",
       "options",

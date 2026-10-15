@@ -26,7 +26,7 @@ function fixture(context: TestContext) {
 }
 
 // Helper function to set up the test fixture for each test case.
-test("the nine field types pass definition/create/read/update through a compact HTTP matrix", async (context) => {
+test("all ten field types pass definition/create/read/update through a compact HTTP matrix", async (context) => {
   const { services, api, inventory } = fixture(context);
   const base = `/inventories/${inventory.id}`;
   const cases: [
@@ -43,6 +43,11 @@ test("the nine field types pass definition/create/read/update through a compact 
     ["duration", 0, 7200],
     ["select", 0, 1],
     ["multiselect", [0, 1], [1, 1]],
+    [
+      "url",
+      { url: "https://example.com" },
+      { url: "http://localhost:8000/docs", label: "Documentation" },
+    ],
   ];
   for (const [field_type, first, second] of cases) {
     const field = (
@@ -93,7 +98,7 @@ test("the nine field types pass definition/create/read/update through a compact 
     assert.notEqual(updated.body.values[0].id, created.body.values[0].id);
     assert.deepEqual(updated.body.values[0].value, input(second));
   }
-  assert.equal(services.items.list(inventory.id).length, 9);
+  assert.equal(services.items.list(inventory.id).length, 10);
 });
 
 // Test for replacement, omitted values, and deletion preserving tombstones and list ordering

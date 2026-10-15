@@ -24,6 +24,8 @@ const field: typeof inventoryFields.$inferSelect = {
   name: "Field",
   fieldType: "text",
   maxLength: 3,
+  isRequired: false,
+  isSortable: true,
   position: 0,
 };
 const option: typeof inventoryFieldOptions.$inferSelect = {

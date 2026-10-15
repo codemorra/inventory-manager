@@ -78,6 +78,8 @@ export function fieldResponse(field: Field) {
     name: field.name,
     field_type: field.fieldType,
     max_length: field.maxLength,
+    is_required: field.isRequired,
+    is_sortable: field.isSortable,
     options: field.options.map(optionResponse),
     position: field.position,
     created_at: field.createdAt,

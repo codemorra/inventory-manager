@@ -20,6 +20,8 @@ export const fieldCreateSchema = z
     field_type: z.enum(fieldTypes).default("text"),
     max_length: integerSchema(1, 10_000).nullable().default(null),
     options: z.array(optionCreateSchema).max(100).default([]),
+    is_required: z.boolean().default(false),
+    is_sortable: z.boolean().default(true),
   })
   .superRefine((data, context) => {
     if (data.field_type !== "text" && data.max_length !== null) {
@@ -57,4 +59,6 @@ export const fieldCreateSchema = z
 export const fieldUpdateSchema = z.object({
   name: nameSchema.nullable().optional(),
   position: integerSchema(0).nullable().optional(),
+  is_required: z.boolean().optional(),
+  is_sortable: z.boolean().optional(),
 });

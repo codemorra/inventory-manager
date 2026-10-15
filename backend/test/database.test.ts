@@ -5,6 +5,7 @@ import {
   mkdirSync,
   copyFileSync,
   writeFileSync,
+  readFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -64,6 +65,81 @@ test("adds groups to an existing database without losing inventory data", () => 
 const directories: string[] = [];
 const connections: DatabaseConnection[] = [];
 
+// Test a real pre-feature database upgrade, including old values and deletion history.
+test("adds field settings with compatible defaults without rewriting legacy rows", () => {
+  const directory = mkdtempSync(
+    join(tmpdir(), "inventory-field-settings-migration-"),
+  );
+  directories.push(directory);
+  const legacy = join(directory, "legacy");
+  mkdirSync(join(legacy, "meta"), { recursive: true });
+  for (const name of ["0000_initial_schema", "0001_inventory_groups"]) {
+    copyFileSync(
+      new URL(`../drizzle/${name}.sql`, import.meta.url),
+      join(legacy, `${name}.sql`),
+    );
+  }
+  const journal = JSON.parse(
+    readFileSync(
+      new URL("../drizzle/meta/_journal.json", import.meta.url),
+      "utf8",
+    ),
+  ) as { entries: unknown[] };
+  journal.entries = journal.entries.slice(0, 2);
+  writeFileSync(join(legacy, "meta", "_journal.json"), JSON.stringify(journal));
+  const path = join(directory, "legacy.db");
+  const original = openDatabase(path, legacy);
+  connections.push(original);
+  original.sqlite.exec(`
+    INSERT INTO inventories (id, name, created_at, updated_at) VALUES ('inventory', 'Legacy', '2026-01-01', '2026-01-01');
+    INSERT INTO inventory_fields (id, inventory_id, name, field_type, max_length, position, created_at, updated_at)
+      VALUES ('field', 'inventory', 'Title', 'text', 120, 0, '2026-01-01', '2026-01-01');
+    INSERT INTO inventory_fields (id, inventory_id, name, field_type, position, created_at, updated_at, deleted_at)
+      VALUES ('deleted-field', 'inventory', '', 'number', 1, '2026-01-01', '2026-01-01', '2026-02-01');
+    INSERT INTO inventory_items (id, inventory_id, created_at, updated_at)
+      VALUES ('item', 'inventory', '2026-01-01', '2026-01-01');
+    INSERT INTO inventory_item_values (id, item_id, field_id, value, created_at, updated_at)
+      VALUES ('value', 'item', 'field', '"Original"', '2026-01-01', '2026-01-01');
+  `);
+  const tables = [
+    "inventories",
+    "inventory_fields",
+    "inventory_items",
+    "inventory_item_values",
+  ];
+  const before = tables.map((table) =>
+    original.sqlite.prepare("SELECT * FROM " + table + " ORDER BY id").all(),
+  );
+  original.close();
+  for (let pass = 0; pass < 2; pass++) {
+    const upgraded = openDatabase(path);
+    connections.push(upgraded);
+    const after = tables.map((table) =>
+      upgraded.sqlite.prepare("SELECT * FROM " + table + " ORDER BY id").all(),
+    );
+    after[1] = (after[1] as Record<string, unknown>[]).map((row) => {
+      const { is_required, is_sortable, ...existing } = row;
+      assert.equal(is_required, 0);
+      assert.equal(is_sortable, 1);
+      return existing;
+    });
+    assert.deepEqual(after, before);
+    const field = upgraded.db
+      .select()
+      .from(inventoryFields)
+      .all()
+      .find((row) => row.id === "field");
+    assert.equal(field?.isRequired, false);
+    assert.equal(field?.isSortable, true);
+    assert.deepEqual(upgraded.sqlite.pragma("foreign_key_check"), []);
+    assert.equal(
+      upgraded.sqlite.pragma("integrity_check", { simple: true }),
+      "ok",
+    );
+    upgraded.close();
+  }
+});
+
 // Helper function to open a temporary database for testing.
 function openTemporaryDatabase() {
   const directory = mkdtempSync(join(tmpdir(), "inventory-node-db-"));
@@ -96,7 +172,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     assert.deepEqual(db.select().from(table).all(), []);
   assert.deepEqual(
     sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get(),
-    { count: 2 },
+    { count: 3 },
   );
 
   const inventory = db
@@ -157,7 +233,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     reopened.sqlite
       .prepare("SELECT count(*) AS count FROM __drizzle_migrations")
       .get(),
-    { count: 2 },
+    { count: 3 },
   );
 });
 

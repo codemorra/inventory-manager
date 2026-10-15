@@ -87,6 +87,7 @@ test("validates field configuration and case-folded initial options in a compact
     "duration",
     "select",
     "multiselect",
+    "url",
   ]) {
     const options =
       field_type === "select" || field_type === "multiselect"
