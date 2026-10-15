@@ -132,6 +132,109 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// Test safe links use display text or their address and open without granting access to the opener.
+test.each([
+  [
+    { url: "https://example.com/docs", label: "Documentation" },
+    "Documentation",
+  ],
+  [{ url: "https://example.com/docs" }, "https://example.com/docs"],
+  [
+    { url: "https://example.com/docs", label: "   " },
+    "https://example.com/docs",
+  ],
+  [
+    { url: "https://example.com/docs", label: "<img src=x onerror=alert(1)>" },
+    "<img src=x onerror=alert(1)>",
+  ],
+])("renders a safe URL value %j", (value, name) => {
+  renderInventoryItemList(
+    [{ ...items[0], values: [{ ...items[0].values[0], value }] }],
+    [{ ...fields[0], name: "Website", field_type: "url" }],
+  );
+  const link = screen.getByRole("link", { name });
+  expect(link).toHaveAttribute("href", value.url);
+  expect(link).toHaveAttribute("target", "_blank");
+  expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  expect(link).toHaveAttribute("title", value.url);
+  expect(screen.queryByRole("img")).not.toBeInTheDocument();
+});
+
+// Test malformed or legacy data cannot introduce an executable link into the table.
+test.each([
+  { url: "javascript:alert(1)", label: "Unsafe" },
+  { url: "data:text/html,test" },
+  { url: "https://example.com\n" },
+  null,
+  "https://example.com",
+  { url: 42 },
+])("never links unsupported stored URL data %j", (value) => {
+  renderInventoryItemList(
+    [{ ...items[0], values: [{ ...items[0].values[0], value }] }],
+    [{ ...fields[0], name: "Website", field_type: "url" }],
+  );
+  expect(screen.queryByRole("link")).not.toBeInTheDocument();
+});
+
+// Test editing restores structured data, while explicit clearing follows full replacement semantics.
+test.each([false, true])(
+  "edits URL values with explicit clearing: %s",
+  async (clear) => {
+    const user = userEvent.setup();
+    const urlField = {
+      ...fields[0],
+      name: "Website",
+      field_type: "url" as const,
+    };
+    const value = { url: "https://example.com/docs", label: "Documentation" };
+    const item = { ...items[0], values: [{ ...items[0].values[0], value }] };
+    mockedUpdateInventoryItem.mockResolvedValue(item);
+    renderInventoryItemList([item], [urlField]);
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    const address = screen.getByLabelText("Website: Web address");
+    const label = screen.getByLabelText("Website: Link text (optional)");
+    expect(address).toHaveValue(value.url);
+    expect(label).toHaveValue(value.label);
+    await user.clear(label);
+    await user.clear(address);
+    if (!clear) await user.type(address, "https://example.org/help");
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() =>
+      expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
+        "inventory-1",
+        "item-1",
+        {
+          values: clear
+            ? []
+            : [
+                {
+                  field_id: urlField.id,
+                  value: { url: "https://example.org/help" },
+                },
+              ],
+        },
+      ),
+    );
+  },
+);
+
+// Test newly required links keep old entries readable but must be supplied when editing them.
+test("requires an address when editing an old item missing a required URL", async () => {
+  const user = userEvent.setup();
+  renderInventoryItemList(
+    [{ ...items[0], values: [] }],
+    [{ ...fields[0], name: "Website", field_type: "url", is_required: true }],
+  );
+  expect(screen.getByRole("cell", { name: "—" })).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  await user.type(
+    screen.getByLabelText("Website: Web address"),
+    "https://example.com",
+  );
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
+});
+
 // Test table display and read-only editing retain the server-owned ID outside replacement payloads.
 test("shows automatic numbers and never submits them while editing an item", async () => {
   const user = userEvent.setup();

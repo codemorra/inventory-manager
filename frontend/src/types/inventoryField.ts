@@ -3,6 +3,7 @@ export type InventoryFieldType =
   | "text"
   | "number"
   | "id"
+  | "url"
   | "boolean"
   | "date"
   | "time"

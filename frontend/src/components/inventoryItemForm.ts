@@ -1,5 +1,6 @@
 import type { InventoryField } from "../types/inventoryField";
 import type { InventoryItemValueInput } from "../types/inventoryItem";
+import { isUrlInput, isWebAddress, type UrlInput } from "./url";
 import {
   durationFromSeconds,
   durationSeconds,
@@ -10,7 +11,7 @@ import {
 
 /** Define values held by inventory item form controls. */
 export type InventoryItemFormValue =
-  string | boolean | string[] | DurationInput;
+  string | boolean | string[] | DurationInput | UrlInput;
 
 /**
  * Initialize controls without implicitly answering required yes/no fields.
@@ -27,6 +28,7 @@ export function getInitialValue(field: InventoryField): InventoryItemFormValue {
   }
 
   if (field.field_type === "duration") return emptyDuration();
+  if (field.field_type === "url") return { url: "", label: "" };
 
   return "";
 }
@@ -45,6 +47,8 @@ export function hasRequiredItemValues(
     if (field.field_type === "id") return true;
     if (!field.is_required) return true;
     const value = values[field.id] ?? getInitialValue(field);
+    if (field.field_type === "url")
+      return isUrlInput(value) && isWebAddress(value.url);
     if (field.field_type === "duration")
       return isDurationInput(value) && durationSeconds(value) !== null;
     if (field.field_type === "boolean") return typeof value === "boolean";
@@ -54,7 +58,7 @@ export function hasRequiredItemValues(
 }
 
 /**
- * Check required values and reject invalid non-empty duration components before submitting.
+ * Check required values and reject invalid duration or link input before submitting.
  * @param fields The active field definitions.
  * @param values The current item form values.
  * @returns Whether the form can be safely converted into a complete replacement payload.
@@ -66,8 +70,14 @@ export function hasValidItemValues(
   return (
     hasRequiredItemValues(fields, values) &&
     fields.every((field) => {
-      if (field.field_type !== "duration") return true;
       const value = values[field.id] ?? getInitialValue(field);
+      if (field.field_type === "url")
+        return (
+          isUrlInput(value) &&
+          (isWebAddress(value.url) ||
+            (value.url === "" && !value.label?.trim()))
+        );
+      if (field.field_type !== "duration") return true;
       return (
         isDurationInput(value) &&
         (Object.values(value).every((part) => part === "") ||
@@ -88,6 +98,8 @@ export function getEditableValue(
   value: unknown,
 ): InventoryItemFormValue {
   if (field.field_type === "duration") return durationFromSeconds(value);
+  if (field.field_type === "url")
+    return isUrlInput(value) ? { ...value } : { url: "", label: "" };
   if (field.field_type === "boolean")
     return typeof value === "boolean" ? value : getInitialValue(field);
   if (field.field_type === "multiselect")
@@ -109,6 +121,13 @@ export function createValueInput(
 ): InventoryItemValueInput | null {
   // The server owns automatic IDs, including during complete item replacement.
   if (field.field_type === "id") return null;
+  if (field.field_type === "url") {
+    if (!isUrlInput(value) || !isWebAddress(value.url)) return null;
+    return {
+      field_id: field.id,
+      value: { url: value.url, ...(value.label && { label: value.label }) },
+    };
+  }
   if (field.field_type === "boolean") {
     return typeof value === "boolean" ? { field_id: field.id, value } : null;
   }
