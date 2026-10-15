@@ -1,6 +1,7 @@
 import type {
   CreateInventoryFieldInput,
   InventoryField,
+  UpdateInventoryFieldInput,
 } from "../types/inventoryField";
 import type { InventoryEditorInput } from "../types/inventoryEditor";
 
@@ -22,6 +23,8 @@ export function createDraftField(
     field_type: data.field_type ?? "text",
     max_length:
       (data.field_type ?? "text") === "text" ? (data.max_length ?? 255) : null,
+    is_required: data.is_required ?? false,
+    is_sortable: data.is_sortable ?? true,
     options: (data.options ?? []).map((option, position) => ({
       id: crypto.randomUUID(),
       field_id: id,
@@ -61,6 +64,8 @@ export function buildInventoryEditorInput(
         data: {
           name: field.name,
           field_type: field.field_type,
+          is_required: field.is_required,
+          is_sortable: field.is_sortable,
           ...(field.field_type === "text"
             ? { max_length: field.max_length ?? 255 }
             : {}),
@@ -73,11 +78,17 @@ export function buildInventoryEditorInput(
       });
       continue;
     }
-    if (saved.name !== field.name)
+    const changes: UpdateInventoryFieldInput = {};
+    if (saved.name !== field.name) changes.name = field.name;
+    if (saved.is_required !== field.is_required)
+      changes.is_required = field.is_required;
+    if (saved.is_sortable !== field.is_sortable)
+      changes.is_sortable = field.is_sortable;
+    if (Object.keys(changes).length)
       result.fields.push({
         action: "update",
         field_id: field.id,
-        data: { name: field.name },
+        data: changes,
       });
     for (const option of saved.options) {
       if (!field.options.some((entry) => entry.id === option.id))

@@ -41,6 +41,8 @@ const fields: InventoryField[] = [
     name: "Title",
     field_type: "text",
     max_length: 120,
+    is_required: false,
+    is_sortable: true,
     options: [],
     position: 0,
     created_at: timestamp,

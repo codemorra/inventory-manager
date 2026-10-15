@@ -1,9 +1,10 @@
-import { type SyntheticEvent, useState } from "react";
+import { type SyntheticEvent, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useInventoryDraft, useDraftEditorLock } from "./InventoryDraftContext";
 import type { InventoryFieldType } from "../types/inventoryField";
 import { Modal } from "./Modal";
+import { InventoryFieldSettings } from "./InventoryFieldSettings";
 
 // Define the field types available during field creation.
 const fieldTypes: InventoryFieldType[] = [
@@ -33,11 +34,14 @@ function supportsOptions(fieldType: InventoryFieldType) {
  */
 export function InventoryFieldCreateForm() {
   const { t } = useTranslation();
+  const typeHelpId = useId();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [fieldType, setFieldType] = useState<InventoryFieldType>("text");
   const [maxLength, setMaxLength] = useState("255");
   const [options, setOptions] = useState([""]);
+  const [isRequired, setIsRequired] = useState(false);
+  const [isSortable, setIsSortable] = useState(true);
   const { addField, disabled } = useInventoryDraft();
   useDraftEditorLock("create-field", isOpen);
   const canSubmit =
@@ -48,9 +52,20 @@ export function InventoryFieldCreateForm() {
         options.length > 0 &&
         options.every((option) => option.trim())));
 
-  // Close the creation modal while no request is pending.
+  // Restore defaults so a dismissed child form cannot leak into the next field.
+  function resetForm() {
+    setName("");
+    setFieldType("text");
+    setMaxLength("255");
+    setOptions([""]);
+    setIsRequired(false);
+    setIsSortable(true);
+  }
+
+  // Discard the creation modal while no request is pending.
   function closeModal() {
     if (!disabled) {
+      resetForm();
       setIsOpen(false);
     }
   }
@@ -74,15 +89,14 @@ export function InventoryFieldCreateForm() {
     addField({
       name: name.trim(),
       field_type: fieldType,
+      is_required: isRequired,
+      is_sortable: isSortable,
       ...(fieldType === "text" && { max_length: Number(maxLength) }),
       ...(supportsOptions(fieldType) && {
         options: options.map((option) => ({ name: option.trim() })),
       }),
     });
-    setName("");
-    setFieldType("text");
-    setMaxLength("255");
-    setOptions([""]);
+    resetForm();
     setIsOpen(false);
   }
 
@@ -121,6 +135,7 @@ export function InventoryFieldCreateForm() {
               <label className="text-sm font-medium text-foreground">
                 {t("fields.form.fieldType")}
                 <select
+                  aria-describedby={typeHelpId}
                   className="mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
                   onChange={(event) =>
                     changeFieldType(event.target.value as InventoryFieldType)
@@ -135,71 +150,82 @@ export function InventoryFieldCreateForm() {
                 </select>
               </label>
             </div>
-            {fieldType === "text" && (
-              <label className="mt-5 block max-w-xs text-sm font-medium text-foreground">
-                {t("fields.form.maximumLength")}
-                <input
-                  className="mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
-                  max={10000}
-                  min={1}
-                  onChange={(event) => setMaxLength(event.target.value)}
-                  required
-                  type="number"
-                  value={maxLength}
-                />
-              </label>
-            )}
-            {supportsOptions(fieldType) && (
-              <fieldset className="mt-5 rounded-xl border border-shell bg-surface-muted p-4">
-                <legend className="text-sm font-medium">
-                  {t("fields.form.options")}
-                </legend>
-                <div className="mt-2 space-y-2">
-                  {options.map((option, index) => (
-                    <div className="flex gap-2" key={index}>
-                      <input
-                        aria-label={t("fields.form.option", {
-                          number: index + 1,
-                        })}
-                        className="w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
-                        maxLength={255}
-                        onChange={(event) =>
-                          setOptions((current) =>
-                            current.map((item, itemIndex) =>
-                              itemIndex === index ? event.target.value : item,
-                            ),
-                          )
-                        }
-                        required
-                        value={option}
-                      />
-                      {options.length > 1 && (
-                        <button
-                          className="rounded-lg border border-shell px-3 py-2 text-sm font-medium text-danger transition enabled:hover:bg-danger/25"
-                          onClick={() =>
+            <p className="mt-3 text-sm text-muted" id={typeHelpId}>
+              {t(`fields.typeHelp.${fieldType}`)}
+            </p>
+            <InventoryFieldSettings
+              required={isRequired}
+              sortable={isSortable}
+              disabled={disabled}
+              onRequiredChange={setIsRequired}
+              onSortableChange={setIsSortable}
+            >
+              {fieldType === "text" && (
+                <label className="block max-w-xs text-sm font-medium text-foreground">
+                  {t("fields.form.maximumLength")}
+                  <input
+                    className="mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                    max={10000}
+                    min={1}
+                    onChange={(event) => setMaxLength(event.target.value)}
+                    required
+                    type="number"
+                    value={maxLength}
+                  />
+                </label>
+              )}
+              {supportsOptions(fieldType) && (
+                <fieldset className="min-w-0">
+                  <legend className="text-sm font-medium">
+                    {t("fields.form.options")}
+                  </legend>
+                  <div className="mt-2 space-y-2">
+                    {options.map((option, index) => (
+                      <div className="flex gap-2" key={index}>
+                        <input
+                          aria-label={t("fields.form.option", {
+                            number: index + 1,
+                          })}
+                          className="w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+                          maxLength={255}
+                          onChange={(event) =>
                             setOptions((current) =>
-                              current.filter(
-                                (_, itemIndex) => itemIndex !== index,
+                              current.map((item, itemIndex) =>
+                                itemIndex === index ? event.target.value : item,
                               ),
                             )
                           }
-                          type="button"
-                        >
-                          {t("common.actions.remove")}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <button
-                  className="mt-3 rounded-lg border border-shell px-3 py-2 text-sm font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50"
-                  onClick={() => setOptions((current) => [...current, ""])}
-                  type="button"
-                >
-                  {t("fields.actions.addOption")}
-                </button>
-              </fieldset>
-            )}
+                          required
+                          value={option}
+                        />
+                        {options.length > 1 && (
+                          <button
+                            className="rounded-lg border border-shell px-3 py-2 text-sm font-medium text-danger transition enabled:hover:bg-danger/25"
+                            onClick={() =>
+                              setOptions((current) =>
+                                current.filter(
+                                  (_, itemIndex) => itemIndex !== index,
+                                ),
+                              )
+                            }
+                            type="button"
+                          >
+                            {t("common.actions.remove")}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    className="mt-3 rounded-lg border border-shell px-3 py-2 text-sm font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50"
+                    onClick={() => setOptions((current) => [...current, ""])}
+                    type="button"
+                  >
+                    {t("fields.actions.addOption")}
+                  </button>
+                </fieldset>
+              )}
+            </InventoryFieldSettings>
             <div className="mt-5 flex flex-wrap justify-end gap-3">
               <button
                 className="rounded-lg border border-shell px-4 py-2.5 text-sm font-semibold transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:opacity-50"

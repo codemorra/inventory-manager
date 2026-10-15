@@ -135,21 +135,41 @@
       "create": "Inventarfeld erstellen",
       "delete": "Inventarfeld löschen",
       "deleteOption": "Auswahloption löschen",
-      "edit": "Inventarfeld umbenennen"
+      "edit": "Inventarfeld bearbeiten"
     },
     "types": {
       "boolean": "Ja/Nein",
       "date": "Datum",
       "datetime": "Datum und Uhrzeit",
-      "duration": "Dauer",
+      "duration": "Zeitdauer",
       "multiselect": "Mehrfachauswahl",
       "number": "Zahl",
       "select": "Einfachauswahl",
       "text": "Text",
       "time": "Uhrzeit"
+    },
+    "typeHelp": {
+      "text": "Text mit einstellbarer Zeichenbegrenzung, zum Beispiel ein Titel oder Notizen.",
+      "number": "Eine ganze Zahl oder Dezimalzahl, zum Beispiel eine Menge oder ein Preis.",
+      "boolean": "Ein Ja- oder Nein-Wert, zum Beispiel ob etwas geprüft oder erledigt wurde.",
+      "date": "Ein Kalenderdatum ohne Uhrzeit, zum Beispiel ein Kaufdatum.",
+      "time": "Eine Uhrzeit ohne Datum, zum Beispiel 14:30.",
+      "datetime": "Ein Kalenderdatum mit Uhrzeit, zum Beispiel ein Termin.",
+      "duration": "Eine verstrichene Zeitspanne, zum Beispiel die Nutzungszeit.",
+      "select": "Für jeden Eintrag kann eine Option ausgewählt werden.",
+      "multiselect": "Für jeden Eintrag können mehrere Optionen ausgewählt werden."
+    },
+    "settings": {
+      "title": "Feldeinstellungen",
+      "required": "Pflichtfeld",
+      "requiredHelp": "Erforderlich bei neuen Einträgen und beim Speichern bestehender Einträge. Bisherige Einträge bleiben bis zur Bearbeitung unverändert.",
+      "sortable": "Spaltensortierung erlauben",
+      "sortableHelp": "Erlaubt das Sortieren der Eintragstabelle nach den Werten dieses Feldes.",
+      "notSortable": "Sortierung deaktiviert"
     }
   },
   "items": {
+    "requiredHint": "* Pflichtfelder müssen vor dem Speichern ausgefüllt sein.",
     "count_one": "{{count}} Eintrag",
     "count_other": "{{count}} Einträge",
     "actions": {

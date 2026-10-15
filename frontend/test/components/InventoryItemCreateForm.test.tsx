@@ -25,6 +25,8 @@ const fields: InventoryField[] = [
     name: "Title",
     field_type: "text",
     max_length: 120,
+    is_required: false,
+    is_sortable: true,
     options: [],
     position: 0,
     created_at: timestamp,
@@ -36,6 +38,8 @@ const fields: InventoryField[] = [
     name: "Rating",
     field_type: "number",
     max_length: null,
+    is_required: false,
+    is_sortable: true,
     options: [],
     position: 1,
     created_at: timestamp,
@@ -47,6 +51,8 @@ const fields: InventoryField[] = [
     name: "Played",
     field_type: "boolean",
     max_length: null,
+    is_required: false,
+    is_sortable: true,
     options: [],
     position: 2,
     created_at: timestamp,
@@ -58,6 +64,8 @@ const fields: InventoryField[] = [
     name: "Platform",
     field_type: "select",
     max_length: null,
+    is_required: false,
+    is_sortable: true,
     options: [
       {
         id: "platform-pc",
@@ -78,6 +86,8 @@ const fields: InventoryField[] = [
     name: "Genre",
     field_type: "multiselect",
     max_length: null,
+    is_required: false,
+    is_sortable: true,
     options: [
       {
         id: "genre-rpg",
@@ -118,6 +128,48 @@ function renderInventoryItemCreateForm(testFields = fields) {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+});
+
+// Test every required input family and intentional no/zero values during item creation.
+test("requires filled inputs and an explicit yes/no choice before creating", async () => {
+  const user = userEvent.setup();
+  renderInventoryItemCreateForm(
+    fields.map((field) => ({ ...field, is_required: true })),
+  );
+  await user.click(screen.getByRole("button", { name: "New item" }));
+  const save = screen.getByRole("button", { name: "Add item" });
+  expect(save).toBeDisabled();
+  expect(screen.getByRole("combobox", { name: /Played/ })).toHaveValue("");
+  await user.type(screen.getByRole("textbox", { name: /Title/ }), "   ");
+  await user.type(screen.getByRole("spinbutton", { name: /Rating/ }), "0");
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: /Played/ }),
+    "false",
+  );
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: /Platform/ }),
+    "platform-pc",
+  );
+  await user.selectOptions(
+    screen.getByRole("listbox", { name: /Genre/ }),
+    "genre-rpg",
+  );
+  expect(save).toBeDisabled();
+  await user.clear(screen.getByRole("textbox", { name: /Title/ }));
+  await user.type(screen.getByRole("textbox", { name: /Title/ }), "Example");
+  expect(save).toBeEnabled();
+  await user.click(save);
+  await waitFor(() =>
+    expect(mockedCreateInventoryItem).toHaveBeenCalledWith("inventory-1", {
+      values: [
+        { field_id: "title-field", value: "Example" },
+        { field_id: "rating-field", value: 0 },
+        { field_id: "played-field", value: false },
+        { field_id: "platform-field", value: "platform-pc" },
+        { field_id: "genre-field", value: ["genre-rpg"] },
+      ],
+    }),
+  );
 });
 
 describe("InventoryItemCreateForm", () => {

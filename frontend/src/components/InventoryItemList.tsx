@@ -19,6 +19,7 @@ import { sortInventoryItems, type ItemSort } from "./inventoryItemSorting";
 import {
   createValueInput,
   getInitialValue,
+  hasRequiredItemValues,
   type InventoryItemFormValue,
 } from "./inventoryItemForm";
 
@@ -95,7 +96,12 @@ function getEditableValues(
       )?.value;
 
       if (field.field_type === "boolean") {
-        return [field.id, storedValue === true];
+        return [
+          field.id,
+          typeof storedValue === "boolean"
+            ? storedValue
+            : getInitialValue(field),
+        ];
       }
 
       if (field.field_type === "multiselect") {
@@ -136,7 +142,9 @@ export function InventoryItemList({
   );
   const { t, i18n } = useTranslation();
   const [sort, setSort] = useState<ItemSort | null>(null);
-  const sortField = fields.find((field) => field.id === sort?.fieldId);
+  const sortField = fields.find(
+    (field) => field.id === sort?.fieldId && field.is_sortable,
+  );
   const displayedItems =
     sort && sortField
       ? sortInventoryItems(
@@ -160,6 +168,8 @@ export function InventoryItemList({
    * @param fieldId The identifier of the selected column.
    */
   function toggleSort(fieldId: string) {
+    if (!fields.some((field) => field.id === fieldId && field.is_sortable))
+      return;
     setSort((current) => ({
       fieldId,
       direction:
@@ -191,7 +201,11 @@ export function InventoryItemList({
   function handleUpdate(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!editingItem) {
+    if (
+      !editingItem ||
+      isMutating ||
+      !hasRequiredItemValues(fields, editValues)
+    ) {
       return;
     }
 
@@ -253,39 +267,43 @@ export function InventoryItemList({
                 {fields.map((field) => (
                   <th
                     aria-sort={
-                      sort?.fieldId === field.id ? sort.direction : undefined
+                      sortField?.id === field.id ? sort?.direction : undefined
                     }
                     className="whitespace-nowrap border-b border-shell p-0"
                     key={field.id}
                     scope="col"
                   >
-                    <button
-                      className={`flex w-full items-center gap-3 px-4 py-3 text-left font-semibold transition-colors enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sort?.fieldId === field.id ? "bg-accent-soft text-accent" : ""}`}
-                      onClick={() => toggleSort(field.id)}
-                      type="button"
-                    >
-                      <span>{field.name}</span>
-                      <svg
-                        aria-hidden="true"
-                        className="size-3.5 shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        viewBox="0 0 16 16"
+                    {field.is_sortable ? (
+                      <button
+                        className={`flex w-full items-center gap-3 px-4 py-3 text-left font-semibold transition-colors enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sort?.fieldId === field.id ? "bg-accent-soft text-accent" : ""}`}
+                        onClick={() => toggleSort(field.id)}
+                        type="button"
                       >
-                        {sort?.fieldId === field.id ? (
-                          <path
-                            d={
-                              sort.direction === "ascending"
-                                ? "M8 13V3m-4 4 4-4 4 4"
-                                : "M8 3v10m-4-4 4 4 4-4"
-                            }
-                          />
-                        ) : (
-                          <path d="m3 6 3-3 3 3M7 10l3 3 3-3" />
-                        )}
-                      </svg>
-                    </button>
+                        <span>{field.name}</span>
+                        <svg
+                          aria-hidden="true"
+                          className="size-3.5 shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          viewBox="0 0 16 16"
+                        >
+                          {sort?.fieldId === field.id ? (
+                            <path
+                              d={
+                                sort.direction === "ascending"
+                                  ? "M8 13V3m-4 4 4-4 4 4"
+                                  : "M8 3v10m-4-4 4 4 4-4"
+                              }
+                            />
+                          ) : (
+                            <path d="m3 6 3-3 3 3M7 10l3 3 3-3" />
+                          )}
+                        </svg>
+                      </button>
+                    ) : (
+                      <span className="block px-4 py-3">{field.name}</span>
+                    )}
                   </th>
                 ))}
                 <th
@@ -370,6 +388,11 @@ export function InventoryItemList({
           title={t("items.titles.edit")}
         >
           <form onSubmit={handleUpdate}>
+            {fields.some((field) => field.is_required) && (
+              <p className="mb-4 text-xs text-muted">
+                {t("items.requiredHint")}
+              </p>
+            )}
             <div className="grid gap-4 md:grid-cols-2">
               {fields.map((field) => (
                 <InventoryItemFieldInput
@@ -402,7 +425,9 @@ export function InventoryItemList({
             <div className="mt-6 flex flex-wrap justify-end gap-3">
               <button
                 className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isMutating}
+                disabled={
+                  isMutating || !hasRequiredItemValues(fields, editValues)
+                }
                 type="submit"
               >
                 {updateItem.isPending

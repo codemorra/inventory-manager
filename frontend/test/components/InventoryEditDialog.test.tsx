@@ -40,6 +40,8 @@ const title: InventoryField = {
   name: "Title",
   field_type: "text",
   max_length: 120,
+  is_required: false,
+  is_sortable: true,
   options: [],
   position: 0,
   created_at: "",
@@ -169,7 +171,13 @@ test("keeps new fields local across section changes until explicit save", async 
       fields: [
         {
           action: "create",
-          data: { name: "Notes", field_type: "text", max_length: 255 },
+          data: {
+            name: "Notes",
+            field_type: "text",
+            max_length: 255,
+            is_required: false,
+            is_sortable: true,
+          },
         },
       ],
       options: [],
@@ -258,6 +266,47 @@ test("submits field renames and option changes together", async () => {
   );
 });
 
+// Test field settings remain local until saving the parent, or are discarded on cancellation.
+test.each(["Save changes", "Cancel"])(
+  "keeps field settings in the session until %s",
+  async (action) => {
+    const user = userEvent.setup();
+    vi.mocked(fieldApi.getInventoryFields).mockResolvedValue([title]);
+    const { client, close } = renderEditor("fields");
+    await user.click(await screen.findByRole("button", { name: "Edit" }));
+    await user.click(screen.getByRole("checkbox", { name: "Required field" }));
+    await user.click(
+      screen.getByRole("checkbox", { name: "Allow column sorting" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByText("Required field")).toBeVisible();
+    expect(screen.getByText("Sorting disabled")).toBeVisible();
+    expect(saveInventoryConfiguration).not.toHaveBeenCalled();
+    expect(
+      client.getQueryData(["inventories", inventory.id, "fields"]),
+    ).toEqual([title]);
+    await user.click(screen.getByRole("button", { name: action }));
+    if (action === "Save changes") {
+      await waitFor(() =>
+        expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+          inventory: { name: "Games", description: null },
+          fields: [
+            {
+              action: "update",
+              field_id: title.id,
+              data: { is_required: true, is_sortable: false },
+            },
+          ],
+          options: [],
+        }),
+      );
+    } else expect(saveInventoryConfiguration).not.toHaveBeenCalled();
+    await waitFor(() => expect(close).toHaveBeenCalledOnce());
+    expect(title.is_required).toBe(false);
+    expect(title.is_sortable).toBe(true);
+  },
+);
+
 // Test that deleting a saved field only stages a tombstone operation.
 test("stages saved field deletion without changing the cached field list", async () => {
   const user = userEvent.setup();
@@ -343,6 +392,8 @@ test("keeps options on new selection fields local and saves only their final sta
           data: {
             name: "Status",
             field_type: "select",
+            is_required: false,
+            is_sortable: true,
             options: [{ name: "Playing" }],
           },
         },

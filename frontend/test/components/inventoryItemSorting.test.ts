@@ -43,6 +43,8 @@ function field(type: InventoryFieldType): InventoryField {
     name: "Field",
     field_type: type,
     max_length: null,
+    is_required: false,
+    is_sortable: true,
     position: 0,
     created_at: "",
     updated_at: "",

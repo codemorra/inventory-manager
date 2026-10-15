@@ -8,6 +8,7 @@ import type { InventoryField } from "../types/inventoryField";
 import {
   createValueInput,
   getInitialValue,
+  hasRequiredItemValues,
   type InventoryItemFormValue,
 } from "./inventoryItemForm";
 // Define properties for the inventory item creation form.
@@ -43,8 +44,46 @@ export function InventoryItemFieldInput({
 }: InventoryItemFieldInputProps) {
   const { t } = useTranslation();
   const inputId = `${idPrefix}-${field.id}`;
+  const fieldLabel = (
+    <>
+      {field.name}
+      {field.is_required && (
+        <span aria-hidden="true" className="ml-1 text-accent">
+          *
+        </span>
+      )}
+    </>
+  );
   const inputClassName =
     "mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50";
+
+  // Required yes/no values must distinguish an unanswered field from an explicit no.
+  if (field.field_type === "boolean" && field.is_required) {
+    return (
+      <label
+        className="block text-sm font-medium text-foreground"
+        htmlFor={inputId}
+      >
+        {fieldLabel}
+        <select
+          className={inputClassName}
+          disabled={disabled}
+          id={inputId}
+          required
+          onChange={(event) =>
+            onChange(
+              event.target.value === "" ? "" : event.target.value === "true",
+            )
+          }
+          value={typeof value === "boolean" ? String(value) : ""}
+        >
+          <option value="">{t("items.noSelection")}</option>
+          <option value="true">{t("common.values.yes")}</option>
+          <option value="false">{t("common.values.no")}</option>
+        </select>
+      </label>
+    );
+  }
 
   if (field.field_type === "boolean") {
     return (
@@ -60,7 +99,7 @@ export function InventoryItemFieldInput({
           onChange={(event) => onChange(event.target.checked)}
           type="checkbox"
         />
-        <span className="text-sm font-medium">{field.name}</span>
+        <span className="text-sm font-medium">{fieldLabel}</span>
       </label>
     );
   }
@@ -71,11 +110,12 @@ export function InventoryItemFieldInput({
         className="block text-sm font-medium text-foreground"
         htmlFor={inputId}
       >
-        {field.name}
+        {fieldLabel}
         <select
           className={inputClassName}
           disabled={disabled}
           id={inputId}
+          required={field.is_required}
           onChange={(event) => onChange(event.target.value)}
           value={typeof value === "string" ? value : ""}
         >
@@ -97,13 +137,14 @@ export function InventoryItemFieldInput({
           className="block text-sm font-medium text-foreground"
           htmlFor={inputId}
         >
-          {field.name}
+          {fieldLabel}
           <select
             aria-describedby={`${inputId}-help`}
             className={`${inputClassName} min-h-28`}
             disabled={disabled}
             id={inputId}
             multiple
+            required={field.is_required}
             onChange={(event) =>
               onChange(
                 Array.from(
@@ -145,12 +186,13 @@ export function InventoryItemFieldInput({
       className="block text-sm font-medium text-foreground"
       htmlFor={inputId}
     >
-      {field.name}
+      {fieldLabel}
       <input
         className={inputClassName}
         disabled={disabled}
         id={inputId}
         maxLength={field.max_length ?? undefined}
+        required={field.is_required}
         min={field.field_type === "duration" ? 0 : undefined}
         onChange={(event) => onChange(event.target.value)}
         step={field.field_type === "number" ? "any" : undefined}
@@ -191,6 +233,8 @@ export function InventoryItemCreateForm({
    */
   function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (createItem.isPending || !hasRequiredItemValues(fields, values)) return;
 
     const itemValues = fields.flatMap((field) => {
       const value = values[field.id] ?? getInitialValue(field);
@@ -237,6 +281,11 @@ export function InventoryItemCreateForm({
             <p className="text-sm leading-relaxed text-muted">
               {t("items.formDescription")}
             </p>
+            {fields.some((field) => field.is_required) && (
+              <p className="mt-2 text-xs text-muted">
+                {t("items.requiredHint")}
+              </p>
+            )}
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               {fields.map((field) => (
                 <InventoryItemFieldInput
@@ -269,7 +318,9 @@ export function InventoryItemCreateForm({
             <div className="mt-6 flex flex-wrap justify-end gap-3">
               <button
                 className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={createItem.isPending}
+                disabled={
+                  createItem.isPending || !hasRequiredItemValues(fields, values)
+                }
                 type="submit"
               >
                 {createItem.isPending

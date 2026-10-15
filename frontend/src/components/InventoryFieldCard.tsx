@@ -6,6 +6,7 @@ import { useInventoryDraft, useDraftEditorLock } from "./InventoryDraftContext";
 import type { InventoryField } from "../types/inventoryField";
 import { InventoryFieldOptions } from "./InventoryFieldOptions";
 import { Modal } from "./Modal";
+import { InventoryFieldSettings } from "./InventoryFieldSettings";
 
 // Define properties for an inventory field card.
 interface InventoryFieldCardProps {
@@ -24,9 +25,11 @@ export function InventoryFieldCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(inventoryField.name);
+  const [isRequired, setIsRequired] = useState(inventoryField.is_required);
+  const [isSortable, setIsSortable] = useState(inventoryField.is_sortable);
 
   const {
-    renameField,
+    updateField,
     removeField,
     disabled: isMutating,
   } = useInventoryDraft();
@@ -35,6 +38,8 @@ export function InventoryFieldCard({
   // Function to initiate editing of the inventory field.
   function startEditing() {
     setName(inventoryField.name);
+    setIsRequired(inventoryField.is_required);
+    setIsSortable(inventoryField.is_sortable);
     setIsEditing(true);
   }
 
@@ -44,13 +49,17 @@ export function InventoryFieldCard({
   }
 
   /**
-   * Apply the renamed field to the local draft without changing its type.
+   * Apply the field name and settings locally without changing its type or text limit.
    * @param event The form submission event.
    */
   function handleUpdate(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    renameField(inventoryField.id, name.trim());
+    updateField(inventoryField.id, {
+      name: name.trim(),
+      is_required: isRequired,
+      is_sortable: isSortable,
+    });
     setIsEditing(false);
   }
 
@@ -63,7 +72,7 @@ export function InventoryFieldCard({
     <article className="bg-surface px-4 py-4">
       {isEditing && (
         <Modal
-          size="small"
+          size="medium"
           title={t("fields.titles.edit")}
           onClose={() => {
             if (!isMutating) cancelEditing();
@@ -89,6 +98,17 @@ export function InventoryFieldCard({
               />
             </div>
 
+            <p className="text-sm text-muted">
+              {t(`fields.types.${inventoryField.field_type}`)} ·{" "}
+              {t(`fields.typeHelp.${inventoryField.field_type}`)}
+            </p>
+            <InventoryFieldSettings
+              required={isRequired}
+              sortable={isSortable}
+              disabled={isMutating}
+              onRequiredChange={setIsRequired}
+              onSortableChange={setIsSortable}
+            />
             <div className="flex justify-end gap-2">
               <button
                 className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
@@ -119,6 +139,16 @@ export function InventoryFieldCard({
             <p className="inline-flex rounded-md bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent">
               {t(`fields.types.${inventoryField.field_type}`)}
             </p>
+            {inventoryField.is_required && (
+              <span className="text-xs font-medium text-muted">
+                {t("fields.settings.required")}
+              </span>
+            )}
+            {!inventoryField.is_sortable && (
+              <span className="text-xs text-muted">
+                {t("fields.settings.notSortable")}
+              </span>
+            )}
           </div>
           {inventoryField.max_length !== null && (
             <p className="mt-1.5 text-xs text-muted">

@@ -15,7 +15,11 @@ test("renames a field only in the draft", async () => {
   await user.clear(screen.getByLabelText("Field name"));
   await user.type(screen.getByLabelText("Field name"), "Manufacturer");
   await user.click(screen.getByRole("button", { name: "Save" }));
-  expect(actions.renameField).toHaveBeenCalledWith(field.id, "Manufacturer");
+  expect(actions.updateField).toHaveBeenCalledWith(field.id, {
+    name: "Manufacturer",
+    is_required: false,
+    is_sortable: true,
+  });
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
@@ -50,5 +54,55 @@ test("cancels a field rename", async () => {
   await user.click(screen.getByRole("button", { name: "Edit" }));
   await user.type(screen.getByLabelText("Field name"), " changed");
   await user.click(screen.getByRole("button", { name: "Cancel" }));
-  expect(actions.renameField).not.toHaveBeenCalled();
+  expect(actions.updateField).not.toHaveBeenCalled();
+});
+
+// Test local field setting changes while immutable configuration stays unavailable.
+test("edits field requirements and sorting without exposing type or limit changes", async () => {
+  const user = userEvent.setup();
+  const { actions } = renderDraftControl(
+    <InventoryFieldCard inventoryField={field} />,
+  );
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  expect(
+    screen.getByRole("dialog", { name: "Edit inventory field" }),
+  ).toBeInTheDocument();
+  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Maximum length")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("checkbox", { name: "Required field" }));
+  await user.click(
+    screen.getByRole("checkbox", { name: "Allow column sorting" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Save" }));
+  expect(actions.updateField).toHaveBeenCalledWith(field.id, {
+    name: field.name,
+    is_required: true,
+    is_sortable: false,
+  });
+});
+
+// Test canceled child edits and reopening restore the current draft's settings.
+test("discards canceled settings and reloads them on reopening", async () => {
+  const user = userEvent.setup();
+  const { actions } = renderDraftControl(
+    <InventoryFieldCard
+      inventoryField={{ ...field, is_required: true, is_sortable: false }}
+    />,
+  );
+  expect(screen.getByText("Required field")).toBeVisible();
+  expect(screen.getByText("Sorting disabled")).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  await user.click(screen.getByRole("checkbox", { name: "Required field" }));
+  await user.click(
+    screen.getByRole("checkbox", { name: "Allow column sorting" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(actions.updateField).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  expect(
+    screen.getByRole("checkbox", { name: "Required field" }),
+  ).toBeChecked();
+  expect(
+    screen.getByRole("checkbox", { name: "Allow column sorting" }),
+  ).not.toBeChecked();
 });
