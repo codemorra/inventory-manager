@@ -5,6 +5,38 @@ import type {
 } from "../types/inventoryField";
 import type { InventoryEditorInput } from "../types/inventoryEditor";
 
+// Locate a dragged field relative to its drop target without adding persistent metadata.
+export type FieldDropSide = "before" | "after";
+
+/**
+ * Move a field within a local draft while retaining its definition and option identifiers.
+ * @param fields The current ordered draft fields.
+ * @param sourceId The saved or temporary identifier being moved.
+ * @param targetId The field serving as the insertion target.
+ * @param side Whether to insert before or after the target.
+ * @returns Reordered fields with consecutive local positions, or the original array for a no-op.
+ */
+export function moveDraftField(
+  fields: InventoryField[],
+  sourceId: string,
+  targetId: string,
+  side: FieldDropSide,
+): InventoryField[] {
+  const source = fields.find((field) => field.id === sourceId);
+  if (
+    !source ||
+    sourceId === targetId ||
+    !fields.some((field) => field.id === targetId)
+  )
+    return fields;
+  const ordered = fields.filter((field) => field.id !== sourceId);
+  const targetIndex = ordered.findIndex((field) => field.id === targetId);
+  ordered.splice(targetIndex + (side === "after" ? 1 : 0), 0, source);
+  if (ordered.every((field, index) => field.id === fields[index]?.id))
+    return fields;
+  return ordered.map((field, position) => ({ ...field, position }));
+}
+
 /**
  * Create a locally identified field without writing to the server or query cache.
  * @param inventoryId The inventory owning the draft.
@@ -52,6 +84,20 @@ export function buildInventoryEditorInput(
   inventory: InventoryEditorInput["inventory"],
 ): InventoryEditorInput {
   const result: InventoryEditorInput = { inventory, fields: [], options: [] };
+  const savedIds = new Set(original.map((field) => field.id));
+  const currentIds = new Set(current.map((field) => field.id));
+  // Without explicit order, the server retains surviving fields and appends newly created ones.
+  const appendOrder = [
+    ...original.filter((field) => currentIds.has(field.id)),
+    ...current.filter((field) => !savedIds.has(field.id)),
+  ];
+  const reordered = current.some(
+    (field, index) => field.id !== appendOrder[index]?.id,
+  );
+  if (reordered)
+    result.field_order = current.map((field) =>
+      savedIds.has(field.id) ? { field_id: field.id } : { client_id: field.id },
+    );
   for (const saved of original) {
     if (!current.some((field) => field.id === saved.id))
       result.fields.push({ action: "delete", field_id: saved.id });
@@ -61,6 +107,7 @@ export function buildInventoryEditorInput(
     if (!saved) {
       result.fields.push({
         action: "create",
+        ...(reordered && { client_id: field.id }),
         data: {
           name: field.name,
           field_type: field.field_type,

@@ -163,7 +163,7 @@ test("frontend clients complete configuration and item CRUD against Express", as
     // Exercise the draft client's atomic contract against the actual SQLite-backed server.
     const { saveInventoryConfiguration } =
       await import("../src/services/inventoryEditor");
-    const saved = await saveInventoryConfiguration(inventory.id, {
+    let saved = await saveInventoryConfiguration(inventory.id, {
       inventory: {
         name: "Saved editor draft",
         description: "Atomic configuration",
@@ -193,6 +193,33 @@ test("frontend clients complete configuration and item CRUD against Express", as
     expect(
       saved.fields[1]?.options.find((entry) => entry.id === option.id)?.name,
     ).toBe("Priority");
+    expect(await fields.getInventoryFields(inventory.id)).toEqual(saved.fields);
+    expect(await items.getInventoryItems(inventory.id)).toEqual([updated]);
+    // Exercise generated saved/temporary order references against the real transaction endpoint.
+    const { buildInventoryEditorInput, createDraftField } =
+      await import("../src/components/inventoryEditorDraft");
+    const draftField = createDraftField(inventory.id, {
+      name: "Quantity",
+      field_type: "number",
+    });
+    saved = await saveInventoryConfiguration(
+      inventory.id,
+      buildInventoryEditorInput(
+        saved.fields,
+        [draftField, ...saved.fields.toReversed()],
+        {
+          name: saved.inventory.name,
+          description: saved.inventory.description,
+        },
+      ),
+    );
+    expect(saved.fields.map((field) => [field.name, field.position])).toEqual([
+      ["Quantity", 0],
+      ["Notes", 1],
+      ["Category", 2],
+      ["Played", 3],
+    ]);
+    expect(saved.fields[0]?.id).not.toBe(draftField.id);
     expect(await fields.getInventoryFields(inventory.id)).toEqual(saved.fields);
     expect(await items.getInventoryItems(inventory.id)).toEqual([updated]);
     await expect(

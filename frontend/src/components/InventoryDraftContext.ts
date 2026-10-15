@@ -4,11 +4,14 @@ import type {
   InventoryField,
   InventoryFieldOption,
 } from "../types/inventoryField";
+import type { FieldDropSide } from "./inventoryEditorDraft";
 
 // Expose local draft operations without any network mutation fallback.
 export interface InventoryDraftActions {
   fields: InventoryField[];
   disabled: boolean;
+  canReorder: boolean;
+  moveField: (sourceId: string, targetId: string, side: FieldDropSide) => void;
   addField: (data: CreateInventoryFieldInput) => void;
   updateField: (
     id: string,

@@ -134,6 +134,8 @@
     "optionName": "Option name",
     "options": "Options: {{options}}",
     "title": "Inventory fields",
+    "reorderHint": "Drag fields by their handles into the desired order.",
+    "reorderField": "Reorder {{name}}",
     "titles": {
       "create": "Create inventory field",
       "delete": "Delete inventory field",

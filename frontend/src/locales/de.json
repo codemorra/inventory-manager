@@ -134,6 +134,8 @@
     "optionName": "Optionsname",
     "options": "Optionen: {{options}}",
     "title": "Inventarfelder",
+    "reorderHint": "Ziehe die Felder am Griff in die gewünschte Reihenfolge.",
+    "reorderField": "{{name}} verschieben",
     "titles": {
       "create": "Inventarfeld erstellen",
       "delete": "Inventarfeld löschen",
