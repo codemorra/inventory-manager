@@ -123,9 +123,11 @@ function InventoryEditorSession({
       const field = createDraftField(inventory.id, data);
       setFields((current) => [...current, field]);
     },
-    renameField: (id, name) =>
+    updateField: (id, changes) =>
       setFields((current) =>
-        current.map((field) => (field.id === id ? { ...field, name } : field)),
+        current.map((field) =>
+          field.id === id ? { ...field, ...changes } : field,
+        ),
       ),
     removeField: (id) =>
       setFields((current) => current.filter((field) => field.id !== id)),

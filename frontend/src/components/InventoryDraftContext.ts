@@ -9,7 +9,10 @@ export interface InventoryDraftActions {
   fields: InventoryField[];
   disabled: boolean;
   addField: (data: CreateInventoryFieldInput) => void;
-  renameField: (id: string, name: string) => void;
+  updateField: (
+    id: string,
+    changes: { name: string; is_required: boolean; is_sortable: boolean },
+  ) => void;
   removeField: (id: string) => void;
   addOption: (fieldId: string, name: string) => void;
   renameOption: (fieldId: string, id: string, name: string) => void;

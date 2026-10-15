@@ -27,7 +27,13 @@ test("creates independent local field and option identifiers", () => {
   expect(input.fields).toEqual([
     {
       action: "create",
-      data: { name: "Type", field_type: "select", options: [{ name: "USB" }] },
+      data: {
+        name: "Type",
+        field_type: "select",
+        options: [{ name: "USB" }],
+        is_required: false,
+        is_sortable: true,
+      },
     },
   ]);
   expect(input.options).toEqual([]);
@@ -80,4 +86,54 @@ test("requires unique options on new selections but preserves existing empty sel
   };
   expect(isValidFieldDraft([], [duplicates])).toBe(false);
   expect(isValidFieldDraft([duplicates], [duplicates])).toBe(true);
+});
+
+// Test explicit default values and persisted changes in either boolean direction.
+test("serializes field flags while omitting reverted settings", () => {
+  const configured = createDraftField("inventory-1", {
+    name: "Title",
+    is_required: true,
+    is_sortable: false,
+  });
+  expect(configured).toMatchObject({ is_required: true, is_sortable: false });
+  expect(buildInventoryEditorInput([], [configured], inventory).fields).toEqual(
+    [
+      {
+        action: "create",
+        data: {
+          name: "Title",
+          field_type: "text",
+          max_length: 255,
+          is_required: true,
+          is_sortable: false,
+        },
+      },
+    ],
+  );
+  const changed = { ...field, is_required: true, is_sortable: false };
+  expect(
+    buildInventoryEditorInput([field], [changed], inventory).fields,
+  ).toEqual([
+    {
+      action: "update",
+      field_id: field.id,
+      data: { is_required: true, is_sortable: false },
+    },
+  ]);
+  expect(
+    buildInventoryEditorInput([changed], [field], inventory).fields,
+  ).toEqual([
+    {
+      action: "update",
+      field_id: field.id,
+      data: { is_required: false, is_sortable: true },
+    },
+  ]);
+  expect(
+    buildInventoryEditorInput(
+      [field],
+      [{ ...changed, is_required: false, is_sortable: true }],
+      inventory,
+    ).fields,
+  ).toEqual([]);
 });

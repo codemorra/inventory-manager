@@ -27,6 +27,8 @@ export interface InventoryField {
   name: string;
   field_type: InventoryFieldType;
   max_length: number | null;
+  is_required: boolean;
+  is_sortable: boolean;
   options: InventoryFieldOption[];
   position: number;
   created_at: string;
@@ -39,12 +41,16 @@ export interface CreateInventoryFieldInput {
   field_type?: InventoryFieldType;
   max_length?: number;
   options?: CreateInventoryFieldOptionInput[];
+  is_required?: boolean;
+  is_sortable?: boolean;
 }
 
 /** Define optional data accepted when updating an inventory field. */
 export interface UpdateInventoryFieldInput {
   name?: string;
   position?: number;
+  is_required?: boolean;
+  is_sortable?: boolean;
 }
 
 /** Define data accepted when creating an inventory field option. */

@@ -135,21 +135,41 @@
       "create": "Create inventory field",
       "delete": "Delete inventory field",
       "deleteOption": "Delete option",
-      "edit": "Rename inventory field"
+      "edit": "Edit inventory field"
     },
     "types": {
-      "boolean": "Boolean",
+      "boolean": "Yes/No",
       "date": "Date",
       "datetime": "Date and time",
       "duration": "Duration",
-      "multiselect": "Multiselect",
+      "multiselect": "Multiple choice",
       "number": "Number",
-      "select": "Select",
+      "select": "Single choice",
       "text": "Text",
       "time": "Time"
+    },
+    "typeHelp": {
+      "text": "Text with a configurable character limit, for example a title or notes.",
+      "number": "A whole or decimal number, for example a quantity or price.",
+      "boolean": "A yes or no value, for example whether something has been checked or completed.",
+      "date": "A calendar date without a time, for example a purchase date.",
+      "time": "A time of day without a date, for example 14:30.",
+      "datetime": "A calendar date with a time, for example an appointment.",
+      "duration": "An elapsed amount of time, for example usage time.",
+      "select": "One option can be selected for each item.",
+      "multiselect": "Multiple options can be selected for each item."
+    },
+    "settings": {
+      "title": "Field settings",
+      "required": "Required field",
+      "requiredHelp": "Required for new items and when saving an existing item. Existing items stay unchanged until edited.",
+      "sortable": "Allow column sorting",
+      "sortableHelp": "Allow sorting the item table by this field's values.",
+      "notSortable": "Sorting disabled"
     }
   },
   "items": {
+    "requiredHint": "* Required fields must be filled before saving.",
     "count_one": "{{count}} item",
     "count_other": "{{count}} items",
     "actions": {

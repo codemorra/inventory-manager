@@ -36,6 +36,8 @@ const fields: InventoryField[] = [
     name: "Title",
     field_type: "text",
     max_length: 120,
+    is_required: false,
+    is_sortable: true,
     options: [],
     position: 0,
     created_at: timestamp,
@@ -47,6 +49,8 @@ const fields: InventoryField[] = [
     name: "Genre",
     field_type: "multiselect",
     max_length: null,
+    is_required: false,
+    is_sortable: true,
     options: [
       {
         id: "genre-rpg",
@@ -67,6 +71,8 @@ const fields: InventoryField[] = [
     name: "Played",
     field_type: "boolean",
     max_length: null,
+    is_required: false,
+    is_sortable: true,
     options: [],
     position: 2,
     created_at: timestamp,
@@ -107,14 +113,14 @@ const items: InventoryItem[] = [
 ];
 
 /** Render the item table with an isolated query client. */
-function renderInventoryItemList(testItems = items) {
+function renderInventoryItemList(testItems = items, testFields = fields) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <InventoryItemList fields={fields} items={testItems} />
+      <InventoryItemList fields={testFields} items={testItems} />
     </QueryClientProvider>,
   );
 }
@@ -123,6 +129,84 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   vi.restoreAllMocks();
+});
+
+// Test that disabling a column also removes an active sort after a field refetch.
+test("removes sorting controls and active sorting when a field becomes unsortable", async () => {
+  const user = userEvent.setup();
+  const client = new QueryClient();
+  const second = {
+    ...items[0],
+    id: "second",
+    values: [{ ...items[0].values[0], value: "Animal Crossing" }],
+  };
+  const testItems = [...items, second];
+  const view = render(
+    <QueryClientProvider client={client}>
+      <InventoryItemList fields={fields} items={testItems} />
+    </QueryClientProvider>,
+  );
+  await user.click(screen.getByRole("button", { name: "Title" }));
+  expect(
+    within(screen.getAllByRole("row")[1]).getByText("Animal Crossing"),
+  ).toBeVisible();
+  view.rerender(
+    <QueryClientProvider client={client}>
+      <InventoryItemList
+        fields={fields.map((field) => ({ ...field, is_sortable: false }))}
+        items={testItems}
+      />
+    </QueryClientProvider>,
+  );
+  const header = screen.getByRole("columnheader", { name: "Title" });
+  expect(within(header).queryByRole("button")).not.toBeInTheDocument();
+  expect(header).not.toHaveAttribute("aria-sort");
+  expect(
+    screen.queryByRole("button", { name: "Reset sorting" }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(screen.getAllByRole("row")[1]).getByText("Baldur's Gate 3"),
+  ).toBeVisible();
+});
+
+// Test variant B: old incomplete items stay visible but cannot be saved without required values.
+test("requires missing values only when editing an existing item and preserves explicit no", async () => {
+  const user = userEvent.setup();
+  mockedUpdateInventoryItem.mockResolvedValue(items[0]);
+  renderInventoryItemList(
+    [{ ...items[0], values: [] }],
+    fields.map((field) => ({ ...field, is_required: true })),
+  );
+  expect(screen.getAllByText("—")).toHaveLength(3);
+  expect(mockedUpdateInventoryItem).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  const save = screen.getByRole("button", { name: "Save changes" });
+  expect(save).toBeDisabled();
+  expect(screen.getByRole("combobox", { name: /Played/ })).toHaveValue("");
+  await user.type(screen.getByRole("textbox", { name: /Title/ }), "Cable");
+  await user.selectOptions(
+    screen.getByRole("listbox", { name: /Genre/ }),
+    "genre-rpg",
+  );
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: /Played/ }),
+    "false",
+  );
+  expect(save).toBeEnabled();
+  await user.click(save);
+  await waitFor(() =>
+    expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
+      "inventory-1",
+      "item-1",
+      {
+        values: [
+          { field_id: "title-field", value: "Cable" },
+          { field_id: "genre-field", value: ["genre-rpg"] },
+          { field_id: "played-field", value: false },
+        ],
+      },
+    ),
+  );
 });
 
 describe("InventoryItemList", () => {
