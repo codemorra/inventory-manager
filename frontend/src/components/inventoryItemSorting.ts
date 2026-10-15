@@ -1,5 +1,6 @@
 import type { InventoryField } from "../types/inventoryField";
 import type { InventoryItem } from "../types/inventoryItem";
+import { isUrlInput, urlDisplayText } from "./url";
 
 // Define the active column and direction of a table sort.
 export interface ItemSort {
@@ -73,6 +74,8 @@ function sortValue(
   value: unknown,
   collator: Intl.Collator,
 ): string | number | null {
+  if (field.field_type === "url")
+    return isUrlInput(value) ? urlDisplayText(value) || null : null;
   if (
     value == null ||
     value === "" ||

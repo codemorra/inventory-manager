@@ -7,6 +7,38 @@ import {
   getEditableValue,
 } from "../../src/components/inventoryItemForm";
 import { field } from "../helpers/inventoryDraft";
+
+// Test optional and required links, explicit clearing, and lossless restoration for item editing.
+test("validates structured URL drafts and serializes only complete web links", () => {
+  const urlField = { ...field, field_type: "url" as const };
+  const required = { ...urlField, is_required: true };
+  expect(getInitialValue(urlField)).toEqual({ url: "", label: "" });
+  expect(hasValidItemValues([urlField], {})).toBe(true);
+  expect(hasRequiredItemValues([required], {})).toBe(false);
+  for (const value of [
+    { url: "javascript:alert(1)" },
+    { url: "https://" },
+    { url: "", label: "Orphaned label" },
+    { url: " https://example.com" },
+  ]) {
+    expect(hasValidItemValues([urlField], { [field.id]: value })).toBe(false);
+    expect(createValueInput(urlField, value)).toBeNull();
+  }
+  const stored = { url: "https://example.com", label: "Documentation" };
+  expect(getEditableValue(urlField, stored)).toEqual(stored);
+  expect(getEditableValue(urlField, stored)).not.toBe(stored);
+  expect(hasValidItemValues([required], { [field.id]: stored })).toBe(true);
+  expect(createValueInput(urlField, stored)).toEqual({
+    field_id: field.id,
+    value: stored,
+  });
+  expect(createValueInput(urlField, { url: stored.url, label: "" })).toEqual({
+    field_id: field.id,
+    value: { url: stored.url },
+  });
+  expect(createValueInput(urlField, { url: "", label: "" })).toBeNull();
+  expect(getEditableValue(urlField, undefined)).toEqual({ url: "", label: "" });
+});
 import {
   durationFromSeconds,
   emptyDuration,

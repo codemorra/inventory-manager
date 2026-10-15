@@ -132,6 +132,38 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+// Test the item form rejects incomplete or unsafe links and submits optional display text structurally.
+test("creates a URL item only after entering a valid web address", async () => {
+  const user = userEvent.setup();
+  renderInventoryItemCreateForm([
+    { ...fields[0], name: "Website", field_type: "url", is_required: true },
+  ]);
+  await user.click(screen.getByRole("button", { name: "New item" }));
+  const save = screen.getByRole("button", { name: "Add item" });
+  expect(save).toBeDisabled();
+  const address = screen.getByLabelText("Website: Web address");
+  await user.type(address, "javascript:alert(1)");
+  expect(save).toBeDisabled();
+  expect(mockedCreateInventoryItem).not.toHaveBeenCalled();
+  await user.clear(address);
+  await user.type(address, "https://example.com/docs");
+  await user.type(
+    screen.getByLabelText("Website: Link text (optional)"),
+    "Documentation",
+  );
+  await user.click(save);
+  await waitFor(() =>
+    expect(mockedCreateInventoryItem).toHaveBeenCalledWith("inventory-1", {
+      values: [
+        {
+          field_id: fields[0].id,
+          value: { url: "https://example.com/docs", label: "Documentation" },
+        },
+      ],
+    }),
+  );
+});
+
 // Test numbering is deferred until save and the read-only preview never enters the payload.
 test("shows an automatic ID placeholder and submits no manually assigned number", async () => {
   const user = userEvent.setup();

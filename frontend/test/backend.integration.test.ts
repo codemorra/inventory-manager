@@ -318,6 +318,73 @@ test("frontend clients complete configuration and item CRUD against Express", as
       await items.deleteInventoryItem(inventory.id, nextNumbered.id),
     ).toBeUndefined();
     expect(await items.getInventoryItems(inventory.id)).toEqual([]);
+    // Verify URL drafts and form payloads round-trip through the real backend without losing display text.
+    const currentFields = await fields.getInventoryFields(inventory.id);
+    const urlDraft = createDraftField(inventory.id, {
+      name: "Website",
+      field_type: "url",
+      is_required: true,
+    });
+    const linkConfiguration = await saveInventoryConfiguration(
+      inventory.id,
+      buildInventoryEditorInput(currentFields, [...currentFields, urlDraft], {
+        name: saved.inventory.name,
+        description: saved.inventory.description,
+      }),
+    );
+    const urlField = linkConfiguration.fields.find(
+      (field) => field.field_type === "url",
+    )!;
+    const { createValueInput, getEditableValue, hasValidItemValues } =
+      await import("../src/components/inventoryItemForm");
+    const linkValue = {
+      url: "https://example.com/docs?q=1#help",
+      label: "Documentation",
+    };
+    const linkItem = await items.createInventoryItem(inventory.id, {
+      values: [createValueInput(urlField, linkValue)!],
+    });
+    expect(
+      linkItem.values.find((value) => value.field_id === urlField.id)?.value,
+    ).toEqual(linkValue);
+    expect(getEditableValue(urlField, linkValue)).toEqual(linkValue);
+    const bareLink = await items.updateInventoryItem(
+      inventory.id,
+      linkItem.id,
+      { values: [createValueInput(urlField, { ...linkValue, label: "" })!] },
+    );
+    expect(
+      bareLink.values.find((value) => value.field_id === urlField.id)?.value,
+    ).toEqual({ url: linkValue.url });
+    for (const value of [
+      { url: "javascript:alert(1)" },
+      { url: "https://example.com\n" },
+      { url: "", label: "No destination" },
+    ]) {
+      expect(hasValidItemValues([urlField], { [urlField.id]: value })).toBe(
+        false,
+      );
+      await expect(
+        items.updateInventoryItem(inventory.id, linkItem.id, {
+          values: [{ field_id: urlField.id, value }],
+        }),
+      ).rejects.toMatchObject({ status: 422 });
+    }
+    await expect(
+      items.updateInventoryItem(inventory.id, linkItem.id, { values: [] }),
+    ).rejects.toMatchObject({ status: 422 });
+    await fields.updateInventoryField(inventory.id, urlField.id, {
+      is_required: false,
+    });
+    const clearedLink = await items.updateInventoryItem(
+      inventory.id,
+      linkItem.id,
+      { values: [] },
+    );
+    expect(
+      clearedLink.values.some((value) => value.field_id === urlField.id),
+    ).toBe(false);
+    await items.deleteInventoryItem(inventory.id, linkItem.id);
     expect(
       await fields.deleteInventoryField(inventory.id, select.id),
     ).toBeUndefined();

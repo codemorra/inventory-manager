@@ -14,6 +14,7 @@ const fieldTypes: InventoryFieldType[] = [
   "text",
   "number",
   "id",
+  "url",
   "boolean",
   "date",
   "time",

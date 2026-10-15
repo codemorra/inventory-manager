@@ -15,6 +15,7 @@ import type { InventoryItem, InventoryItemValue } from "../types/inventoryItem";
 import { InventoryItemFieldInput } from "./InventoryItemCreateForm";
 import { Modal } from "./Modal";
 import { formatDuration } from "./duration";
+import { isUrlInput, isWebAddress, urlDisplayText } from "./url";
 import { InventoryToolbar } from "./InventoryToolbar";
 import { sortInventoryItems, type ItemSort } from "./inventoryItemSorting";
 import {
@@ -51,15 +52,32 @@ function getOptionLabel(
  * @param itemValue The stored value for the inventory item.
  * @param booleanLabels Labels to use for boolean values.
  * @param locale The language used to format duration hours.
- * @returns A string suitable for display in the inventory table.
+ * @returns A readable table value or a safe external link.
  */
 function formatValue(
   field: InventoryField,
   itemValue: InventoryItemValue | undefined,
   booleanLabels: { no: string; yes: string },
   locale: string,
-): string {
+): ReactNode {
   const value = itemValue?.value;
+  if (field.field_type === "url") {
+    if (!isUrlInput(value)) return "—";
+    const text = urlDisplayText(value) || "—";
+    // Treat malformed legacy destinations as plain text; never make unsupported schemes clickable.
+    if (!isWebAddress(value.url)) return text;
+    return (
+      <a
+        href={value.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={value.url}
+        className="cursor-pointer break-all text-accent underline decoration-accent/40 underline-offset-2 transition hover:text-accent-hover hover:decoration-current focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        {text}
+      </a>
+    );
+  }
 
   if (value === null || value === undefined || value === "") {
     return "—";

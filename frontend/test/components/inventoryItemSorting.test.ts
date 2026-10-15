@@ -70,6 +70,25 @@ function field(type: InventoryFieldType): InventoryField {
 }
 
 describe("sortInventoryItems", () => {
+  // Test links sort by visible labels and use the address when display text is absent.
+  test("sorts URL values by the same text displayed in the table", () => {
+    const values = [
+      item({ url: "https://a.example.com", label: "Zebra" }, 1),
+      item({ url: "https://z.example.com", label: "Apple" }, 2),
+      item({ url: "https://b.example.com" }, 3),
+      item(null, 4),
+    ];
+    expect(
+      sortInventoryItems(values, field("url"), "ascending", "en").map(
+        (entry) => entry.id,
+      ),
+    ).toEqual(["2", "3", "1", "4"]);
+    expect(
+      sortInventoryItems(values, field("url"), "descending", "en").map(
+        (entry) => entry.id,
+      ),
+    ).toEqual(["1", "3", "2", "4"]);
+  });
   // Test semantic comparisons for every supported field type in both directions.
   test.each<[InventoryFieldType, unknown, unknown]>([
     ["text", "Item 2", "Item 10"],

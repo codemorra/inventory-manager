@@ -152,7 +152,8 @@
       "select": "Single choice",
       "text": "Text",
       "time": "Time",
-      "id": "Automatic ID"
+      "id": "Automatic ID",
+      "url": "URL"
     },
     "typeHelp": {
       "text": "Text with a configurable character limit, for example a title or notes.",
@@ -164,7 +165,8 @@
       "duration": "An elapsed amount of time, for example usage time.",
       "select": "One option can be selected for each item.",
       "multiselect": "Multiple options can be selected for each item.",
-      "id": "An automatically assigned, read-only number for each item."
+      "id": "An automatically assigned, read-only number for each item.",
+      "url": "A web address with optional link text."
     },
     "settings": {
       "title": "Field settings",
@@ -223,7 +225,13 @@
       "delete": "Delete inventory item",
       "edit": "Edit inventory item"
     },
-    "automaticId": "Assigned automatically"
+    "automaticId": "Assigned automatically",
+    "url": {
+      "address": "Web address",
+      "label": "Link text (optional)",
+      "help": "HTTP or HTTPS address. Without link text, the address is displayed.",
+      "invalid": "Enter a valid HTTP or HTTPS address without spaces."
+    }
   },
   "navigation": {
     "searchInventories": "Search inventories by title",

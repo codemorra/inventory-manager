@@ -6,6 +6,27 @@ import { renderDraftControl, selectFieldType } from "../helpers/inventoryDraft";
 import i18n from "../../src/i18n";
 afterEach(cleanup);
 
+// Test the new URL definition remains a local draft and exposes only shared field settings.
+test("creates a required URL field using the themed type selector", async () => {
+  const user = userEvent.setup();
+  const { actions } = renderDraftControl(<InventoryFieldCreateForm />);
+  await user.click(screen.getByRole("button", { name: "New field" }));
+  await user.type(screen.getByLabelText("Field name"), "Website");
+  await selectFieldType(user, "url");
+  expect(
+    screen.getByText("A web address with optional link text."),
+  ).toBeVisible();
+  expect(screen.queryByLabelText("Maximum length")).not.toBeInTheDocument();
+  await user.click(screen.getByLabelText("Required field"));
+  await user.click(screen.getByRole("button", { name: "Add field" }));
+  expect(actions.addField).toHaveBeenCalledWith({
+    name: "Website",
+    field_type: "url",
+    is_required: true,
+    is_sortable: true,
+  });
+});
+
 // Test explicit reuse opt-in, hidden manual requirement settings, and reset after cancellation.
 test("creates automatic numbering only in the local field draft", async () => {
   const user = userEvent.setup();

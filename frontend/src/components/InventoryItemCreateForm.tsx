@@ -6,6 +6,8 @@ import { ApiError } from "../services/api";
 import { Modal } from "./Modal";
 import { ChoiceSelect } from "./ChoiceSelect";
 import { DurationFieldInput } from "./DurationFieldInput";
+import { UrlFieldInput } from "./UrlFieldInput";
+import { isUrlInput } from "./url";
 import { emptyDuration, isDurationInput } from "./duration";
 import type { InventoryField } from "../types/inventoryField";
 import {
@@ -47,6 +49,17 @@ export function InventoryItemFieldInput({
 }: InventoryItemFieldInputProps) {
   const { t } = useTranslation();
   const inputId = `${idPrefix}-${field.id}`;
+  if (field.field_type === "url")
+    return (
+      <UrlFieldInput
+        id={inputId}
+        label={field.name}
+        value={isUrlInput(value) ? value : { url: "", label: "" }}
+        required={field.is_required}
+        disabled={disabled}
+        onChange={onChange}
+      />
+    );
   if (field.field_type === "id")
     return (
       <label className="block text-sm font-medium" htmlFor={inputId}>
