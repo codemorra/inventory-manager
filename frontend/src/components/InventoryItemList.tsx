@@ -14,12 +14,14 @@ import type {
 import type { InventoryItem, InventoryItemValue } from "../types/inventoryItem";
 import { InventoryItemFieldInput } from "./InventoryItemCreateForm";
 import { Modal } from "./Modal";
+import { formatDuration } from "./duration";
 import { InventoryToolbar } from "./InventoryToolbar";
 import { sortInventoryItems, type ItemSort } from "./inventoryItemSorting";
 import {
   createValueInput,
   getInitialValue,
-  hasRequiredItemValues,
+  hasValidItemValues,
+  getEditableValue,
   type InventoryItemFormValue,
 } from "./inventoryItemForm";
 
@@ -48,12 +50,14 @@ function getOptionLabel(
  * @param field The inventory field definition.
  * @param itemValue The stored value for the inventory item.
  * @param booleanLabels Labels to use for boolean values.
+ * @param locale The language used to format duration hours.
  * @returns A string suitable for display in the inventory table.
  */
 function formatValue(
   field: InventoryField,
   itemValue: InventoryItemValue | undefined,
   booleanLabels: { no: string; yes: string },
+  locale: string,
 ): string {
   const value = itemValue?.value;
 
@@ -76,6 +80,9 @@ function formatValue(
       .join(", ");
   }
 
+  if (field.field_type === "duration" && typeof value === "number")
+    return formatDuration(value, locale);
+
   return String(value);
 }
 
@@ -95,32 +102,7 @@ function getEditableValues(
         (value) => value.field_id === field.id,
       )?.value;
 
-      if (field.field_type === "boolean") {
-        return [
-          field.id,
-          typeof storedValue === "boolean"
-            ? storedValue
-            : getInitialValue(field),
-        ];
-      }
-
-      if (field.field_type === "multiselect") {
-        return [
-          field.id,
-          Array.isArray(storedValue)
-            ? storedValue.filter(
-                (optionId): optionId is string => typeof optionId === "string",
-              )
-            : [],
-        ];
-      }
-
-      return [
-        field.id,
-        storedValue === null || storedValue === undefined
-          ? ""
-          : String(storedValue),
-      ];
+      return [field.id, getEditableValue(field, storedValue)];
     }),
   );
 }
@@ -201,11 +183,7 @@ export function InventoryItemList({
   function handleUpdate(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (
-      !editingItem ||
-      isMutating ||
-      !hasRequiredItemValues(fields, editValues)
-    ) {
+    if (!editingItem || isMutating || !hasValidItemValues(fields, editValues)) {
       return;
     }
 
@@ -328,10 +306,15 @@ export function InventoryItemList({
                         key={field.id}
                       >
                         <span className="line-clamp-3">
-                          {formatValue(field, valuesByField.get(field.id), {
-                            no: t("common.values.no"),
-                            yes: t("common.values.yes"),
-                          })}
+                          {formatValue(
+                            field,
+                            valuesByField.get(field.id),
+                            {
+                              no: t("common.values.no"),
+                              yes: t("common.values.yes"),
+                            },
+                            i18n.resolvedLanguage ?? "en",
+                          )}
                         </span>
                       </td>
                     ))}
@@ -425,9 +408,7 @@ export function InventoryItemList({
             <div className="mt-6 flex flex-wrap justify-end gap-3">
               <button
                 className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={
-                  isMutating || !hasRequiredItemValues(fields, editValues)
-                }
+                disabled={isMutating || !hasValidItemValues(fields, editValues)}
                 type="submit"
               >
                 {updateItem.isPending
