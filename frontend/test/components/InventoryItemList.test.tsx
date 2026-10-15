@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   cleanup,
   render,
   screen,
@@ -130,6 +131,143 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   vi.restoreAllMocks();
+});
+
+// Test direct toggles use full replacement and do not open a dialog or coerce neighboring values.
+test.each([true, false, undefined])(
+  "toggles a table checkbox with stored state %s",
+  async (stored) => {
+    const user = userEvent.setup();
+    const checkbox = {
+      ...fields[2],
+      name: "Checked",
+      field_type: "checkbox" as const,
+    };
+    const item = {
+      ...items[0],
+      values: items[0].values.filter((value) => value.field_id !== checkbox.id),
+    };
+    if (stored !== undefined)
+      item.values.push({ ...items[0].values[2], value: stored });
+    mockedUpdateInventoryItem.mockResolvedValueOnce(item);
+    renderInventoryItemList([item], [fields[0], fields[1], checkbox]);
+    const input = screen.getByRole("checkbox", { name: "Toggle Checked" });
+    expect(input).toHaveProperty("checked", stored === true);
+    await user.click(input);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
+        "inventory-1",
+        "item-1",
+        {
+          values: [
+            { field_id: fields[0].id, value: items[0].values[0].value },
+            { field_id: fields[1].id, value: items[0].values[1].value },
+            { field_id: checkbox.id, value: stored !== true },
+          ],
+        },
+      ),
+    );
+  },
+);
+
+// Test pending feedback and locking prevent stale concurrent full replacements from multiple clicks.
+test("locks table actions while a checkbox update is pending", async () => {
+  const user = userEvent.setup();
+  let finish!: (item: InventoryItem) => void;
+  mockedUpdateInventoryItem.mockReturnValueOnce(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  renderInventoryItemList(
+    [{ ...items[0], values: [] }],
+    [{ ...fields[2], name: "Checked", field_type: "checkbox" }],
+  );
+  const input = screen.getByRole("checkbox", { name: "Toggle Checked" });
+  await user.click(input);
+  await waitFor(() => expect(input).toBeDisabled());
+  expect(input).toBeChecked();
+  expect(input).toHaveAttribute("aria-busy", "true");
+  expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
+  await user.click(input);
+  expect(mockedUpdateInventoryItem).toHaveBeenCalledTimes(1);
+  await act(async () => finish(items[0]));
+  await waitFor(() => expect(input).toBeEnabled());
+});
+
+// Test failed persistence restores the original state, displays an error, and permits a retry.
+test("rolls back a failed checkbox preview and allows retrying", async () => {
+  const user = userEvent.setup();
+  mockedUpdateInventoryItem.mockRejectedValueOnce(
+    new Error("Synthetic failure"),
+  );
+  mockedUpdateInventoryItem.mockResolvedValueOnce(items[0]);
+  renderInventoryItemList(
+    [{ ...items[0], values: [] }],
+    [{ ...fields[2], name: "Checked", field_type: "checkbox" }],
+  );
+  const input = screen.getByRole("checkbox", { name: "Toggle Checked" });
+  await user.click(input);
+  await waitFor(() =>
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Unable to update inventory item.",
+    ),
+  );
+  expect(input).not.toBeChecked();
+  expect(input).toBeEnabled();
+  await user.click(input);
+  await waitFor(() =>
+    expect(mockedUpdateInventoryItem).toHaveBeenCalledTimes(2),
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument(),
+  );
+});
+
+// Test old incomplete items route into a local edit draft instead of bypassing newly required values.
+test("opens the edit dialog for missing requirements before saving a checkbox change", async () => {
+  const user = userEvent.setup();
+  mockedUpdateInventoryItem.mockResolvedValueOnce(items[0]);
+  const checkbox = {
+    ...fields[2],
+    name: "Checked",
+    field_type: "checkbox" as const,
+  };
+  renderInventoryItemList(
+    [{ ...items[0], values: [] }],
+    [{ ...fields[0], is_required: true }, checkbox],
+  );
+  await user.click(screen.getByRole("checkbox", { name: "Toggle Checked" }));
+  const dialog = screen.getByRole("dialog");
+  expect(within(dialog).getByRole("status")).toHaveTextContent(
+    "has not been saved yet",
+  );
+  expect(
+    within(dialog).getByRole("checkbox", { name: "Checked" }),
+  ).toBeChecked();
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  expect(mockedUpdateInventoryItem).not.toHaveBeenCalled();
+  await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+  expect(
+    screen.getByRole("checkbox", { name: "Toggle Checked" }),
+  ).not.toBeChecked();
+  await user.click(screen.getByRole("checkbox", { name: "Toggle Checked" }));
+  await user.type(screen.getByRole("textbox", { name: /Title/ }), "Complete");
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
+      "inventory-1",
+      "item-1",
+      {
+        values: [
+          { field_id: fields[0].id, value: "Complete" },
+          { field_id: checkbox.id, value: true },
+        ],
+      },
+    ),
+  );
 });
 
 // Test safe links use display text or their address and open without granting access to the opener.

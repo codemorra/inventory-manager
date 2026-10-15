@@ -95,6 +95,7 @@ describe("sortInventoryItems", () => {
     ["number", 2, 10],
     ["duration", 60, 120],
     ["boolean", false, true],
+    ["checkbox", false, true],
     ["date", "2025-12-31", "2026-01-01"],
     ["time", "09:30", "10:00"],
     ["datetime", "2026-01-01T23:00", "2026-01-02T01:00"],

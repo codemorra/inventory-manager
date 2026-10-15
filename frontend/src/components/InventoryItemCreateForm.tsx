@@ -105,7 +105,7 @@ export function InventoryItemFieldInput({
     );
   }
 
-  if (field.field_type === "boolean") {
+  if (field.field_type === "boolean" || field.field_type === "checkbox") {
     return (
       <label
         className="flex items-center gap-3 rounded-lg border border-shell bg-surface-muted px-3 py-2.5"

@@ -335,8 +335,12 @@ test("frontend clients complete configuration and item CRUD against Express", as
     const urlField = linkConfiguration.fields.find(
       (field) => field.field_type === "url",
     )!;
-    const { createValueInput, getEditableValue, hasValidItemValues } =
-      await import("../src/components/inventoryItemForm");
+    const {
+      createValueInput,
+      getEditableValue,
+      hasValidItemValues,
+      createCheckboxReplacement,
+    } = await import("../src/components/inventoryItemForm");
     const linkValue = {
       url: "https://example.com/docs?q=1#help",
       label: "Documentation",
@@ -384,6 +388,109 @@ test("frontend clients complete configuration and item CRUD against Express", as
     expect(
       clearedLink.values.some((value) => value.field_id === urlField.id),
     ).toBe(false);
+    // Direct checkbox interaction uses the same full-replacement endpoint and preserves other typed values.
+    const checkboxBefore = await fields.getInventoryFields(inventory.id);
+    const checkboxDraft = createDraftField(inventory.id, {
+      name: "Checked",
+      field_type: "checkbox",
+      is_required: true,
+    });
+    const checkboxConfiguration = await saveInventoryConfiguration(
+      inventory.id,
+      buildInventoryEditorInput(
+        checkboxBefore,
+        [...checkboxBefore, checkboxDraft],
+        {
+          name: saved.inventory.name,
+          description: saved.inventory.description,
+        },
+      ),
+    );
+    const checkbox = checkboxConfiguration.fields.find(
+      (field) => field.field_type === "checkbox",
+    )!;
+    const quantity = checkboxConfiguration.fields.find(
+      (field) => field.field_type === "number",
+    )!;
+    const checkable = await items.updateInventoryItem(
+      inventory.id,
+      linkItem.id,
+      {
+        values: [
+          { field_id: checkbox.id, value: false },
+          { field_id: urlField.id, value: linkValue },
+          { field_id: quantity.id, value: 0 },
+        ],
+      },
+    );
+    const idAssignment = checkable.values.find(
+      (value) => value.field_id === automatic.id,
+    );
+    const checked = await items.updateInventoryItem(
+      inventory.id,
+      checkable.id,
+      createCheckboxReplacement(
+        checkboxConfiguration.fields,
+        checkable,
+        checkbox.id,
+        true,
+      ),
+    );
+    expect(
+      checked.values.find((value) => value.field_id === checkbox.id)?.value,
+    ).toBe(true);
+    expect(
+      checked.values.find((value) => value.field_id === urlField.id)?.value,
+    ).toEqual(linkValue);
+    expect(
+      checked.values.find((value) => value.field_id === quantity.id)?.value,
+    ).toBe(0);
+    expect(
+      checked.values.find((value) => value.field_id === automatic.id),
+    ).toEqual(idAssignment);
+    const unchecked = await items.updateInventoryItem(
+      inventory.id,
+      checkable.id,
+      createCheckboxReplacement(
+        checkboxConfiguration.fields,
+        checked,
+        checkbox.id,
+        false,
+      ),
+    );
+    expect(
+      unchecked.values.find((value) => value.field_id === checkbox.id)?.value,
+    ).toBe(false);
+    const laterRequired = await saveInventoryConfiguration(inventory.id, {
+      inventory: {
+        name: saved.inventory.name,
+        description: saved.inventory.description,
+      },
+      options: [],
+      fields: [
+        {
+          action: "create",
+          data: { name: "Later required", is_required: true },
+        },
+      ],
+    });
+    await expect(
+      items.updateInventoryItem(
+        inventory.id,
+        checkable.id,
+        createCheckboxReplacement(
+          laterRequired.fields,
+          unchecked,
+          checkbox.id,
+          true,
+        ),
+      ),
+    ).rejects.toMatchObject({ status: 422 });
+    expect(
+      (await items.getInventoryItems(inventory.id)).find(
+        (entry) => entry.id === unchecked.id,
+      ),
+    ).toEqual(unchecked);
     await items.deleteInventoryItem(inventory.id, linkItem.id);
     expect(
       await fields.deleteInventoryField(inventory.id, select.id),

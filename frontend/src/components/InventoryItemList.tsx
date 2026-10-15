@@ -1,5 +1,5 @@
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
-import { type ReactNode, type SyntheticEvent, useState } from "react";
+import { type ReactNode, type SyntheticEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -20,6 +20,7 @@ import { InventoryToolbar } from "./InventoryToolbar";
 import { sortInventoryItems, type ItemSort } from "./inventoryItemSorting";
 import {
   createValueInput,
+  createCheckboxReplacement,
   getInitialValue,
   hasValidItemValues,
   getEditableValue,
@@ -159,8 +160,16 @@ export function InventoryItemList({
     Record<string, InventoryItemFormValue>
   >({});
   const updateItem = useUpdateInventoryItem();
+  const checkboxUpdate = useUpdateInventoryItem();
+  const checkboxInFlight = useRef(false);
+  const [checkboxEditHint, setCheckboxEditHint] = useState(false);
+  const [checkboxTarget, setCheckboxTarget] = useState<{
+    itemId: string;
+    fieldId: string;
+  } | null>(null);
   const deleteItem = useDeleteInventoryItem();
-  const isMutating = updateItem.isPending || deleteItem.isPending;
+  const isMutating =
+    updateItem.isPending || deleteItem.isPending || checkboxUpdate.isPending;
   const editingItem = items.find((item) => item.id === editingItemId);
 
   /**
@@ -184,14 +193,61 @@ export function InventoryItemList({
    * @param item The inventory item to edit.
    */
   function startEditing(item: InventoryItem) {
+    checkboxUpdate.reset();
+    setCheckboxEditHint(false);
     setEditValues(getEditableValues(fields, item));
     setEditingItemId(item.id);
   }
 
   // Cancel editing the current inventory item.
   function cancelEditing() {
+    setCheckboxEditHint(false);
     setEditingItemId(null);
     setEditValues({});
+  }
+
+  /**
+   * Save a table checkbox while preserving the full-replacement and required-field contracts.
+   * @param item The saved item whose checkbox was clicked.
+   * @param field The checkbox field to change.
+   * @param checked The new state requested by the user.
+   */
+  function toggleCheckbox(
+    item: InventoryItem,
+    field: InventoryField,
+    checked: boolean,
+  ) {
+    if (
+      isMutating ||
+      checkboxInFlight.current ||
+      editingItemId !== null ||
+      deletingTarget !== null
+    )
+      return;
+    checkboxUpdate.reset();
+    const values = { ...getEditableValues(fields, item), [field.id]: checked };
+    if (!hasValidItemValues(fields, values)) {
+      // A table shortcut cannot bypass requirements introduced after this item was created.
+      startEditing(item);
+      setEditValues(values);
+      setCheckboxEditHint(true);
+      return;
+    }
+    setCheckboxTarget({ itemId: item.id, fieldId: field.id });
+    // Block rapid consecutive toggles until persistence and the item query refresh have both finished.
+    checkboxInFlight.current = true;
+    checkboxUpdate.mutate(
+      {
+        inventoryId: item.inventory_id,
+        itemId: item.id,
+        data: createCheckboxReplacement(fields, item, field.id, checked),
+      },
+      {
+        onSettled: () => {
+          checkboxInFlight.current = false;
+        },
+      },
+    );
   }
 
   /**
@@ -323,17 +379,68 @@ export function InventoryItemList({
                         className="max-w-80 border-r border-shell/60 px-4 py-2.5 align-top text-foreground transition-colors group-hover:bg-surface-hover"
                         key={field.id}
                       >
-                        <span className="line-clamp-3">
-                          {formatValue(
-                            field,
-                            valuesByField.get(field.id),
-                            {
-                              no: t("common.values.no"),
-                              yes: t("common.values.yes"),
-                            },
-                            i18n.resolvedLanguage ?? "en",
-                          )}
-                        </span>
+                        {field.field_type === "checkbox" ? (
+                          <div className="min-h-6">
+                            <input
+                              type="checkbox"
+                              className="size-4 cursor-pointer accent-accent transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label={t("items.checkbox.toggle", {
+                                field: field.name,
+                              })}
+                              aria-busy={
+                                (checkboxUpdate.isPending &&
+                                  checkboxTarget?.itemId === item.id &&
+                                  checkboxTarget.fieldId === field.id) ||
+                                undefined
+                              }
+                              checked={
+                                checkboxUpdate.isPending &&
+                                checkboxTarget?.itemId === item.id &&
+                                checkboxTarget.fieldId === field.id
+                                  ? checkboxUpdate.variables?.data.values.find(
+                                      (value) => value.field_id === field.id,
+                                    )?.value === true
+                                  : valuesByField.get(field.id)?.value === true
+                              }
+                              disabled={
+                                isMutating ||
+                                editingItemId !== null ||
+                                deletingTarget !== null
+                              }
+                              onChange={(event) =>
+                                toggleCheckbox(
+                                  item,
+                                  field,
+                                  event.target.checked,
+                                )
+                              }
+                            />
+                            {checkboxUpdate.error &&
+                              checkboxTarget?.itemId === item.id &&
+                              checkboxTarget.fieldId === field.id && (
+                                <p
+                                  className="mt-1 text-xs text-danger"
+                                  role="alert"
+                                >
+                                  {checkboxUpdate.error instanceof ApiError
+                                    ? checkboxUpdate.error.message
+                                    : t("items.errors.update")}
+                                </p>
+                              )}
+                          </div>
+                        ) : (
+                          <span className="line-clamp-3">
+                            {formatValue(
+                              field,
+                              valuesByField.get(field.id),
+                              {
+                                no: t("common.values.no"),
+                                yes: t("common.values.yes"),
+                              },
+                              i18n.resolvedLanguage ?? "en",
+                            )}
+                          </span>
+                        )}
                       </td>
                     ))}
                     <td className="sticky right-0 whitespace-nowrap border-l border-shell bg-surface px-4 py-2.5 text-right align-top transition-colors group-hover:bg-surface-hover">
@@ -389,6 +496,11 @@ export function InventoryItemList({
           title={t("items.titles.edit")}
         >
           <form onSubmit={handleUpdate}>
+            {checkboxEditHint && (
+              <p className="mb-4 text-sm text-muted" role="status">
+                {t("items.checkbox.completeRequired")}
+              </p>
+            )}
             {fields.some((field) => field.is_required) && (
               <p className="mb-4 text-xs text-muted">
                 {t("items.requiredHint")}

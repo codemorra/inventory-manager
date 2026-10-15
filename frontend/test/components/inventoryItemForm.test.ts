@@ -5,8 +5,85 @@ import {
   hasRequiredItemValues,
   hasValidItemValues,
   getEditableValue,
+  createCheckboxReplacement,
 } from "../../src/components/inventoryItemForm";
 import { field } from "../helpers/inventoryDraft";
+
+// Test checkbox defaults and requirements are independent of explicit yes/no answers.
+test("treats unchecked checkboxes as valid values including required fields", () => {
+  const checkbox = {
+    ...field,
+    field_type: "checkbox" as const,
+    is_required: true,
+  };
+  expect(getInitialValue(checkbox)).toBe(false);
+  expect(getEditableValue(checkbox, undefined)).toBe(false);
+  expect(hasValidItemValues([checkbox], {})).toBe(true);
+  for (const value of [false, true]) {
+    expect(createValueInput(checkbox, value)).toEqual({
+      field_id: field.id,
+      value,
+    });
+    expect(getEditableValue(checkbox, value)).toBe(value);
+  }
+  expect(createValueInput(checkbox, "false")).toBeNull();
+  expect(hasRequiredItemValues([checkbox], { [field.id]: "false" })).toBe(
+    false,
+  );
+});
+
+// Test direct toggles preserve exact saved values without resubmitting automatic IDs or removed fields.
+test("builds complete checkbox replacements without coercing stored values", () => {
+  const checkbox = { ...field, field_type: "checkbox" as const };
+  const definitions = [
+    checkbox,
+    { ...field, id: "link", field_type: "url" as const },
+    { ...field, id: "number", field_type: "number" as const },
+    { ...field, id: "automatic", field_type: "id" as const },
+    { ...field, id: "selection", field_type: "select" as const },
+    {
+      ...field,
+      id: "required-checkbox",
+      field_type: "checkbox" as const,
+      is_required: true,
+    },
+  ];
+  const item = {
+    id: "item",
+    inventory_id: field.inventory_id,
+    created_at: "",
+    updated_at: "",
+    values: [
+      ["link", { url: "https://example.com", label: "Help" }],
+      ["number", 0],
+      ["automatic", 7],
+      ["selection", "deleted-option"],
+      ["removed-field", "Legacy"],
+    ].map(([field_id, value], index) => ({
+      id: String(index),
+      field_id: String(field_id),
+      value,
+      created_at: "",
+      updated_at: "",
+    })),
+  };
+  const before = structuredClone(item);
+  expect(createCheckboxReplacement(definitions, item, field.id, false)).toEqual(
+    {
+      values: [
+        { field_id: field.id, value: false },
+        {
+          field_id: "link",
+          value: { url: "https://example.com", label: "Help" },
+        },
+        { field_id: "number", value: 0 },
+        { field_id: "selection", value: "deleted-option" },
+        { field_id: "required-checkbox", value: false },
+      ],
+    },
+  );
+  expect(item).toEqual(before);
+});
 
 // Test optional and required links, explicit clearing, and lossless restoration for item editing.
 test("validates structured URL drafts and serializes only complete web links", () => {

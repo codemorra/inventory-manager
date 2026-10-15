@@ -153,7 +153,8 @@
       "text": "Text",
       "time": "Uhrzeit",
       "id": "Laufende Nummer",
-      "url": "URL"
+      "url": "URL",
+      "checkbox": "Checkbox"
     },
     "typeHelp": {
       "text": "Text mit einstellbarer Zeichenbegrenzung, zum Beispiel ein Titel oder Notizen.",
@@ -166,7 +167,8 @@
       "select": "Für jeden Eintrag kann eine Option ausgewählt werden.",
       "multiselect": "Für jeden Eintrag können mehrere Optionen ausgewählt werden.",
       "id": "Eine automatisch vergebene, unveränderliche Nummer für jeden Eintrag.",
-      "url": "Eine Webadresse mit optionalem Linktext."
+      "url": "Eine Webadresse mit optionalem Linktext.",
+      "checkbox": "Ein direkt in der Tabelle umschaltbares Kontrollkästchen."
     },
     "settings": {
       "title": "Feldeinstellungen",
@@ -231,6 +233,10 @@
       "label": "Linktext (optional)",
       "help": "HTTP- oder HTTPS-Adresse. Ohne Linktext wird die Adresse angezeigt.",
       "invalid": "Gib eine gültige HTTP- oder HTTPS-Adresse ohne Leerzeichen ein."
+    },
+    "checkbox": {
+      "toggle": "{{field}} umschalten",
+      "completeRequired": "Ergänze die fehlenden oder ungültigen Angaben, bevor du den Eintrag speicherst. Die Checkbox-Änderung ist noch nicht gespeichert."
     }
   },
   "navigation": {
