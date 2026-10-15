@@ -102,7 +102,7 @@ export function createInventoryEditorService(db: AppDatabase) {
             fields.update(inventoryId, id!, { position });
           });
         }
-        // Existing item values and deletion tombstones retain their established semantics.
+        // Newly created ID fields have backfilled assignments; other values retain their established semantics.
         return { inventory, fields: fields.list(inventoryId) };
       });
     },

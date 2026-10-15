@@ -366,7 +366,7 @@
       "patch": {
         "tags": ["inventory items"],
         "summary": "Update Item",
-        "description": "Replace all values of an active inventory item.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    item_id: Inventory item UUID.\n    data: Validated replacement values.\n    session: Active database session.\n\nReturns:\n    InventoryItemRead: Updated inventory item response.",
+        "description": "Replace all editable values of an active item in one transaction. Omitted editable values are cleared with deletion tombstones. Automatic ID assignments remain unchanged and must not be included in the request. All current required fields must be supplied; false and zero are valid values. Invalid input leaves existing values and assignments unchanged.",
         "operationId": "update_item_inventories__inventory_id__items__item_id__patch",
         "parameters": [
           {
@@ -1079,7 +1079,7 @@
         "tags": ["inventories"],
         "summary": "Save Inventory Editor Draft",
         "operationId": "save_inventory_editor_draft",
-        "description": "Apply inventory metadata, field operations, and option operations in one transaction. Any validation, ownership, or storage failure rolls back all changes. Omitted operation arrays leave existing records unchanged. Existing field types and text limits cannot be changed; group membership is preserved. Each existing field or option may be changed only once per save, and options cannot be changed when their field is being deleted. New fields include their initial options in their create data. Existing item values retain their established deletion semantics.",
+        "description": "Apply inventory metadata, field operations, and option operations in one transaction. Any validation, ownership, or storage failure rolls back all changes. Omitted operation arrays leave existing records unchanged. Existing field types and text limits cannot be changed; group membership is preserved. Each existing field or option may be changed only once per save, and options cannot be changed when their field is being deleted. New fields include their initial options in their create data. Existing item values retain their established deletion semantics. Field order is optional and must reference the complete final field set. New ID fields backfill existing active items in this transaction; any later failure rolls back those assignments too. Deleting an ID field clears its number values while preserving tombstones.",
         "parameters": [
           {
             "name": "inventory_id",

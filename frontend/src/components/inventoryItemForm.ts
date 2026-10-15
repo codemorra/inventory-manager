@@ -10,14 +10,14 @@ import {
   type DurationInput,
 } from "./duration";
 
-/** Define values held by inventory item form controls. */
+// Define values held by inventory item form controls.
 export type InventoryItemFormValue =
   string | boolean | string[] | DurationInput | UrlInput;
 
 /**
  * Initialize controls without implicitly answering required yes/no fields.
  * @param field The field whose input is being initialized.
- * @returns An empty value, or false for an optional checkbox.
+ * @returns An empty value, or false for checkbox fields and optional yes/no fields.
  */
 export function getInitialValue(field: InventoryField): InventoryItemFormValue {
   if (field.field_type === "checkbox") return false;

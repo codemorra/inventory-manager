@@ -1,4 +1,4 @@
-# inventory-manager
+# Inventory Manager
 
 > This project is currently under development. The interface, field configuration, and application behavior may change as development progresses.
 
@@ -18,7 +18,8 @@ The screenshot uses synthetic demo data.
 - Single-level groups with drag-and-drop organization
 - Sidebar filtering by inventory title
 - Sortable item tables
-- Configurable text limits and field-specific selection options
+- Required fields, per-column sorting controls, and drag-and-drop field ordering
+- Configurable text limits, selection options, web links, and automatic numbering
 - English and German interface
 - Light, dark, and system appearance modes with accent colors
 
@@ -38,15 +39,18 @@ discards the draft. A failed save keeps the draft available for correction or re
 Complete or cancel open field and option forms before saving the full inventory.
 Long field lists scroll independently of the dialog actions.
 
-Available field types include text, number, boolean, date, time, datetime, duration,
-select, and multiselect.
+Drag fields by their handles to change their order. **Save changes** applies the
+order to the table and item forms. Field names, requirements, sorting preferences,
+and selection options can be edited later. A field's type and text limit are fixed
+at creation.
 
 The inventory page shows its title and optional description above the item table.
 The table toolbar provides the creation action and item count. Select a column
-heading to sort ascending, then select it again to sort descending. Comparisons
-follow the field type; selection fields use option names, and empty values appear
-last. **Reset sorting** restores the original order. Sorting changes the current
-view without changing stored data.
+heading to sort ascending, then select it again to sort descending. Sorting can be
+disabled separately for each field. Comparisons follow the field type; selections
+use option names and links use their displayed text. Empty values appear last.
+**Reset sorting** restores the original order. Sorting changes the current view
+without changing stored data.
 
 Right-click a sidebar group to rename or delete it. Deleting a group preserves its
 inventories and moves them to **Without a group**. Deleting an inventory, item,
@@ -57,6 +61,38 @@ confirmation open with an error and allow another attempt.
 
 The **Settings** button at the bottom of the sidebar opens language, appearance, and
 accent color preferences. Changes take effect immediately.
+
+## Fields and item values
+
+| Field type      | Purpose                                                    |
+| --------------- | ---------------------------------------------------------- |
+| Text            | Text with a limit of 1–1,000 characters, defaulting to 255 |
+| Number          | Whole or decimal numbers                                   |
+| Yes/No          | A boolean value displayed as yes or no                     |
+| Checkbox        | A checkbox that can be toggled directly in the item table  |
+| Date            | A calendar date                                            |
+| Time            | A time of day                                              |
+| Date and time   | A calendar date with a time                                |
+| Duration        | Hours, minutes, and seconds, stored as whole seconds       |
+| Single choice   | One option from this field's selection options             |
+| Multiple choice | Several options from this field's selection options        |
+| URL             | An HTTP or HTTPS address with optional link text           |
+| Automatic ID    | A read-only number assigned automatically to each item     |
+
+Selection options belong to their field within one inventory. Item dialogs use
+themed dropdowns for single and multiple choices. Web links open in a new tab;
+without link text, the address is displayed.
+
+Required fields must be completed for new items and when saving existing items.
+Adding a required field leaves existing entries unchanged until their next edit.
+If a table checkbox cannot be saved because required or other input is incomplete,
+the edit dialog opens with the checkbox change still unsaved. Canceling discards it.
+
+Automatic IDs have independent counters per field and inventory, starting at 1.
+Adding an ID field numbers existing active items by creation time, with technical
+IDs breaking ties. Numbers are assigned only when a save succeeds and remain
+unchanged during item edits. Deleted numbers are not reused unless explicitly
+enabled in the field settings; that option selects the smallest free number.
 
 ## Technology
 
