@@ -1,4 +1,4 @@
-/** Define supported inventory field types. */
+// Define supported inventory field types.
 export type InventoryFieldType =
   | "text"
   | "number"
@@ -13,7 +13,7 @@ export type InventoryFieldType =
   | "select"
   | "multiselect";
 
-/** Represent a selectable option returned by the API. */
+// Represent a selectable option returned by the API.
 export interface InventoryFieldOption {
   id: string;
   field_id: string;
@@ -23,7 +23,7 @@ export interface InventoryFieldOption {
   updated_at: string;
 }
 
-/** Represent an inventory field returned by the API. */
+// Represent an inventory field returned by the API.
 export interface InventoryField {
   id: string;
   inventory_id: string;
@@ -39,7 +39,7 @@ export interface InventoryField {
   updated_at: string;
 }
 
-/** Define data accepted when creating an inventory field. */
+// Define data accepted when creating an inventory field.
 export interface CreateInventoryFieldInput {
   name: string;
   field_type?: InventoryFieldType;
@@ -50,7 +50,7 @@ export interface CreateInventoryFieldInput {
   reuse_deleted_ids?: boolean;
 }
 
-/** Define optional data accepted when updating an inventory field. */
+// Define optional data accepted when updating an inventory field.
 export interface UpdateInventoryFieldInput {
   name?: string;
   position?: number;
@@ -59,12 +59,12 @@ export interface UpdateInventoryFieldInput {
   reuse_deleted_ids?: boolean;
 }
 
-/** Define data accepted when creating an inventory field option. */
+// Define data accepted when creating an inventory field option.
 export interface CreateInventoryFieldOptionInput {
   name: string;
 }
 
-/** Define optional data accepted when updating an inventory field option. */
+// Define optional data accepted when updating an inventory field option.
 export interface UpdateInventoryFieldOptionInput {
   name?: string;
 }

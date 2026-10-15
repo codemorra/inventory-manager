@@ -46,34 +46,58 @@ attachment directory are stored under the data directory.
 Drizzle migrations run before the server starts. To generate or apply them manually:
 
 ```bash
-npm run db:generate -- --name=describe_change
+npm run db:generate -- --dialect sqlite --schema ./src/db/schema.ts --out ./drizzle --name=describe_change
 npm run db:migrate
 ```
 
 Review generated SQL before applying it. Keep `drizzle/` alongside `dist/` when
-moving the compiled backend.
+moving the compiled backend. The explicit relative paths avoid the generator's
+absolute snapshot-path handling issue.
 
 Run `npm run check` from the repository root for all quality checks. Backend tests
 use `node:test` with synthetic data; HTTP tests require local socket communication.
 
 ## API behavior
 
-Item PATCH replaces all active values. Deletions preserve tombstones for future
-synchronization. Invalid item values return structured 422 errors.
+Item PATCH replaces all editable values while preserving automatic IDs, which must
+not be submitted. Omitted values and deleted items retain tombstones with cleared
+content. Invalid values return structured 422 errors without partial changes.
 
-The inventory editor saves through `PATCH /inventories/{inventory_id}/configuration`.
-The request contains optional `inventory` metadata and `fields` and `options` arrays
-of create, update, or delete operations. New field definitions include their initial
-options. Omitted operation arrays leave existing records unchanged; this endpoint
-does not replace the entire field list. The response contains the saved inventory
-and its active fields with options.
+### Field configuration
 
-All editor operations run in one database transaction. Invalid data, unrelated or
-deleted identifiers, and persistence errors roll back the entire save. Existing
-field and option IDs are preserved, field types and text limits remain immutable,
-and inventory group membership is unchanged. Field and option deletions retain
-their tombstones and existing item values. Individual configuration endpoints
-remain available; item PATCH continues to replace all active values.
+Supported field types are `text`, `number`, `boolean`, `checkbox`, `date`, `time`,
+`datetime`, `duration`, `select`, `multiselect`, `url`, and `id`.
+
+`is_required` defaults to `false`; `is_sortable` defaults to `true`. Required values
+are checked on item creation and replacement, leaving old items unchanged until
+edited. Boolean `false` and numeric zero are valid values.
+
+- Text limits are fixed at creation: 1–1,000 characters, default 255.
+- Selection options belong to their field; new selection fields require unique initial options.
+- Durations use non-negative safe integer seconds.
+- URLs contain an HTTP(S) `url` and optional `label`.
+- Checkboxes store booleans and use full item replacement when toggled in the table.
+- Automatic IDs count from 1 per field and inventory, backfill existing items, and
+  remain unchanged during edits. Failed saves consume no number. Deleted numbers
+  are reused only with `reuse_deleted_ids`, which selects the smallest free number.
+
+### Atomic inventory editor
+
+`PATCH /inventories/{inventory_id}/configuration` saves optional inventory metadata
+and field/option operations in one transaction. Failures roll back the entire
+draft, including ID backfills. Field types and text limits remain immutable;
+group membership is unchanged. The response includes the inventory and active fields.
+
+Optional `field_order` references every final field exactly once: saved fields use
+`field_id`, new fields use their create operation's `client_id`. Do not combine it
+with individual position updates. Omitting it preserves append behavior.
+
+Field and option deletion retain existing item values, except deleting an ID field
+clears its number assignments. Deletion tombstones are preserved.
+
+See `/docs` or `/openapi.json` for request schemas and validation details.
+
+### Inventory groups
 
 Inventory groups have one level. `/inventory-groups` supports listing and creation;
 `/inventory-groups/{group_id}` supports renaming with PATCH and deletion with DELETE.
