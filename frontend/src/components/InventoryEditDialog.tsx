@@ -131,53 +131,6 @@ function InventoryEditorSession({
       ),
     removeField: (id) =>
       setFields((current) => current.filter((field) => field.id !== id)),
-    addOption: (fieldId, name) => {
-      const id = crypto.randomUUID();
-      setFields((current) =>
-        current.map((field) =>
-          field.id === fieldId
-            ? {
-                ...field,
-                options: [
-                  ...field.options,
-                  {
-                    id,
-                    field_id: fieldId,
-                    name,
-                    position: field.options.length,
-                    created_at: "",
-                    updated_at: "",
-                  },
-                ],
-              }
-            : field,
-        ),
-      );
-    },
-    renameOption: (fieldId, id, name) =>
-      setFields((current) =>
-        current.map((field) =>
-          field.id === fieldId
-            ? {
-                ...field,
-                options: field.options.map((option) =>
-                  option.id === id ? { ...option, name } : option,
-                ),
-              }
-            : field,
-        ),
-      ),
-    removeOption: (fieldId, id) =>
-      setFields((current) =>
-        current.map((field) =>
-          field.id === fieldId
-            ? {
-                ...field,
-                options: field.options.filter((option) => option.id !== id),
-              }
-            : field,
-        ),
-      ),
   };
   const inputClass =
     "mt-1.5 w-full rounded-md border border-shell bg-surface px-3 py-2.5 text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/20";

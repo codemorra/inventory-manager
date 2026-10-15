@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import type userEvent from "@testing-library/user-event";
+import i18n from "../../src/i18n";
 import { vi } from "vitest";
 import {
   InventoryDraftContext,
@@ -46,9 +48,6 @@ export function renderDraftControl(
     addField: vi.fn(),
     updateField: vi.fn(),
     removeField: vi.fn(),
-    addOption: vi.fn(),
-    renameOption: vi.fn(),
-    removeOption: vi.fn(),
     setPendingEditor: vi.fn(),
     ...overrides,
   };
@@ -60,4 +59,21 @@ export function renderDraftControl(
     ),
     actions,
   };
+}
+
+/**
+ * Select a field type through the themed dropdown rather than a native select.
+ * @param user The active user interaction session.
+ * @param type The field type to choose.
+ */
+export async function selectFieldType(
+  user: ReturnType<typeof userEvent.setup>,
+  type: string,
+) {
+  await user.click(
+    screen.getByRole("combobox", { name: i18n.t("fields.form.fieldType") }),
+  );
+  await user.click(
+    screen.getByRole("option", { name: i18n.t(`fields.types.${type}`) }),
+  );
 }

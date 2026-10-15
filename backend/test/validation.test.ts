@@ -103,8 +103,8 @@ test("validates field configuration and case-folded initial options in a compact
     assert.deepEqual(field.options, options.length ? [{ name: "First" }] : []);
   }
   assert.equal(
-    fieldCreateSchema.parse({ name: "Text", max_length: "10000" }).max_length,
-    10000,
+    fieldCreateSchema.parse({ name: "Text", max_length: "1000" }).max_length,
+    1000,
   );
   assert.equal(
     fieldCreateSchema.parse({ name: "Text", max_length: null }).max_length,
@@ -113,7 +113,7 @@ test("validates field configuration and case-folded initial options in a compact
   const invalid = [
     { field_type: "invalid" },
     { max_length: 0 },
-    { max_length: 10001 },
+    { max_length: 1001 },
     { field_type: "number", max_length: 10 },
     { field_type: "boolean", options: [{ name: "Yes" }] },
     { field_type: "select" },

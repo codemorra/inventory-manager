@@ -18,7 +18,7 @@ export const fieldCreateSchema = z
   .object({
     name: nameSchema,
     field_type: z.enum(fieldTypes).default("text"),
-    max_length: integerSchema(1, 10_000).nullable().default(null),
+    max_length: integerSchema(1, 1_000).nullable().default(null),
     options: z.array(optionCreateSchema).max(100).default([]),
     is_required: z.boolean().default(false),
     is_sortable: z.boolean().default(true),
