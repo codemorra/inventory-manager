@@ -22,6 +22,13 @@
       "when": 1792062185845,
       "tag": "0002_field_configuration",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792062185846,
+      "tag": "0003_automatic_ids",
+      "breakpoints": true
     }
   ]
 }

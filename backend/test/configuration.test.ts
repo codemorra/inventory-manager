@@ -106,6 +106,7 @@ test("select and multiselect HTTP CRUD embeds options and permits later duplicat
       "name",
       "options",
       "position",
+      "reuse_deleted_ids",
       "updated_at",
     ]);
     assert.equal(created.body.max_length, null);

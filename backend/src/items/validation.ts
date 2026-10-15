@@ -64,7 +64,7 @@ export function validateValues(
     values.map((input) => [input.field_id, input.value]),
   );
   for (const field of fields) {
-    if (!field.isRequired) continue;
+    if (!field.isRequired || field.fieldType === "id") continue;
     const value = submitted.get(field.id);
     if (
       value === undefined ||
@@ -77,6 +77,9 @@ export function validateValues(
   for (const { field_id, value } of values) {
     const field = definitions.get(field_id)!;
     switch (field.fieldType) {
+      case "id":
+        // Automatic numbers cannot be supplied, cleared, or overwritten by clients.
+        return invalidValue();
       case "text":
         if (
           typeof value !== "string" ||

@@ -264,8 +264,58 @@ test("frontend clients complete configuration and item CRUD against Express", as
       status: 422,
       code: "invalid_inventory_item_value",
     });
+    // Exercise automatic numbering with a real draft save and complete item replacement.
+    const numberDraft = createDraftField(inventory.id, {
+      name: "Reference",
+      field_type: "id",
+    });
+    const numbered = await saveInventoryConfiguration(
+      inventory.id,
+      buildInventoryEditorInput(saved.fields, [numberDraft, ...saved.fields], {
+        name: saved.inventory.name,
+        description: saved.inventory.description,
+      }),
+    );
+    const automatic = numbered.fields.find(
+      (field) => field.field_type === "id",
+    )!;
+    expect(automatic.reuse_deleted_ids).toBe(false);
+    const numberedItem = (await items.getInventoryItems(inventory.id))[0]!;
+    const assigned = numberedItem.values.find(
+      (value) => value.field_id === automatic.id,
+    )!;
+    expect(assigned.value).toBe(1);
+    const replaced = await items.updateInventoryItem(inventory.id, item.id, {
+      values: [],
+    });
+    expect(replaced.values).toEqual([assigned]);
+    await items.deleteInventoryItem(inventory.id, item.id);
+    const nextNumbered = await items.createInventoryItem(inventory.id, {
+      values: [],
+    });
+    expect(nextNumbered.values[0]?.value).toBe(2);
+    await saveInventoryConfiguration(
+      inventory.id,
+      buildInventoryEditorInput(
+        numbered.fields,
+        numbered.fields.map((field) =>
+          field.id === automatic.id
+            ? { ...field, reuse_deleted_ids: true }
+            : field,
+        ),
+        {
+          name: saved.inventory.name,
+          description: saved.inventory.description,
+        },
+      ),
+    );
+    const reusedNumbered = await items.createInventoryItem(inventory.id, {
+      values: [],
+    });
+    expect(reusedNumbered.values[0]?.value).toBe(1);
+    await items.deleteInventoryItem(inventory.id, reusedNumbered.id);
     expect(
-      await items.deleteInventoryItem(inventory.id, item.id),
+      await items.deleteInventoryItem(inventory.id, nextNumbered.id),
     ).toBeUndefined();
     expect(await items.getInventoryItems(inventory.id)).toEqual([]);
     expect(

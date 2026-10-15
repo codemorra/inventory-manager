@@ -13,6 +13,16 @@ import {
   maximumDurationHours,
 } from "../../src/components/duration";
 
+// Test automatic IDs never become client-supplied values, including in complete replacements.
+test("omits automatic numbers while keeping existing IDs visible for editing", () => {
+  const automatic = { ...field, field_type: "id" as const, is_required: true };
+  expect(getInitialValue(automatic)).toBe("");
+  expect(hasValidItemValues([automatic], {})).toBe(true);
+  expect(getEditableValue(automatic, 42)).toBe("42");
+  for (const value of ["", "42", "Changed"])
+    expect(createValueInput(automatic, value)).toBeNull();
+});
+
 // Test that required yes/no fields distinguish unset, no, and yes in the API payload.
 test("keeps required booleans unset until explicitly answered", () => {
   const boolean = {

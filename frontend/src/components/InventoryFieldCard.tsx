@@ -7,6 +7,7 @@ import type { InventoryField } from "../types/inventoryField";
 import { InventoryFieldOptions } from "./InventoryFieldOptions";
 import { Modal } from "./Modal";
 import { InventoryFieldSettings } from "./InventoryFieldSettings";
+import { AutomaticIdSettings } from "./AutomaticIdSettings";
 
 // Define properties for an inventory field card.
 interface InventoryFieldCardProps {
@@ -27,6 +28,9 @@ export function InventoryFieldCard({
   const [name, setName] = useState(inventoryField.name);
   const [isRequired, setIsRequired] = useState(inventoryField.is_required);
   const [isSortable, setIsSortable] = useState(inventoryField.is_sortable);
+  const [reuseDeletedIds, setReuseDeletedIds] = useState(
+    inventoryField.reuse_deleted_ids ?? false,
+  );
   const [options, setOptions] = useState(inventoryField.options);
   const [pendingOption, setPendingOption] = useState(false);
   const supportsOptions =
@@ -45,6 +49,7 @@ export function InventoryFieldCard({
     setName(inventoryField.name);
     setIsRequired(inventoryField.is_required);
     setIsSortable(inventoryField.is_sortable);
+    setReuseDeletedIds(inventoryField.reuse_deleted_ids ?? false);
     setOptions(inventoryField.options);
     setPendingOption(false);
     setIsEditing(true);
@@ -67,6 +72,9 @@ export function InventoryFieldCard({
       name: name.trim(),
       is_required: isRequired,
       is_sortable: isSortable,
+      ...(inventoryField.field_type === "id" && {
+        reuse_deleted_ids: reuseDeletedIds,
+      }),
       ...(supportsOptions && { options }),
     });
     setIsEditing(false);
@@ -112,12 +120,19 @@ export function InventoryFieldCard({
               {t(`fields.typeHelp.${inventoryField.field_type}`)}
             </p>
             <InventoryFieldSettings
+              automatic={inventoryField.field_type === "id"}
               required={isRequired}
               sortable={isSortable}
               disabled={isMutating}
               onRequiredChange={setIsRequired}
               onSortableChange={setIsSortable}
             >
+              {inventoryField.field_type === "id" && (
+                <AutomaticIdSettings
+                  reuse={reuseDeletedIds}
+                  onChange={setReuseDeletedIds}
+                />
+              )}
               {supportsOptions && (
                 <InventoryFieldOptions
                   fieldId={inventoryField.id}

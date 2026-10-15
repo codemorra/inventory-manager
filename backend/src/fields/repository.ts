@@ -45,6 +45,7 @@ export function createFieldRepository(db: AppDatabase) {
         position?: number;
         isRequired?: boolean;
         isSortable?: boolean;
+        reuseDeletedIds?: boolean;
       },
     ) =>
       db

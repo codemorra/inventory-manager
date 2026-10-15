@@ -151,7 +151,8 @@
       "number": "Number",
       "select": "Single choice",
       "text": "Text",
-      "time": "Time"
+      "time": "Time",
+      "id": "Automatic ID"
     },
     "typeHelp": {
       "text": "Text with a configurable character limit, for example a title or notes.",
@@ -162,7 +163,8 @@
       "datetime": "A calendar date with a time, for example an appointment.",
       "duration": "An elapsed amount of time, for example usage time.",
       "select": "One option can be selected for each item.",
-      "multiselect": "Multiple options can be selected for each item."
+      "multiselect": "Multiple options can be selected for each item.",
+      "id": "An automatically assigned, read-only number for each item."
     },
     "settings": {
       "title": "Field settings",
@@ -170,7 +172,10 @@
       "requiredHelp": "Required for new items and when saving an existing item. Existing items stay unchanged until edited.",
       "sortable": "Allow column sorting",
       "sortableHelp": "Allow sorting the item table by this field's values.",
-      "notSortable": "Sorting disabled"
+      "notSortable": "Sorting disabled",
+      "automaticIdHelp": "Numbering starts at 1. Existing items also receive a number when the field is saved.",
+      "reuseDeletedIds": "Reuse numbers from deleted items",
+      "reuseDeletedIdsHelp": "Reassigns the smallest available number. Old references may then point to a different item."
     }
   },
   "items": {
@@ -217,7 +222,8 @@
       "create": "Add inventory item",
       "delete": "Delete inventory item",
       "edit": "Edit inventory item"
-    }
+    },
+    "automaticId": "Assigned automatically"
   },
   "navigation": {
     "searchInventories": "Search inventories by title",

@@ -132,6 +132,30 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+// Test numbering is deferred until save and the read-only preview never enters the payload.
+test("shows an automatic ID placeholder and submits no manually assigned number", async () => {
+  const user = userEvent.setup();
+  renderInventoryItemCreateForm([
+    { ...fields[0], name: "Reference", field_type: "id", is_required: true },
+  ]);
+  await user.click(screen.getByRole("button", { name: "New item" }));
+  const input = screen.getByLabelText("Reference");
+  expect(input).toHaveAttribute("readonly");
+  expect(input).toHaveAttribute("placeholder", "Assigned automatically");
+  await user.type(input, "99");
+  expect(input).toHaveValue("");
+  expect(mockedCreateInventoryItem).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(mockedCreateInventoryItem).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "New item" }));
+  await user.click(screen.getByRole("button", { name: "Add item" }));
+  await waitFor(() =>
+    expect(mockedCreateInventoryItem).toHaveBeenCalledWith("inventory-1", {
+      values: [],
+    }),
+  );
+});
+
 // Test a duration is converted into integer seconds only at explicit item submission.
 test("creates a duration item with hour, minute, and second inputs", async () => {
   const user = userEvent.setup();

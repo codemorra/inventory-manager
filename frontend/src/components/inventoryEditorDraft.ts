@@ -57,6 +57,9 @@ export function createDraftField(
       (data.field_type ?? "text") === "text" ? (data.max_length ?? 255) : null,
     is_required: data.is_required ?? false,
     is_sortable: data.is_sortable ?? true,
+    ...(data.field_type === "id" && {
+      reuse_deleted_ids: data.reuse_deleted_ids ?? false,
+    }),
     options: (data.options ?? []).map((option, position) => ({
       id: crypto.randomUUID(),
       field_id: id,
@@ -113,6 +116,9 @@ export function buildInventoryEditorInput(
           field_type: field.field_type,
           is_required: field.is_required,
           is_sortable: field.is_sortable,
+          ...(field.field_type === "id" && {
+            reuse_deleted_ids: field.reuse_deleted_ids ?? false,
+          }),
           ...(field.field_type === "text"
             ? { max_length: field.max_length ?? 255 }
             : {}),
@@ -126,6 +132,11 @@ export function buildInventoryEditorInput(
       continue;
     }
     const changes: UpdateInventoryFieldInput = {};
+    if (
+      field.field_type === "id" &&
+      Boolean(saved.reuse_deleted_ids) !== Boolean(field.reuse_deleted_ids)
+    )
+      changes.reuse_deleted_ids = Boolean(field.reuse_deleted_ids);
     if (saved.name !== field.name) changes.name = field.name;
     if (saved.is_required !== field.is_required)
       changes.is_required = field.is_required;

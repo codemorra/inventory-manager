@@ -25,6 +25,7 @@ export const fieldTypes = [
   "select",
   "multiselect",
   "url",
+  "id",
 ] as const;
 
 // Single-level inventory groups with deletion tombstones.
@@ -58,6 +59,10 @@ export const inventoryFields = sqliteTable(
     name: text("name").notNull(),
     fieldType: text("field_type", { enum: fieldTypes }).notNull(),
     maxLength: integer("max_length"),
+    reuseDeletedIds: integer("reuse_deleted_ids", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    lastAssignedId: integer("last_assigned_id").notNull().default(0),
     isRequired: integer("is_required", { mode: "boolean" })
       .notNull()
       .default(false),

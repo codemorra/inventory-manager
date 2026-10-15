@@ -5,6 +5,7 @@ import { createFieldRepository } from "../fields/repository.js";
 import type { InventoryService } from "../inventories/service.js";
 import { createOptionRepository } from "../options/repository.js";
 import { createItemRepository } from "./repository.js";
+import { assignAutomaticId } from "./automatic-ids.js";
 import {
   itemInputSchema,
   validateValues,
@@ -88,6 +89,11 @@ export function createItemService(
         const items = createItemRepository(transaction);
         const item = items.create(inventoryId);
         items.createValues(item.id, data.values);
+        for (const field of createFieldRepository(transaction).list(
+          inventoryId,
+        ))
+          if (field.fieldType === "id")
+            assignAutomaticId(transaction, field.id, item.id);
         return { ...item, values: items.values(item.id) };
       });
     },
@@ -97,7 +103,12 @@ export function createItemService(
       return db.transaction((transaction) => {
         validate(transaction, inventoryId, data.values);
         const items = createItemRepository(transaction);
-        items.tombstoneValues(item.id);
+        // Full replacement applies to editable values, never to server-owned ID assignments.
+        const automaticFields = createFieldRepository(transaction)
+          .list(inventoryId)
+          .filter((field) => field.fieldType === "id")
+          .map((field) => field.id);
+        items.tombstoneValues(item.id, automaticFields);
         items.createValues(item.id, data.values);
         // Replacing values deliberately does not update the item's own lifecycle timestamp.
         return { ...item, values: items.values(item.id) };

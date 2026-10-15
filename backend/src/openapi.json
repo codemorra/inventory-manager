@@ -1249,12 +1249,17 @@
             "type": "boolean",
             "description": "Whether the UI permits sorting the item table by this field.",
             "default": true
+          },
+          "reuse_deleted_ids": {
+            "type": "boolean",
+            "description": "ID fields only: reassign the smallest available number after deletion. Disabled by default; turning it off resumes above the highest number ever assigned.",
+            "default": false
           }
         },
         "type": "object",
         "required": ["name"],
         "title": "InventoryFieldCreate",
-        "description": "Validate data required to create a configured inventory field."
+        "description": "Validate data required to create a configured inventory field. Saving an ID field numbers existing active items by creation time, then technical ID, in the same transaction."
       },
       "InventoryFieldOptionCreate": {
         "properties": {
@@ -1387,6 +1392,10 @@
           "is_sortable": {
             "type": "boolean",
             "description": "Whether the UI permits sorting the item table by this field."
+          },
+          "reuse_deleted_ids": {
+            "type": "boolean",
+            "description": "ID fields only: reassign the smallest available number after deletion. Disabled by default; turning it off resumes above the highest number ever assigned."
           }
         },
         "type": "object",
@@ -1400,7 +1409,8 @@
           "created_at",
           "updated_at",
           "is_required",
-          "is_sortable"
+          "is_sortable",
+          "reuse_deleted_ids"
         ],
         "title": "InventoryFieldRead",
         "description": "Represent an active configured inventory field in API responses."
@@ -1417,10 +1427,11 @@
           "duration",
           "select",
           "multiselect",
-          "url"
+          "url",
+          "id"
         ],
         "title": "InventoryFieldType",
-        "description": "Supported inventory field types; URL values use an address with optional display text."
+        "description": "Supported inventory field types; URL values use an address with optional display text. ID fields assign immutable, inventory-local numbers starting at 1; each ID field has its own sequence."
       },
       "InventoryFieldUpdate": {
         "properties": {
@@ -1456,6 +1467,10 @@
           "is_sortable": {
             "type": "boolean",
             "description": "Whether the UI permits sorting the item table by this field."
+          },
+          "reuse_deleted_ids": {
+            "type": "boolean",
+            "description": "ID fields only: reassign the smallest available number after deletion. Disabled by default; turning it off resumes above the highest number ever assigned."
           }
         },
         "type": "object",
@@ -1521,7 +1536,7 @@
         },
         "type": "object",
         "title": "InventoryItemUpdate",
-        "description": "Validate replacement values for an inventory item."
+        "description": "Replace all editable values of an inventory item, preserving automatic ID assignments."
       },
       "InventoryItemValueInput": {
         "properties": {
@@ -1531,7 +1546,7 @@
           },
           "value": {
             "title": "Value",
-            "description": "Value matching the field type. URL fields use InventoryUrlValue. Duration uses non-negative integer seconds up to 9007199254740991. Required fields must be supplied when creating or replacing an item.",
+            "description": "Value matching the field type. URL fields use InventoryUrlValue. Duration uses non-negative integer seconds up to 9007199254740991. Required fields must be supplied when creating or replacing an item. Never submit ID field values; the server generates them and preserves them during complete replacement.",
             "examples": [
               {
                 "url": "https://example.com",
@@ -1754,7 +1769,10 @@
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
-                    "field_id": { "type": "string", "minLength": 1 }
+                    "field_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
                   },
                   "required": ["field_id"]
                 },
@@ -1762,7 +1780,10 @@
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
-                    "client_id": { "type": "string", "minLength": 1 }
+                    "client_id": {
+                      "type": "string",
+                      "minLength": 1
+                    }
                   },
                   "required": ["client_id"]
                 }
@@ -1870,6 +1891,10 @@
                         "is_sortable": {
                           "type": "boolean",
                           "description": "Whether the UI permits sorting the item table by this field."
+                        },
+                        "reuse_deleted_ids": {
+                          "type": "boolean",
+                          "description": "ID fields only: reassign the smallest available number after deletion. Disabled by default; turning it off resumes above the highest number ever assigned."
                         }
                       },
                       "type": "object",

@@ -2,6 +2,7 @@
 export type InventoryFieldType =
   | "text"
   | "number"
+  | "id"
   | "boolean"
   | "date"
   | "time"
@@ -29,6 +30,7 @@ export interface InventoryField {
   max_length: number | null;
   is_required: boolean;
   is_sortable: boolean;
+  reuse_deleted_ids?: boolean;
   options: InventoryFieldOption[];
   position: number;
   created_at: string;
@@ -43,6 +45,7 @@ export interface CreateInventoryFieldInput {
   options?: CreateInventoryFieldOptionInput[];
   is_required?: boolean;
   is_sortable?: boolean;
+  reuse_deleted_ids?: boolean;
 }
 
 /** Define optional data accepted when updating an inventory field. */
@@ -51,6 +54,7 @@ export interface UpdateInventoryFieldInput {
   position?: number;
   is_required?: boolean;
   is_sortable?: boolean;
+  reuse_deleted_ids?: boolean;
 }
 
 /** Define data accepted when creating an inventory field option. */

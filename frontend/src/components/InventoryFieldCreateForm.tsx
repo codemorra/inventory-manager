@@ -7,11 +7,13 @@ import { Modal } from "./Modal";
 import { InventoryFieldSettings } from "./InventoryFieldSettings";
 import { SingleSelect } from "./SingleSelect";
 import { IntegerSpinbox } from "./IntegerSpinbox";
+import { AutomaticIdSettings } from "./AutomaticIdSettings";
 
 // Define the field types available during field creation.
 const fieldTypes: InventoryFieldType[] = [
   "text",
   "number",
+  "id",
   "boolean",
   "date",
   "time",
@@ -44,6 +46,7 @@ export function InventoryFieldCreateForm() {
   const [options, setOptions] = useState([""]);
   const [isRequired, setIsRequired] = useState(false);
   const [isSortable, setIsSortable] = useState(true);
+  const [reuseDeletedIds, setReuseDeletedIds] = useState(false);
   const { addField, disabled } = useInventoryDraft();
   useDraftEditorLock("create-field", isOpen);
   const canSubmit =
@@ -65,6 +68,7 @@ export function InventoryFieldCreateForm() {
     setOptions([""]);
     setIsRequired(false);
     setIsSortable(true);
+    setReuseDeletedIds(false);
   }
 
   // Discard the creation modal while no request is pending.
@@ -81,6 +85,7 @@ export function InventoryFieldCreateForm() {
    */
   function changeFieldType(nextFieldType: InventoryFieldType) {
     setFieldType(nextFieldType);
+    if (nextFieldType === "id") setIsRequired(false);
     setMaxLength(nextFieldType === "text" ? "255" : "");
     setOptions(supportsOptions(nextFieldType) ? [""] : []);
   }
@@ -97,6 +102,7 @@ export function InventoryFieldCreateForm() {
       field_type: fieldType,
       is_required: isRequired,
       is_sortable: isSortable,
+      ...(fieldType === "id" && { reuse_deleted_ids: reuseDeletedIds }),
       ...(fieldType === "text" && { max_length: Number(maxLength) }),
       ...(supportsOptions(fieldType) && {
         options: options.map((option) => ({ name: option.trim() })),
@@ -157,12 +163,19 @@ export function InventoryFieldCreateForm() {
               {t(`fields.typeHelp.${fieldType}`)}
             </p>
             <InventoryFieldSettings
+              automatic={fieldType === "id"}
               required={isRequired}
               sortable={isSortable}
               disabled={disabled}
               onRequiredChange={setIsRequired}
               onSortableChange={setIsSortable}
             >
+              {fieldType === "id" && (
+                <AutomaticIdSettings
+                  reuse={reuseDeletedIds}
+                  onChange={setReuseDeletedIds}
+                />
+              )}
               {fieldType === "text" && (
                 <div>
                   <IntegerSpinbox

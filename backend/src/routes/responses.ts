@@ -80,6 +80,7 @@ export function fieldResponse(field: Field) {
     max_length: field.maxLength,
     is_required: field.isRequired,
     is_sortable: field.isSortable,
+    reuse_deleted_ids: field.reuseDeletedIds,
     options: field.options.map(optionResponse),
     position: field.position,
     created_at: field.createdAt,

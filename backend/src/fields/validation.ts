@@ -22,8 +22,15 @@ export const fieldCreateSchema = z
     options: z.array(optionCreateSchema).max(100).default([]),
     is_required: z.boolean().default(false),
     is_sortable: z.boolean().default(true),
+    reuse_deleted_ids: z.boolean().default(false),
   })
   .superRefine((data, context) => {
+    if (data.field_type !== "id" && data.reuse_deleted_ids) {
+      context.addIssue({
+        code: "custom",
+        message: "Only ID fields can reuse deleted numbers.",
+      });
+    }
     if (data.field_type !== "text" && data.max_length !== null) {
       context.addIssue({
         code: "custom",
@@ -61,4 +68,5 @@ export const fieldUpdateSchema = z.object({
   position: integerSchema(0).nullable().optional(),
   is_required: z.boolean().optional(),
   is_sortable: z.boolean().optional(),
+  reuse_deleted_ids: z.boolean().optional(),
 });

@@ -6,6 +6,38 @@ import { renderDraftControl, selectFieldType } from "../helpers/inventoryDraft";
 import i18n from "../../src/i18n";
 afterEach(cleanup);
 
+// Test explicit reuse opt-in, hidden manual requirement settings, and reset after cancellation.
+test("creates automatic numbering only in the local field draft", async () => {
+  const user = userEvent.setup();
+  const { actions } = renderDraftControl(<InventoryFieldCreateForm />);
+  await user.click(screen.getByRole("button", { name: "New field" }));
+  await user.type(screen.getByLabelText("Field name"), "Reference");
+  await selectFieldType(user, "id");
+  expect(screen.queryByLabelText("Required field")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Maximum length")).not.toBeInTheDocument();
+  const reuse = screen.getByLabelText("Reuse numbers from deleted items");
+  expect(reuse).not.toBeChecked();
+  expect(reuse).toHaveAccessibleDescription(/Old references/);
+  await user.click(reuse);
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(actions.addField).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "New field" }));
+  await user.type(screen.getByLabelText("Field name"), "Reference");
+  await selectFieldType(user, "id");
+  expect(
+    screen.getByLabelText("Reuse numbers from deleted items"),
+  ).not.toBeChecked();
+  await user.click(screen.getByLabelText("Reuse numbers from deleted items"));
+  await user.click(screen.getByRole("button", { name: "Add field" }));
+  expect(actions.addField).toHaveBeenCalledWith({
+    name: "Reference",
+    field_type: "id",
+    is_required: false,
+    is_sortable: true,
+    reuse_deleted_ids: true,
+  });
+});
+
 // Test compact sizing and frontend limits matching the backend's accepted text configuration.
 test.each(["", "0", "-1", "+1", "1.5", "1,5", "1e2", "abc", " 10", "001"])(
   "rejects an invalid text limit: %s",

@@ -42,6 +42,7 @@ export function hasRequiredItemValues(
   values: Record<string, InventoryItemFormValue>,
 ): boolean {
   return fields.every((field) => {
+    if (field.field_type === "id") return true;
     if (!field.is_required) return true;
     const value = values[field.id] ?? getInitialValue(field);
     if (field.field_type === "duration")
@@ -106,6 +107,8 @@ export function createValueInput(
   field: InventoryField,
   value: InventoryItemFormValue,
 ): InventoryItemValueInput | null {
+  // The server owns automatic IDs, including during complete item replacement.
+  if (field.field_type === "id") return null;
   if (field.field_type === "boolean") {
     return typeof value === "boolean" ? { field_id: field.id, value } : null;
   }
