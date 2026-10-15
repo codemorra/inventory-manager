@@ -4,11 +4,14 @@ import { useTranslation } from "react-i18next";
 import { useCreateInventoryItem } from "../hooks/useInventoryItems";
 import { ApiError } from "../services/api";
 import { Modal } from "./Modal";
+import { ChoiceSelect } from "./ChoiceSelect";
+import { DurationFieldInput } from "./DurationFieldInput";
+import { emptyDuration, isDurationInput } from "./duration";
 import type { InventoryField } from "../types/inventoryField";
 import {
   createValueInput,
   getInitialValue,
-  hasRequiredItemValues,
+  hasValidItemValues,
   type InventoryItemFormValue,
 } from "./inventoryItemForm";
 // Define properties for the inventory item creation form.
@@ -57,31 +60,22 @@ export function InventoryItemFieldInput({
   const inputClassName =
     "mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50";
 
-  // Required yes/no values must distinguish an unanswered field from an explicit no.
+  // Required yes/no fields need an explicit answer rather than a checked-by-default input.
   if (field.field_type === "boolean" && field.is_required) {
     return (
-      <label
-        className="block text-sm font-medium text-foreground"
-        htmlFor={inputId}
-      >
-        {fieldLabel}
-        <select
-          className={inputClassName}
-          disabled={disabled}
-          id={inputId}
-          required
-          onChange={(event) =>
-            onChange(
-              event.target.value === "" ? "" : event.target.value === "true",
-            )
-          }
-          value={typeof value === "boolean" ? String(value) : ""}
-        >
-          <option value="">{t("items.noSelection")}</option>
-          <option value="true">{t("common.values.yes")}</option>
-          <option value="false">{t("common.values.no")}</option>
-        </select>
-      </label>
+      <ChoiceSelect
+        id={inputId}
+        label={field.name}
+        required
+        disabled={disabled}
+        value={typeof value === "boolean" ? String(value) : ""}
+        onChange={(next) => onChange(next === "" ? "" : next === "true")}
+        options={[
+          { value: "", label: t("items.noSelection") },
+          { value: "true", label: t("common.values.yes") },
+          { value: "false", label: t("common.values.no") },
+        ]}
+      />
     );
   }
 
@@ -104,78 +98,70 @@ export function InventoryItemFieldInput({
     );
   }
 
-  if (field.field_type === "select") {
+  if (field.field_type === "select" || field.field_type === "multiselect") {
+    const options = field.options.map((option) => ({
+      value: option.id,
+      label: option.name,
+    }));
+    const selected = Array.isArray(value)
+      ? value
+      : typeof value === "string" && value
+        ? [value]
+        : [];
+    // Retain unavailable saved options visibly until the user deliberately clears or replaces them.
+    for (const id of selected)
+      if (!options.some((option) => option.value === id))
+        options.push({ value: id, label: t("items.unavailableOption") });
     return (
-      <label
-        className="block text-sm font-medium text-foreground"
-        htmlFor={inputId}
-      >
-        {fieldLabel}
-        <select
-          className={inputClassName}
-          disabled={disabled}
-          id={inputId}
-          required={field.is_required}
-          onChange={(event) => onChange(event.target.value)}
-          value={typeof value === "string" ? value : ""}
-        >
-          <option value="">{t("items.noSelection")}</option>
-          {field.options.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </select>
-      </label>
-    );
-  }
-
-  if (field.field_type === "multiselect") {
-    return (
-      <div>
-        <label
-          className="block text-sm font-medium text-foreground"
-          htmlFor={inputId}
-        >
-          {fieldLabel}
-          <select
-            aria-describedby={`${inputId}-help`}
-            className={`${inputClassName} min-h-28`}
-            disabled={disabled}
+      <div className="min-w-0">
+        {field.field_type === "multiselect" ? (
+          <ChoiceSelect
             id={inputId}
+            label={field.name}
+            describedBy={`${inputId}-help`}
             multiple
             required={field.is_required}
-            onChange={(event) =>
-              onChange(
-                Array.from(
-                  event.target.selectedOptions,
-                  (option) => option.value,
-                ),
-              )
-            }
+            disabled={disabled}
             value={Array.isArray(value) ? value : []}
-          >
-            {field.options.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <span
-          className="mt-1.5 block text-xs font-normal text-muted"
-          id={`${inputId}-help`}
-        >
-          {t("items.selectMultiple")}
-        </span>
+            options={options}
+            emptyLabel={t("items.noSelection")}
+            onChange={onChange}
+          />
+        ) : (
+          <ChoiceSelect
+            id={inputId}
+            label={field.name}
+            required={field.is_required}
+            disabled={disabled}
+            value={typeof value === "string" ? value : ""}
+            options={[{ value: "", label: t("items.noSelection") }, ...options]}
+            onChange={onChange}
+          />
+        )}
+        {field.field_type === "multiselect" && (
+          <p id={`${inputId}-help`} className="mt-1.5 text-xs text-muted">
+            {t(options.length ? "items.selectMultiple" : "items.noOptions")}
+          </p>
+        )}
       </div>
     );
   }
 
+  if (field.field_type === "duration")
+    return (
+      <DurationFieldInput
+        id={inputId}
+        label={field.name}
+        required={field.is_required}
+        disabled={disabled}
+        value={isDurationInput(value) ? value : emptyDuration()}
+        onChange={onChange}
+      />
+    );
+
   const inputType = {
     date: "date",
     datetime: "datetime-local",
-    duration: "number",
     number: "number",
     text: "text",
     time: "time",
@@ -193,7 +179,6 @@ export function InventoryItemFieldInput({
         id={inputId}
         maxLength={field.max_length ?? undefined}
         required={field.is_required}
-        min={field.field_type === "duration" ? 0 : undefined}
         onChange={(event) => onChange(event.target.value)}
         step={field.field_type === "number" ? "any" : undefined}
         type={inputType}
@@ -234,7 +219,7 @@ export function InventoryItemCreateForm({
   function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (createItem.isPending || !hasRequiredItemValues(fields, values)) return;
+    if (createItem.isPending || !hasValidItemValues(fields, values)) return;
 
     const itemValues = fields.flatMap((field) => {
       const value = values[field.id] ?? getInitialValue(field);
@@ -319,7 +304,7 @@ export function InventoryItemCreateForm({
               <button
                 className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={
-                  createItem.isPending || !hasRequiredItemValues(fields, values)
+                  createItem.isPending || !hasValidItemValues(fields, values)
                 }
                 type="submit"
               >

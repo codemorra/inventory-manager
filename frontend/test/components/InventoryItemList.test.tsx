@@ -17,6 +17,7 @@ import {
 import type { InventoryField } from "../../src/types/inventoryField";
 import type { InventoryItem } from "../../src/types/inventoryItem";
 import { InventoryItemList } from "../../src/components/InventoryItemList";
+import { chooseOptions } from "../helpers/choices";
 
 vi.mock("../../src/services/inventoryItems", () => ({
   createInventoryItem: vi.fn(),
@@ -131,6 +132,120 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// Test readable table durations and complete replacement after changing elapsed hours.
+test("formats durations and edits their stored seconds without wrapping hours", async () => {
+  const user = userEvent.setup();
+  mockedUpdateInventoryItem.mockResolvedValue(items[0]);
+  const duration = {
+    ...fields[0],
+    name: "Usage time",
+    field_type: "duration" as const,
+  };
+  renderInventoryItemList(
+    [{ ...items[0], values: [{ ...items[0].values[0], value: 94530 }] }],
+    [duration],
+  );
+  expect(screen.getByText("26 h 15 min 30 s")).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  expect(screen.getByRole("spinbutton", { name: "Hours" })).toHaveValue("26");
+  await user.clear(screen.getByRole("spinbutton", { name: "Hours" }));
+  await user.type(screen.getByRole("spinbutton", { name: "Hours" }), "27");
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
+      "inventory-1",
+      "item-1",
+      { values: [{ field_id: duration.id, value: 98130 }] },
+    ),
+  );
+});
+
+// Test that old items without a newly required duration remain readable until explicitly edited.
+test("requires a missing duration on editing without changing the existing item on read", async () => {
+  const user = userEvent.setup();
+  mockedUpdateInventoryItem.mockResolvedValue(items[0]);
+  const duration = {
+    ...fields[0],
+    field_type: "duration" as const,
+    is_required: true,
+  };
+  renderInventoryItemList([{ ...items[0], values: [] }], [duration]);
+  expect(screen.getByText("—")).toBeVisible();
+  expect(mockedUpdateInventoryItem).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  await user.type(screen.getByRole("spinbutton", { name: "Seconds" }), "0");
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
+      "inventory-1",
+      "item-1",
+      { values: [{ field_id: duration.id, value: 0 }] },
+    ),
+  );
+});
+
+// Test that editing and clearing an existing optional duration omits it from the replacement.
+test("clears a duration only when every component is removed", async () => {
+  const user = userEvent.setup();
+  mockedUpdateInventoryItem.mockResolvedValue(items[0]);
+  const duration = { ...fields[0], field_type: "duration" as const };
+  renderInventoryItemList(
+    [{ ...items[0], values: [{ ...items[0].values[0], value: 0 }] }],
+    [duration],
+  );
+  expect(screen.getByText("0 s")).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  for (const label of ["Hours", "Minutes", "Seconds"])
+    await user.clear(screen.getByRole("spinbutton", { name: label }));
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
+      "inventory-1",
+      "item-1",
+      { values: [] },
+    ),
+  );
+});
+
+// Test legacy selection IDs remain explicit until the user chooses to remove them.
+test("allows clearing unavailable saved multi-choice options without keeping their IDs", async () => {
+  const user = userEvent.setup();
+  mockedUpdateInventoryItem.mockResolvedValue(items[0]);
+  const multi = fields[1];
+  renderInventoryItemList(
+    [
+      {
+        ...items[0],
+        values: [
+          {
+            ...items[0].values[0],
+            field_id: multi.id,
+            value: ["removed-option"],
+          },
+        ],
+      },
+    ],
+    [multi],
+  );
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  expect(screen.getByRole("combobox", { name: "Genre" })).toHaveTextContent(
+    "Unavailable option",
+  );
+  await chooseOptions(user, "Genre", ["Unavailable option"]);
+  expect(screen.getByRole("combobox", { name: "Genre" })).toHaveTextContent(
+    "No selection",
+  );
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
+      "inventory-1",
+      "item-1",
+      { values: [] },
+    ),
+  );
+});
+
 // Test that disabling a column also removes an active sort after a field refetch.
 test("removes sorting controls and active sorting when a field becomes unsortable", async () => {
   const user = userEvent.setup();
@@ -182,16 +297,12 @@ test("requires missing values only when editing an existing item and preserves e
   await user.click(screen.getByRole("button", { name: "Edit" }));
   const save = screen.getByRole("button", { name: "Save changes" });
   expect(save).toBeDisabled();
-  expect(screen.getByRole("combobox", { name: /Played/ })).toHaveValue("");
+  expect(screen.getByRole("combobox", { name: /Played/ })).toHaveTextContent(
+    "No selection",
+  );
   await user.type(screen.getByRole("textbox", { name: /Title/ }), "Cable");
-  await user.selectOptions(
-    screen.getByRole("listbox", { name: /Genre/ }),
-    "genre-rpg",
-  );
-  await user.selectOptions(
-    screen.getByRole("combobox", { name: /Played/ }),
-    "false",
-  );
+  await chooseOptions(user, "Genre", ["RPG"]);
+  await chooseOptions(user, "Played", ["No"]);
   expect(save).toBeEnabled();
   await user.click(save);
   await waitFor(() =>

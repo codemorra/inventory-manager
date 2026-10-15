@@ -200,6 +200,15 @@
       "title": "Keine Felder konfiguriert"
     },
     "noSelection": "Keine Auswahl",
+    "noOptions": "Keine Optionen verfügbar. Ergänze sie in den Feldeinstellungen.",
+    "unavailableOption": "Nicht mehr verfügbare Option",
+    "duration": {
+      "hours": "Stunden",
+      "minutes": "Minuten",
+      "seconds": "Sekunden",
+      "help": "Ganze Stunden, Minuten und Sekunden. Nicht ausgefüllte Teile zählen als 0.",
+      "invalid": "Diese Zeitdauer ist zu groß oder enthält ungültige Werte."
+    },
     "selectMultiple": "Wähle eine oder mehrere Optionen aus.",
     "title": "Inventareinträge",
     "titles": {

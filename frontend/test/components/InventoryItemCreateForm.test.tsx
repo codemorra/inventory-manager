@@ -7,6 +7,8 @@ import { ApiError } from "../../src/services/api";
 import { createInventoryItem } from "../../src/services/inventoryItems";
 import type { InventoryField } from "../../src/types/inventoryField";
 import { InventoryItemCreateForm } from "../../src/components/InventoryItemCreateForm";
+import { chooseOptions } from "../helpers/choices";
+import { maximumDurationHours } from "../../src/components/duration";
 
 vi.mock("../../src/services/inventoryItems", () => ({
   createInventoryItem: vi.fn(),
@@ -130,6 +132,70 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+// Test a duration is converted into integer seconds only at explicit item submission.
+test("creates a duration item with hour, minute, and second inputs", async () => {
+  const user = userEvent.setup();
+  renderInventoryItemCreateForm([
+    {
+      ...fields[0],
+      field_type: "duration",
+      name: "Usage time",
+      is_required: true,
+    },
+  ]);
+  await user.click(screen.getByRole("button", { name: "New item" }));
+  const save = screen.getByRole("button", { name: "Add item" });
+  expect(save).toBeDisabled();
+  await user.type(screen.getByRole("spinbutton", { name: "Hours" }), "26");
+  await user.type(screen.getByRole("spinbutton", { name: "Minutes" }), "15");
+  await user.type(screen.getByRole("spinbutton", { name: "Seconds" }), "30");
+  expect(mockedCreateInventoryItem).not.toHaveBeenCalled();
+  await user.click(save);
+  await waitFor(() =>
+    expect(mockedCreateInventoryItem).toHaveBeenCalledWith("inventory-1", {
+      values: [{ field_id: fields[0].id, value: 94530 }],
+    }),
+  );
+});
+
+// Test optional unset durations remain omitted, while zero is an explicit valid required value.
+test.each([false, true])(
+  "distinguishes unset and explicit zero durations (required: %s)",
+  async (required) => {
+    const user = userEvent.setup();
+    renderInventoryItemCreateForm([
+      { ...fields[0], field_type: "duration", is_required: required },
+    ]);
+    await user.click(screen.getByRole("button", { name: "New item" }));
+    const save = screen.getByRole("button", { name: "Add item" });
+    if (required) {
+      expect(save).toBeDisabled();
+      await user.type(screen.getByRole("spinbutton", { name: "Seconds" }), "0");
+    }
+    await user.click(save);
+    await waitFor(() =>
+      expect(mockedCreateInventoryItem).toHaveBeenCalledWith("inventory-1", {
+        values: required ? [{ field_id: fields[0].id, value: 0 }] : [],
+      }),
+    );
+  },
+);
+
+// Test that invalid optional durations cannot be silently discarded by item submission.
+test("blocks saving an optional duration whose combined value overflows", async () => {
+  const user = userEvent.setup();
+  renderInventoryItemCreateForm([{ ...fields[0], field_type: "duration" }]);
+  await user.click(screen.getByRole("button", { name: "New item" }));
+  await user.type(
+    screen.getByRole("spinbutton", { name: "Hours" }),
+    String(maximumDurationHours),
+  );
+  await user.type(screen.getByRole("spinbutton", { name: "Minutes" }), "59");
+  expect(screen.getByRole("button", { name: "Add item" })).toBeDisabled();
+  expect(screen.getByRole("alert")).toBeVisible();
+  expect(mockedCreateInventoryItem).not.toHaveBeenCalled();
+});
+
 // Test every required input family and intentional no/zero values during item creation.
 test("requires filled inputs and an explicit yes/no choice before creating", async () => {
   const user = userEvent.setup();
@@ -139,21 +205,18 @@ test("requires filled inputs and an explicit yes/no choice before creating", asy
   await user.click(screen.getByRole("button", { name: "New item" }));
   const save = screen.getByRole("button", { name: "Add item" });
   expect(save).toBeDisabled();
-  expect(screen.getByRole("combobox", { name: /Played/ })).toHaveValue("");
+  expect(screen.getByRole("combobox", { name: /Played/ })).toHaveTextContent(
+    "No selection",
+  );
+  expect(screen.getByRole("combobox", { name: /Played/ })).toHaveAttribute(
+    "aria-required",
+    "true",
+  );
   await user.type(screen.getByRole("textbox", { name: /Title/ }), "   ");
   await user.type(screen.getByRole("spinbutton", { name: /Rating/ }), "0");
-  await user.selectOptions(
-    screen.getByRole("combobox", { name: /Played/ }),
-    "false",
-  );
-  await user.selectOptions(
-    screen.getByRole("combobox", { name: /Platform/ }),
-    "platform-pc",
-  );
-  await user.selectOptions(
-    screen.getByRole("listbox", { name: /Genre/ }),
-    "genre-rpg",
-  );
+  await chooseOptions(user, "Played", ["No"]);
+  await chooseOptions(user, "Platform", ["PC"]);
+  await chooseOptions(user, "Genre", ["RPG"]);
   expect(save).toBeDisabled();
   await user.clear(screen.getByRole("textbox", { name: /Title/ }));
   await user.type(screen.getByRole("textbox", { name: /Title/ }), "Example");
@@ -190,11 +253,8 @@ describe("InventoryItemCreateForm", () => {
     await user.type(screen.getByLabelText("Title"), "Baldur's Gate 3");
     await user.type(screen.getByLabelText("Rating"), "9.5");
     await user.click(screen.getByLabelText("Played"));
-    await user.selectOptions(screen.getByLabelText("Platform"), "platform-pc");
-    await user.selectOptions(screen.getByLabelText("Genre"), [
-      "genre-rpg",
-      "genre-strategy",
-    ]);
+    await chooseOptions(user, "Platform", ["PC"]);
+    await chooseOptions(user, "Genre", ["RPG", "Strategy"]);
     await user.click(screen.getByRole("button", { name: "Add item" }));
 
     await waitFor(() => {

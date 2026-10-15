@@ -200,6 +200,15 @@
       "title": "No fields configured"
     },
     "noSelection": "No selection",
+    "noOptions": "No options available. Add them in the field settings.",
+    "unavailableOption": "Unavailable option",
+    "duration": {
+      "hours": "Hours",
+      "minutes": "Minutes",
+      "seconds": "Seconds",
+      "help": "Whole hours, minutes, and seconds. Unfilled components count as 0.",
+      "invalid": "This duration is too large or contains invalid values."
+    },
     "selectMultiple": "Select one or more options.",
     "title": "Inventory items",
     "titles": {
