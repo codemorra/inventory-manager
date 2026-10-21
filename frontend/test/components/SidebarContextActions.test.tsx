@@ -1,6 +1,7 @@
 import { saveInventoryConfiguration } from "../../src/services/inventoryEditor";
 vi.mock("../../src/services/inventoryEditor", () => ({
   saveInventoryConfiguration: vi.fn(),
+  getInventoryConfiguration: vi.fn(async () => ({ inventory, fields: [] })),
 }));
 vi.mock("../../src/services/inventoryFields", () => ({
   getInventoryFields: vi.fn().mockResolvedValue([]),
@@ -34,6 +35,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 const inventory = {
+  configuration_revision: 1,
   id: "games",
   name: "Games",
   description: "Collection",
@@ -101,6 +103,7 @@ test("edits an inventory from the context menu", async () => {
   await user.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() =>
     expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+      expected_revision: 1,
       inventory: { name: "Board games", description: "Collection" },
       fields: [],
       options: [],

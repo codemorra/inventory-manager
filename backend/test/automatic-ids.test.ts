@@ -175,6 +175,8 @@ test("rolls back failed item saves and editor backfills", (context) => {
         { action: "create", data: { name: "Rolled back", field_type: "id" } },
         { action: "delete", field_id: "missing" },
       ],
+      expected_revision: services.inventories.get(inventory.id)
+        .configurationRevision,
     }),
   );
   assert.equal(services.fields.list(inventory.id).length, 2);
@@ -291,6 +293,8 @@ test("backfills large drafts atomically and clears values when their ID field is
     services.items.create(inventory.id, {});
   const saved = services.inventoryEditor.save(inventory.id, {
     fields: [{ action: "create", data: { name: "Number", field_type: "id" } }],
+    expected_revision: services.inventories.get(inventory.id)
+      .configurationRevision,
   });
   const field = saved.fields[0]!;
   const numbers = services.items

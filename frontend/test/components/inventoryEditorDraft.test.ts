@@ -16,7 +16,9 @@ test("serializes automatic numbering preferences without client-owned assignment
     field_type: "id",
   });
   expect(automatic.reuse_deleted_ids).toBe(false);
-  expect(buildInventoryEditorInput([], [automatic], inventory).fields).toEqual([
+  expect(
+    buildInventoryEditorInput([], [automatic], inventory, 1).fields,
+  ).toEqual([
     {
       action: "create",
       data: {
@@ -30,7 +32,7 @@ test("serializes automatic numbering preferences without client-owned assignment
   ]);
   const updated = { ...automatic, reuse_deleted_ids: true };
   expect(
-    buildInventoryEditorInput([automatic], [updated], inventory).fields,
+    buildInventoryEditorInput([automatic], [updated], inventory, 1).fields,
   ).toEqual([
     {
       action: "update",
@@ -39,7 +41,7 @@ test("serializes automatic numbering preferences without client-owned assignment
     },
   ]);
   expect(
-    buildInventoryEditorInput([automatic], [automatic], inventory).fields,
+    buildInventoryEditorInput([automatic], [automatic], inventory, 1).fields,
   ).toEqual([]);
 });
 
@@ -87,14 +89,16 @@ test("serializes a complete order only when surviving fields were reordered", ()
   const other = { ...field, id: "other" };
   const original = [field, other];
   const moved = moveDraftField(original, other.id, field.id, "before");
-  expect(buildInventoryEditorInput(original, moved, inventory)).toEqual({
+  expect(buildInventoryEditorInput(original, moved, inventory, 1)).toEqual({
+    expected_revision: 1,
     inventory,
     fields: [],
     options: [],
     field_order: [{ field_id: other.id }, { field_id: field.id }],
   });
   const reverted = moveDraftField(moved, field.id, other.id, "before");
-  expect(buildInventoryEditorInput(original, reverted, inventory)).toEqual({
+  expect(buildInventoryEditorInput(original, reverted, inventory, 1)).toEqual({
+    expected_revision: 1,
     inventory,
     fields: [],
     options: [],
@@ -114,6 +118,7 @@ test("references new fields in the order without submitting deleted fields or in
     [field, removed],
     current,
     inventory,
+    1,
   );
   expect(result.field_order).toEqual([
     { client_id: fresh.id },
@@ -144,7 +149,7 @@ test("retains append behavior without unnecessary client identifiers or order ch
     [field, a, b],
     [field, b, a],
   ]) {
-    const result = buildInventoryEditorInput([field], current, inventory);
+    const result = buildInventoryEditorInput([field], current, inventory, 1);
     expect(result.field_order).toBeUndefined();
     expect(result.fields).toHaveLength(2);
     expect(
@@ -176,7 +181,7 @@ test("creates independent local field and option identifiers", () => {
   expect(a.id).not.toBe(b.id);
   expect(a.options[0]?.field_id).toBe(a.id);
   expect(a.options[0]?.id).not.toBe(b.options[0]?.id);
-  const input = buildInventoryEditorInput([], [a], inventory);
+  const input = buildInventoryEditorInput([], [a], inventory, 1);
   expect(input.fields).toEqual([
     {
       action: "create",
@@ -194,7 +199,8 @@ test("creates independent local field and option identifiers", () => {
 
 // Test that unchanged metadata does not create unnecessary field or option operations.
 test("leaves unchanged saved configuration untouched", () => {
-  expect(buildInventoryEditorInput([field], [field], inventory)).toEqual({
+  expect(buildInventoryEditorInput([field], [field], inventory, 1)).toEqual({
+    expected_revision: 1,
     inventory,
     fields: [],
     options: [],
@@ -209,7 +215,8 @@ test("does not emit option mutations beneath deleted fields", () => {
     max_length: null,
     options: [option],
   };
-  expect(buildInventoryEditorInput([saved], [], inventory)).toEqual({
+  expect(buildInventoryEditorInput([saved], [], inventory, 1)).toEqual({
+    expected_revision: 1,
     inventory,
     fields: [{ action: "delete", field_id: field.id }],
     options: [],
@@ -221,7 +228,7 @@ test("omits reverted names and discarded draft options", () => {
   const saved = { ...field, options: [option] };
   const current = { ...saved, options: [{ ...option }] };
   expect(
-    buildInventoryEditorInput([saved], [current], inventory).options,
+    buildInventoryEditorInput([saved], [current], inventory, 1).options,
   ).toEqual([]);
 });
 
@@ -249,23 +256,23 @@ test("serializes field flags while omitting reverted settings", () => {
     is_sortable: false,
   });
   expect(configured).toMatchObject({ is_required: true, is_sortable: false });
-  expect(buildInventoryEditorInput([], [configured], inventory).fields).toEqual(
-    [
-      {
-        action: "create",
-        data: {
-          name: "Title",
-          field_type: "text",
-          max_length: 255,
-          is_required: true,
-          is_sortable: false,
-        },
+  expect(
+    buildInventoryEditorInput([], [configured], inventory, 1).fields,
+  ).toEqual([
+    {
+      action: "create",
+      data: {
+        name: "Title",
+        field_type: "text",
+        max_length: 255,
+        is_required: true,
+        is_sortable: false,
       },
-    ],
-  );
+    },
+  ]);
   const changed = { ...field, is_required: true, is_sortable: false };
   expect(
-    buildInventoryEditorInput([field], [changed], inventory).fields,
+    buildInventoryEditorInput([field], [changed], inventory, 1).fields,
   ).toEqual([
     {
       action: "update",
@@ -274,7 +281,7 @@ test("serializes field flags while omitting reverted settings", () => {
     },
   ]);
   expect(
-    buildInventoryEditorInput([changed], [field], inventory).fields,
+    buildInventoryEditorInput([changed], [field], inventory, 1).fields,
   ).toEqual([
     {
       action: "update",
@@ -287,6 +294,7 @@ test("serializes field flags while omitting reverted settings", () => {
       [field],
       [{ ...changed, is_required: false, is_sortable: true }],
       inventory,
+      1,
     ).fields,
   ).toEqual([]);
 });

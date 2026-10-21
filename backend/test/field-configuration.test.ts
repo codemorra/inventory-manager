@@ -161,6 +161,8 @@ test("saves field flags atomically without forcing backfills of existing items",
       options: [
         { action: "delete", field_id: "missing", option_id: "missing" },
       ],
+      expected_revision: services.inventories.get(inventory.id)
+        .configurationRevision,
     }),
   );
   assert.equal(services.inventories.get(inventory.id).name, inventory.name);
@@ -174,6 +176,8 @@ test("saves field flags atomically without forcing backfills of existing items",
         data: { is_required: true, is_sortable: false },
       },
     ],
+    expected_revision: services.inventories.get(inventory.id)
+      .configurationRevision,
   });
   assert.equal(saved.fields[0]?.isRequired, true);
   assert.equal(saved.fields[0]?.isSortable, false);

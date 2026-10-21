@@ -79,14 +79,21 @@ export function createDraftField(
  * @param original The saved field snapshot captured when the editor opened.
  * @param current The locally edited fields and options.
  * @param inventory The edited inventory metadata.
+ * @param expectedRevision The configuration revision captured with the original field snapshot.
  * @returns Operations that preserve saved identifiers and omit discarded draft objects.
  */
 export function buildInventoryEditorInput(
   original: InventoryField[],
   current: InventoryField[],
   inventory: InventoryEditorInput["inventory"],
+  expectedRevision: number,
 ): InventoryEditorInput {
-  const result: InventoryEditorInput = { inventory, fields: [], options: [] };
+  const result: InventoryEditorInput = {
+    inventory,
+    expected_revision: expectedRevision,
+    fields: [],
+    options: [],
+  };
   const savedIds = new Set(original.map((field) => field.id));
   const currentIds = new Set(current.map((field) => field.id));
   // Without explicit order, the server retains surviving fields and appends newly created ones.

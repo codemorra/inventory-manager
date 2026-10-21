@@ -74,7 +74,10 @@
   "inventories": {
     "editor": {
       "finishForm": "Schließe das offene Feld- oder Optionsformular ab oder brich es ab, bevor du speicherst.",
-      "invalidDraft": "Neue Auswahlfelder benötigen mindestens eine Option mit einem eindeutigen, nicht leeren Namen."
+      "invalidDraft": "Neue Auswahlfelder benötigen mindestens eine Option mit einem eindeutigen, nicht leeren Namen.",
+      "conflict": "Das Inventar wurde inzwischen geändert oder gelöscht. Dein Entwurf bleibt erhalten. Lade den aktuellen Stand, bevor du erneut speicherst.",
+      "discardAndReload": "Entwurf verwerfen und neu laden",
+      "reloadFailed": "Der aktuelle Stand konnte nicht geladen werden. Dein Entwurf bleibt erhalten."
     },
     "general": "Allgemein",
     "actions": {

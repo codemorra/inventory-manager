@@ -1,3 +1,4 @@
+import { configurationRevision } from "./helpers/configuration-revision.js";
 import assert from "node:assert/strict";
 import test, { type TestContext } from "node:test";
 import { and, eq } from "drizzle-orm";
@@ -409,6 +410,10 @@ test("failed editor saves restore field deletion content and reject unrelated id
         { action: "delete", field_id: f.target.selection.id },
         { action: "delete", field_id: f.other.text.id },
       ],
+      expected_revision: configurationRevision(
+        f.services,
+        `/inventories/${f.target.inventory.id}/configuration`,
+      ),
     })
     .expect(404);
   assert.deepEqual(snapshot(f), before);

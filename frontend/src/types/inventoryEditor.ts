@@ -24,6 +24,7 @@ export type OptionChange =
 
 // Keep editor metadata independent of group membership changes.
 export interface InventoryEditorInput {
+  expected_revision: number;
   inventory: { name: string; description: string | null };
   fields: FieldChange[];
   options: OptionChange[];

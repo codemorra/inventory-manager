@@ -7,6 +7,7 @@ import { InventoryTree } from "../../src/components/InventoryTree";
 afterEach(cleanup);
 const group = { id: "group", name: "Leisure", created_at: "", updated_at: "" };
 const inventory = {
+  configuration_revision: 1,
   id: "games",
   name: "Games",
   group_id: "group",

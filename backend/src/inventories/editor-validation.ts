@@ -46,6 +46,7 @@ const optionChangeSchema = z.discriminatedUnion("action", [
 // Reject ambiguous batches before any database writes are attempted.
 export const inventoryEditorSchema = z
   .strictObject({
+    expected_revision: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
     inventory: inventoryUpdateSchema
       .omit({ group_id: true })
       .strict()

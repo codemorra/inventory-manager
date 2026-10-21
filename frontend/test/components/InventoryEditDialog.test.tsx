@@ -12,7 +12,10 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { InventoryEditDialog } from "../../src/components/InventoryEditDialog";
 import * as fieldApi from "../../src/services/inventoryFields";
-import { saveInventoryConfiguration } from "../../src/services/inventoryEditor";
+import {
+  saveInventoryConfiguration,
+  getInventoryConfiguration,
+} from "../../src/services/inventoryEditor";
 import { ApiError } from "../../src/services/api";
 import type { InventoryField } from "../../src/types/inventoryField";
 import { selectFieldType } from "../helpers/inventoryDraft";
@@ -24,6 +27,7 @@ import {
 
 vi.mock("../../src/services/inventoryEditor", () => ({
   saveInventoryConfiguration: vi.fn(),
+  getInventoryConfiguration: vi.fn(),
 }));
 vi.mock("../../src/services/inventoryFields", () => ({
   getInventoryFields: vi.fn(),
@@ -35,6 +39,7 @@ vi.mock("../../src/services/inventoryFields", () => ({
   deleteInventoryFieldOption: vi.fn(),
 }));
 const inventory = {
+  configuration_revision: 1,
   id: "games",
   name: "Games",
   description: null,
@@ -82,6 +87,10 @@ const type: InventoryField = {
 };
 
 beforeEach(() => {
+  vi.mocked(getInventoryConfiguration).mockImplementation(async () => ({
+    inventory,
+    fields: await fieldApi.getInventoryFields(inventory.id),
+  }));
   vi.mocked(fieldApi.getInventoryFields).mockResolvedValue([]);
   vi.mocked(saveInventoryConfiguration).mockResolvedValue({
     inventory,
@@ -176,6 +185,7 @@ test("saves a dragged field order without touching item data or the query cache 
   await user.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() =>
     expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+      expected_revision: 1,
       inventory: { name: "Games", description: null },
       fields: [],
       options: [],
@@ -343,6 +353,7 @@ test("keeps new fields local across section changes until explicit save", async 
   await user.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() =>
     expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+      expected_revision: 1,
       inventory: { name: "Collection", description: null },
       fields: [
         {
@@ -428,6 +439,7 @@ test.each(["Cancel", "Close dialog", "Escape", "Backdrop"])(
     await user.click(screen.getByRole("button", { name: "Save changes" }));
     await waitFor(() =>
       expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+        expected_revision: 1,
         inventory: { name: "Games", description: null },
         fields: [],
         options: [],
@@ -484,6 +496,7 @@ test("submits field renames and option changes together", async () => {
   await user.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() =>
     expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+      expected_revision: 1,
       inventory: { name: "Games", description: null },
       fields: [
         { action: "update", field_id: "title", data: { name: "Cable" } },
@@ -525,6 +538,7 @@ test.each(["Save changes", "Cancel"])(
     if (action === "Save changes") {
       await waitFor(() =>
         expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+          expected_revision: 1,
           inventory: { name: "Games", description: null },
           fields: [
             {
@@ -562,6 +576,7 @@ test("stages saved field deletion without changing the cached field list", async
   await user.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() =>
     expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+      expected_revision: 1,
       inventory: { name: "Games", description: null },
       fields: [{ action: "delete", field_id: "title" }],
       options: [],
@@ -583,6 +598,7 @@ test("drops discarded new fields from the save payload", async () => {
   await user.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() =>
     expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+      expected_revision: 1,
       inventory: { name: "Games", description: null },
       fields: [],
       options: [],
@@ -626,6 +642,7 @@ test("keeps options on new selection fields local and saves only their final sta
   await user.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() =>
     expect(saveInventoryConfiguration).toHaveBeenCalledWith("games", {
+      expected_revision: 1,
       inventory: { name: "Games", description: null },
       fields: [
         {
@@ -702,6 +719,136 @@ test("only closes the child dialog on Escape", async () => {
   expect(screen.getAllByRole("dialog")).toHaveLength(1);
   expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
   expect(close).not.toHaveBeenCalled();
+});
+
+// Test stale metadata and definitions remain local until an explicit, successful discard-and-reload.
+test("preserves a conflicting draft through a failed reload and saves only with the refreshed revision", async () => {
+  const user = userEvent.setup();
+  const initial = {
+    inventory: {
+      ...inventory,
+      name: "Snapshot name",
+      configuration_revision: 7,
+    },
+    fields: [title],
+  };
+  vi.mocked(getInventoryConfiguration).mockResolvedValue(initial);
+  vi.mocked(saveInventoryConfiguration).mockRejectedValueOnce(
+    new ApiError(409, "Stale draft", "inventory_configuration_conflict"),
+  );
+  const { client, close } = renderEditor();
+  const name = await screen.findByLabelText("Name");
+  expect(name).toHaveValue("Snapshot name");
+  await user.clear(name);
+  await user.type(name, "Local draft");
+  await user.click(screen.getByRole("button", { name: "Fields" }));
+  await addTextField(user, "Local field");
+  act(() =>
+    client.setQueryData(["inventories", inventory.id, "configuration"], {
+      inventory: {
+        ...inventory,
+        name: "Background change",
+        configuration_revision: 8,
+      },
+      fields: [type],
+    }),
+  );
+  expect(screen.getByText("Local field")).toBeInTheDocument();
+  expect(screen.getByText("Title")).toBeInTheDocument();
+  expect(screen.queryByText("Type")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Your draft is preserved",
+  );
+  expect(saveInventoryConfiguration).toHaveBeenLastCalledWith(
+    inventory.id,
+    expect.objectContaining({
+      expected_revision: 7,
+      inventory: { name: "Local draft", description: null },
+    }),
+  );
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  expect(close).not.toHaveBeenCalled();
+  vi.mocked(getInventoryConfiguration).mockRejectedValueOnce(
+    new Error("Offline"),
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Discard draft and reload" }),
+  );
+  await screen.findByText(
+    "The current configuration could not be loaded. Your draft is preserved.",
+  );
+  expect(screen.getByText("Local field")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "General" }));
+  expect(screen.getByLabelText("Name")).toHaveValue("Local draft");
+  vi.mocked(getInventoryConfiguration).mockResolvedValueOnce({
+    inventory: {
+      ...inventory,
+      name: "Remote name",
+      configuration_revision: 12,
+    },
+    fields: [type],
+  });
+  await user.click(
+    screen.getByRole("button", { name: "Discard draft and reload" }),
+  );
+  await waitFor(() =>
+    expect(screen.getByLabelText("Name")).toHaveValue("Remote name"),
+  );
+  await user.click(screen.getByRole("button", { name: "Fields" }));
+  expect(screen.getByText("Type")).toBeInTheDocument();
+  expect(screen.queryByText("Local field")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(close).toHaveBeenCalledOnce());
+  expect(saveInventoryConfiguration).toHaveBeenLastCalledWith(
+    inventory.id,
+    expect.objectContaining({ expected_revision: 12, fields: [], options: [] }),
+  );
+});
+
+// Test deletion in another window cannot erase the still-open editor's draft.
+test("preserves a deleted inventory draft when its current configuration cannot be reloaded", async () => {
+  const user = userEvent.setup();
+  vi.mocked(saveInventoryConfiguration).mockRejectedValueOnce(
+    new ApiError(404, "Deleted", "inventory_not_found"),
+  );
+  const { close } = renderEditor();
+  const name = await screen.findByLabelText("Name");
+  await user.type(name, " local");
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  const reload = await screen.findByRole("button", {
+    name: "Discard draft and reload",
+  });
+  vi.mocked(getInventoryConfiguration).mockRejectedValueOnce(
+    new ApiError(404, "Deleted", "inventory_not_found"),
+  );
+  await user.click(reload);
+  await screen.findByText(
+    "The current configuration could not be loaded. Your draft is preserved.",
+  );
+  expect(name).toHaveValue("Games local");
+  expect(close).not.toHaveBeenCalled();
+  expect(saveInventoryConfiguration).toHaveBeenCalledOnce();
+});
+
+// Test unfinished child forms cannot be silently discarded by the conflict reload action.
+test("blocks conflict reload while a field form is unfinished", async () => {
+  const user = userEvent.setup();
+  vi.mocked(saveInventoryConfiguration).mockRejectedValueOnce(
+    new ApiError(409, "Stale", "inventory_configuration_conflict"),
+  );
+  renderEditor("fields");
+  await user.click(await screen.findByRole("button", { name: "Save changes" }));
+  await screen.findByRole("button", { name: "Discard draft and reload" });
+  await user.click(screen.getByRole("button", { name: "New field" }));
+  expect(
+    screen.getByRole("button", { name: "Discard draft and reload" }),
+  ).toBeDisabled();
+  await user.keyboard("{Escape}");
+  expect(
+    screen.getByRole("button", { name: "Discard draft and reload" }),
+  ).toBeEnabled();
+  expect(getInventoryConfiguration).toHaveBeenCalledOnce();
 });
 
 // Test that large drafts keep the independent field-list scroll layout.

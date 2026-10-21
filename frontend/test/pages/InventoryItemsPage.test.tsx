@@ -6,6 +6,20 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { ApiError } from "../../src/services/api";
 import { getInventoryFields } from "../../src/services/inventoryFields";
+vi.mock("../../src/services/inventoryEditor", () => ({
+  saveInventoryConfiguration: vi.fn(),
+  getInventoryConfiguration: vi.fn(async () => ({
+    inventory: {
+      id: "inventory-1",
+      name: "Games",
+      description: null,
+      configuration_revision: 1,
+      created_at: "",
+      updated_at: "",
+    },
+    fields: await getInventoryFields("inventory-1"),
+  })),
+}));
 import { getInventoryItems } from "../../src/services/inventoryItems";
 import type { InventoryField } from "../../src/types/inventoryField";
 import { InventoryItemsPage } from "../../src/pages/InventoryItemsPage";
@@ -81,6 +95,7 @@ describe("InventoryItemsPage", () => {
     const user = userEvent.setup();
     vi.mocked(getInventories).mockResolvedValueOnce([
       {
+        configuration_revision: 1,
         id: "inventory-1",
         name: "Games",
         description: null,
@@ -111,6 +126,7 @@ describe("InventoryItemsPage", () => {
   test("shows the inventory name, description, and empty table toolbar", async () => {
     vi.mocked(getInventories).mockResolvedValueOnce([
       {
+        configuration_revision: 1,
         id: "inventory-1",
         name: "Games",
         description: "My game collection",
@@ -144,6 +160,7 @@ describe("InventoryItemsPage", () => {
     async (description) => {
       vi.mocked(getInventories).mockResolvedValueOnce([
         {
+          configuration_revision: 1,
           id: "inventory-1",
           name: "Games",
           description,

@@ -1,6 +1,13 @@
 vi.mock("../../src/services/inventoryFields", () => ({
   getInventoryFields: vi.fn().mockResolvedValue([]),
 }));
+vi.mock("../../src/services/inventoryEditor", () => ({
+  getInventoryConfiguration: vi.fn(async () => ({
+    inventory: (await getInventories())[0],
+    fields: [],
+  })),
+  saveInventoryConfiguration: vi.fn(),
+}));
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   cleanup,
@@ -56,6 +63,7 @@ describe("AppShell", () => {
     const user = userEvent.setup();
     mockedGetInventories.mockResolvedValue([
       {
+        configuration_revision: 1,
         id: "games",
         name: "Games",
         description: "Collection",
@@ -187,6 +195,7 @@ describe("AppShell", () => {
   test("renders inventory navigation links", async () => {
     mockedGetInventories.mockResolvedValue([
       {
+        configuration_revision: 1,
         id: "inventory-1",
         name: "Games",
         description: null,

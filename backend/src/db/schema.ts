@@ -40,6 +40,9 @@ export const inventories = sqliteTable(
   "inventories",
   {
     ...lifecycleColumns(),
+    configurationRevision: integer("configuration_revision")
+      .notNull()
+      .default(1),
     name: text("name").notNull(),
     description: text("description"),
     groupId: text("group_id").references(() => inventoryGroups.id),

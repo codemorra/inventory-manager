@@ -77,6 +77,7 @@ describe("InventoryOverviewPage", () => {
   test("displays returned inventories", async () => {
     mockedGetInventories.mockResolvedValue([
       {
+        configuration_revision: 1,
         id: "inventory-1",
         name: "Cables",
         description: "Cable collection",
@@ -84,6 +85,7 @@ describe("InventoryOverviewPage", () => {
         updated_at: "2026-09-14T10:00:00Z",
       },
       {
+        configuration_revision: 1,
         id: "inventory-2",
         name: "Tools",
         description: null,
