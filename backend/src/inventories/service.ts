@@ -3,6 +3,7 @@ import { DomainError } from "../errors.js";
 import { createInventoryRepository } from "./repository.js";
 import { inventoryCreateSchema, inventoryUpdateSchema } from "./validation.js";
 import { createGroupService, type GroupService } from "../groups/service.js";
+import { tombstoneInventoryContents } from "../db/deletion.js";
 
 /**
  * Creates a service for managing inventories.
@@ -57,9 +58,17 @@ export function createInventoryService(
         ? repository.update(id, changes)
         : inventory;
     },
+    /**
+     * Clear an inventory and all dependent content atomically, without deleting its group.
+     * @param id The active inventory to delete.
+     */
     delete(id: string) {
       get(id);
-      repository.tombstone(id);
+      db.transaction((transaction) => {
+        const deletedAt = new Date().toISOString();
+        tombstoneInventoryContents(transaction, id, deletedAt);
+        createInventoryRepository(transaction).tombstone(id, deletedAt);
+      });
     },
   };
 }

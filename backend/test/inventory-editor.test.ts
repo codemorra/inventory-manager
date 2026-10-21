@@ -409,8 +409,8 @@ test("preserves no-op saves and permits deleting all existing options", async (c
   assert.deepEqual(f.services.items.read(f.inventory.id, f.item.id), f.item);
 });
 
-// Test that removing a field keeps its tombstone, stored values, and child option history.
-test("field deletion preserves existing item values and option records", async (context) => {
+// Test saved field deletion clears its values and options without changing unrelated item content.
+test("field deletion clears dependent content and preserves unrelated values", async (context) => {
   const f = fixture(context);
   const result = await f.api
     .patch(`/inventories/${f.inventory.id}/configuration`)
@@ -430,7 +430,20 @@ test("field deletion preserves existing item values and option records", async (
     )
     .get(f.type.id) as { count: number };
   assert.equal(optionCount.count, 2);
-  assert.deepEqual(f.services.items.read(f.inventory.id, f.item.id), f.item);
+  assert.equal(
+    (
+      f.sqlite
+        .prepare(
+          "SELECT count(*) AS count FROM inventory_field_options WHERE field_id = ? AND (name != '' OR deleted_at IS NULL)",
+        )
+        .get(f.type.id) as { count: number }
+    ).count,
+    0,
+  );
+  assert.deepEqual(f.services.items.read(f.inventory.id, f.item.id), {
+    ...f.item,
+    values: f.item.values.filter((value) => value.fieldId !== f.type.id),
+  });
 });
 
 // Test validation and scope failures without retaining any earlier writes in the batch.

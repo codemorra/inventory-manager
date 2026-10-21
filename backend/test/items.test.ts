@@ -255,8 +255,8 @@ test("item errors preserve parent scoping, DTO precedence, and structured value 
     .expect(404, missingParent);
 });
 
-// Test for handling deleted options and fields in old values
-test("deleted options and fields remain readable in old values but cannot be resubmitted", (context) => {
+// Test option-only deletion retains references, while field deletion removes its stored content.
+test("deleted options remain referenced until their field is removed", (context) => {
   const { services, inventory } = fixture(context);
   const other = services.inventories.create({ name: "Other" });
   const foreign = services.fields.create(other.id, { name: "Foreign" });
@@ -279,7 +279,9 @@ test("deleted options and fields remain readable in old values but cannot be res
   );
   assert.deepEqual(services.items.read(inventory.id, item.id), item);
   services.fields.delete(inventory.id, field.id);
-  assert.deepEqual(services.items.list(inventory.id), [item]);
+  assert.deepEqual(services.items.list(inventory.id), [
+    { ...item, values: [] },
+  ]);
   assert.throws(() => services.items.create(inventory.id, input), invalid);
   assert.throws(
     () =>

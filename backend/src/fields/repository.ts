@@ -54,10 +54,14 @@ export function createFieldRepository(db: AppDatabase) {
         .where(activeField(inventoryId, fieldId))
         .returning()
         .get(),
-    tombstone: (inventoryId: string, fieldId: string) =>
+    tombstone: (
+      inventoryId: string,
+      fieldId: string,
+      deletedAt = new Date().toISOString(),
+    ) =>
       db
         .update(inventoryFields)
-        .set({ name: "", deletedAt: new Date().toISOString() })
+        .set({ name: "", deletedAt, updatedAt: deletedAt })
         .where(activeField(inventoryId, fieldId))
         .run(),
   };
