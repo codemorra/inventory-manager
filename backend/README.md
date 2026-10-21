@@ -63,6 +63,30 @@ Item PATCH replaces all editable values while preserving automatic IDs, which mu
 not be submitted. Omitted values and deleted items retain tombstones with cleared
 content. Invalid values return structured 422 errors without partial changes.
 
+### Revision checks
+
+Items expose `revision`. Item PATCH and DELETE require `expected_revision` in the
+JSON body, matching the version being edited or confirmed for deletion. Successful
+writes advance the revision; stale requests return 409 `inventory_item_conflict`
+without changing data. Field deletion and ID backfills also advance affected item
+revisions. Missing or deleted items return 404; invalid revisions return 422.
+
+Inventories expose `configuration_revision`. Load the editor through
+`GET /inventories/{inventory_id}/configuration` to read metadata, fields, options,
+and revision from one consistent snapshot. Configuration PATCH requires that
+revision as `expected_revision`; a stale draft returns 409
+`inventory_configuration_conflict` without applying any operations.
+
+Every accepted configuration save advances the revision, including no-op saves.
+Metadata, field, option, and group membership changes also advance it, including
+writes through individual endpoints. Item value changes and automatic ID counter
+increments do not. Use the returned revision rather than assuming an increment of
+exactly one. Failed transactions consume no revision.
+
+The frontend keeps conflicting editor drafts until an explicit discard-and-reload.
+It does not automatically retry stale writes. Checkbox conflicts offer a list
+reload; item deletion conflicts require loading the current item and confirming again.
+
 ### Field configuration
 
 Supported field types are `text`, `number`, `boolean`, `checkbox`, `date`, `time`,
@@ -92,8 +116,12 @@ Optional `field_order` references every final field exactly once: saved fields u
 `field_id`, new fields use their create operation's `client_id`. Do not combine it
 with individual position updates. Omitting it preserves append behavior.
 
-Field and option deletion retain existing item values, except deleting an ID field
-clears its number assignments. Deletion tombstones are preserved.
+Deleting a field clears its stored values and selection options for every field
+type. Deleting an option alone preserves existing item references to that option;
+future item saves must use valid active options. Deleting an inventory clears its
+fields, options, items, and values in the same transaction. Identifiers,
+relationships, and existing deletion timestamps are retained as tombstones.
+Unrelated inventories and groups are unaffected.
 
 See `/docs` or `/openapi.json` for request schemas and validation details.
 
