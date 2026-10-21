@@ -39,6 +39,12 @@ discards the draft. A failed save keeps the draft available for correction or re
 Complete or cancel open field and option forms before saving the full inventory.
 Long field lists scroll independently of the dialog actions.
 
+If an inventory or item changes in another window, outdated edits are rejected
+instead of overwriting newer data. The editor keeps your inputs until you explicitly
+discard them and reload the current version. A conflicting checkbox change requires
+reloading the list; a conflicting item deletion requires loading the current item
+and confirming again.
+
 Drag fields by their handles to change their order. **Save changes** applies the
 order to the table and item forms. Field names, requirements, sorting preferences,
 and selection options can be edited later. A field's type and text limit are fixed
@@ -58,6 +64,10 @@ field, option, or group requires confirmation in an application dialog. Field an
 option deletions remain part of the local editor draft until saved. Inventory,
 item, and group deletions are applied after confirmation; failures leave the
 confirmation open with an error and allow another attempt.
+
+Deleting a field also clears its stored item values and selection options. Deleting
+an inventory clears its fields, options, items, and values. Identifiers and deletion
+markers remain in the database; unrelated inventories and groups are preserved.
 
 The **Settings** button at the bottom of the sidebar opens language, appearance, and
 accent color preferences. Changes take effect immediately.

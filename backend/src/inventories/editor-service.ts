@@ -12,7 +12,7 @@ import { DomainError } from "../errors.js";
 /**
  * Compose atomic persistence for inventory editor drafts.
  * @param db The database connection used to save the complete draft.
- * @returns The operation for saving metadata, fields, and options together.
+ * @returns Operations to read consistent snapshots and save complete configuration drafts.
  */
 export function createInventoryEditorService(db: AppDatabase) {
   return {
@@ -35,8 +35,9 @@ export function createInventoryEditorService(db: AppDatabase) {
     /**
      * Commit all draft changes or leave every affected record unchanged.
      * @param inventoryId The inventory being edited.
-     * @param input The untrusted metadata and field or option operations.
+     * @param input The expected revision, metadata, and field or option operations.
      * @returns The updated inventory and its active fields with options.
+     * @throws DomainError if the inventory is missing or its configuration revision is stale.
      */
     save(inventoryId: string, input: unknown) {
       const draft = inventoryEditorSchema.parse(input);
