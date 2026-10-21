@@ -29,6 +29,13 @@
       "when": 1792062185846,
       "tag": "0003_automatic_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792574446167,
+      "tag": "0004_item_revisions",
+      "breakpoints": true
     }
   ]
 }

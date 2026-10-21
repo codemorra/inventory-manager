@@ -14,11 +14,13 @@ import { ApiError } from "../../src/services/api";
 import {
   deleteInventoryItem,
   updateInventoryItem,
+  getInventoryItems,
 } from "../../src/services/inventoryItems";
 import type { InventoryField } from "../../src/types/inventoryField";
 import type { InventoryItem } from "../../src/types/inventoryItem";
 import { InventoryItemList } from "../../src/components/InventoryItemList";
 import { chooseOptions } from "../helpers/choices";
+import { useInventoryItems } from "../../src/hooks/useInventoryItems";
 
 vi.mock("../../src/services/inventoryItems", () => ({
   createInventoryItem: vi.fn(),
@@ -29,6 +31,7 @@ vi.mock("../../src/services/inventoryItems", () => ({
 
 const mockedDeleteInventoryItem = vi.mocked(deleteInventoryItem);
 const mockedUpdateInventoryItem = vi.mocked(updateInventoryItem);
+const mockedGetInventoryItems = vi.mocked(getInventoryItems);
 const timestamp = "2026-09-24T10:00:00Z";
 
 const fields: InventoryField[] = [
@@ -84,6 +87,7 @@ const fields: InventoryField[] = [
 
 const items: InventoryItem[] = [
   {
+    revision: 1,
     id: "item-1",
     inventory_id: "inventory-1",
     values: [
@@ -133,6 +137,195 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// Test background refreshes cannot replace an open draft's concurrency precondition.
+test("preserves a stale edit until the user explicitly discards inputs and reloads", async () => {
+  const user = userEvent.setup();
+  const item = { ...items[0], values: [items[0].values[0]] };
+  const remote = {
+    ...item,
+    revision: 2,
+    values: [{ ...item.values[0], value: "Other tab" }],
+  };
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const view = render(
+    <QueryClientProvider client={client}>
+      <InventoryItemList fields={[fields[0]]} items={[item]} />
+    </QueryClientProvider>,
+  );
+  mockedUpdateInventoryItem.mockRejectedValueOnce(
+    new ApiError(409, "Conflict", "inventory_item_conflict"),
+  );
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  const input = screen.getByRole("textbox", { name: /Title/ });
+  await user.clear(input);
+  await user.type(input, "Local draft");
+  view.rerender(
+    <QueryClientProvider client={client}>
+      <InventoryItemList fields={[fields[0]]} items={[remote]} />
+    </QueryClientProvider>,
+  );
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Your inputs are preserved",
+    ),
+  );
+  expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
+    "inventory-1",
+    "item-1",
+    {
+      expected_revision: 1,
+      values: [{ field_id: fields[0].id, value: "Local draft" }],
+    },
+  );
+  expect(input).toHaveValue("Local draft");
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  mockedGetInventoryItems.mockRejectedValueOnce(new Error("Offline"));
+  await user.click(
+    screen.getByRole("button", { name: "Discard inputs and reload" }),
+  );
+  await screen.findByText(
+    "The current version could not be loaded. Please try again.",
+  );
+  expect(input).toHaveValue("Local draft");
+  mockedGetInventoryItems.mockResolvedValueOnce([remote]);
+  await user.click(
+    screen.getByRole("button", { name: "Discard inputs and reload" }),
+  );
+  await waitFor(() => expect(input).toHaveValue("Other tab"));
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
+  mockedUpdateInventoryItem.mockResolvedValueOnce({ ...remote, revision: 3 });
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(mockedUpdateInventoryItem).toHaveBeenLastCalledWith(
+      "inventory-1",
+      "item-1",
+      {
+        expected_revision: 2,
+        values: [{ field_id: fields[0].id, value: "Other tab" }],
+      },
+    ),
+  );
+});
+
+// Test deletion by another client never closes or clears the user's unsaved edit draft.
+test("keeps draft inputs when the conflicting item no longer exists", async () => {
+  const user = userEvent.setup();
+  mockedUpdateInventoryItem.mockRejectedValueOnce(
+    new ApiError(404, "Missing", "inventory_item_not_found"),
+  );
+  mockedGetInventoryItems.mockResolvedValueOnce([]);
+  renderInventoryItemList([items[0]], [fields[0]]);
+  await user.click(screen.getByRole("button", { name: "Edit" }));
+  const input = screen.getByRole("textbox", { name: /Title/ });
+  await user.clear(input);
+  await user.type(input, "Keep this draft");
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await screen.findByText(/Your inputs are preserved/);
+  await user.click(
+    screen.getByRole("button", { name: "Discard inputs and reload" }),
+  );
+  await screen.findByText(/This item no longer exists/);
+  expect(input).toHaveValue("Keep this draft");
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+});
+
+// Test stale checkbox writes are never retried automatically and use the refreshed revision after recovery.
+test("requires reloading after a checkbox conflict before another toggle", async () => {
+  const user = userEvent.setup();
+  const item = { ...items[0], values: [] };
+  const remote = { ...item, revision: 2 };
+  mockedGetInventoryItems
+    .mockResolvedValueOnce([item])
+    .mockResolvedValue([remote]);
+  mockedUpdateInventoryItem.mockRejectedValueOnce(
+    new ApiError(409, "Conflict", "inventory_item_conflict"),
+  );
+  mockedUpdateInventoryItem.mockResolvedValueOnce({ ...remote, revision: 3 });
+  // Render real query subscriptions so reloads exercise the table's refreshed data rather than static props.
+  function LiveTable() {
+    const query = useInventoryItems("inventory-1");
+    return (
+      <InventoryItemList
+        fields={[{ ...fields[2], name: "Checked", field_type: "checkbox" }]}
+        items={query.data ?? []}
+      />
+    );
+  }
+  render(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <LiveTable />
+    </QueryClientProvider>,
+  );
+  const checkbox = await screen.findByRole("checkbox", {
+    name: "Toggle Checked",
+  });
+  await user.click(checkbox);
+  await waitFor(() =>
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "The checkbox change was not saved",
+    ),
+  );
+  expect(checkbox).not.toBeChecked();
+  expect(checkbox).toBeDisabled();
+  expect(mockedUpdateInventoryItem).toHaveBeenCalledTimes(1);
+  await user.click(screen.getByRole("button", { name: "Reload list" }));
+  await waitFor(() => expect(checkbox).toBeEnabled());
+  await user.click(checkbox);
+  await waitFor(() =>
+    expect(mockedUpdateInventoryItem).toHaveBeenLastCalledWith(
+      "inventory-1",
+      "item-1",
+      {
+        expected_revision: 2,
+        values: [{ field_id: fields[2].id, value: true }],
+      },
+    ),
+  );
+});
+
+// Test a stale delete must be explicitly refreshed and confirmed again against its current revision.
+test("requires a fresh confirmation after a deletion conflict", async () => {
+  const user = userEvent.setup();
+  mockedDeleteInventoryItem.mockRejectedValueOnce(
+    new ApiError(409, "Conflict", "inventory_item_conflict"),
+  );
+  mockedDeleteInventoryItem.mockResolvedValueOnce(undefined);
+  mockedGetInventoryItems.mockResolvedValueOnce([{ ...items[0], revision: 2 }]);
+  renderInventoryItemList([items[0]], [fields[0]]);
+  await user.click(screen.getByRole("button", { name: "Delete" }));
+  const dialog = screen.getByRole("dialog");
+  await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+  await waitFor(() =>
+    expect(within(dialog).getByRole("alert")).toHaveTextContent(
+      "Load the current version",
+    ),
+  );
+  expect(within(dialog).getByRole("button", { name: "Delete" })).toBeDisabled();
+  await user.click(
+    within(dialog).getByRole("button", { name: "Load current item" }),
+  );
+  await waitFor(() =>
+    expect(
+      within(dialog).getByRole("button", { name: "Delete" }),
+    ).toBeEnabled(),
+  );
+  await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+  await waitFor(() =>
+    expect(mockedDeleteInventoryItem).toHaveBeenLastCalledWith(
+      "inventory-1",
+      "item-1",
+      2,
+    ),
+  );
+});
+
 // Test direct toggles use full replacement and do not open a dialog or coerce neighboring values.
 test.each([true, false, undefined])(
   "toggles a table checkbox with stored state %s",
@@ -160,6 +353,7 @@ test.each([true, false, undefined])(
         "inventory-1",
         "item-1",
         {
+          expected_revision: 1,
           values: [
             { field_id: fields[0].id, value: items[0].values[0].value },
             { field_id: fields[1].id, value: items[0].values[1].value },
@@ -261,6 +455,7 @@ test("opens the edit dialog for missing requirements before saving a checkbox ch
       "inventory-1",
       "item-1",
       {
+        expected_revision: 1,
         values: [
           { field_id: fields[0].id, value: "Complete" },
           { field_id: checkbox.id, value: true },
@@ -342,6 +537,7 @@ test.each([false, true])(
         "inventory-1",
         "item-1",
         {
+          expected_revision: 1,
           values: clear
             ? []
             : [
@@ -396,7 +592,7 @@ test("shows automatic numbers and never submits them while editing an item", asy
     expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
       "inventory-1",
       "item-1",
-      { values: [] },
+      { expected_revision: 1, values: [] },
     ),
   );
 });
@@ -424,7 +620,10 @@ test("formats durations and edits their stored seconds without wrapping hours", 
     expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
       "inventory-1",
       "item-1",
-      { values: [{ field_id: duration.id, value: 98130 }] },
+      {
+        expected_revision: 1,
+        values: [{ field_id: duration.id, value: 98130 }],
+      },
     ),
   );
 });
@@ -449,7 +648,7 @@ test("requires a missing duration on editing without changing the existing item 
     expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
       "inventory-1",
       "item-1",
-      { values: [{ field_id: duration.id, value: 0 }] },
+      { expected_revision: 1, values: [{ field_id: duration.id, value: 0 }] },
     ),
   );
 });
@@ -472,7 +671,7 @@ test("clears a duration only when every component is removed", async () => {
     expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
       "inventory-1",
       "item-1",
-      { values: [] },
+      { expected_revision: 1, values: [] },
     ),
   );
 });
@@ -510,7 +709,7 @@ test("allows clearing unavailable saved multi-choice options without keeping the
     expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
       "inventory-1",
       "item-1",
-      { values: [] },
+      { expected_revision: 1, values: [] },
     ),
   );
 });
@@ -579,6 +778,7 @@ test("requires missing values only when editing an existing item and preserves e
       "inventory-1",
       "item-1",
       {
+        expected_revision: 1,
         values: [
           { field_id: "title-field", value: "Cable" },
           { field_id: "genre-field", value: ["genre-rpg"] },
@@ -676,6 +876,7 @@ describe("InventoryItemList", () => {
         "inventory-1",
         "item-1",
         {
+          expected_revision: 1,
           values: [
             { field_id: "title-field", value: "Divinity: Original Sin 2" },
             { field_id: "genre-field", value: ["genre-rpg"] },
@@ -722,6 +923,7 @@ describe("InventoryItemList", () => {
       expect(mockedDeleteInventoryItem).toHaveBeenCalledWith(
         "inventory-1",
         "item-1",
+        1,
       );
     });
   });

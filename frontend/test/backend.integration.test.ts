@@ -147,12 +147,26 @@ test("frontend clients complete configuration and item CRUD against Express", as
     });
     expect(await items.getInventoryItems(inventory.id)).toEqual([item]);
     const updated = await items.updateInventoryItem(inventory.id, item.id, {
+      expected_revision: (await items.getInventoryItems(inventory.id)).find(
+        (entry) => entry.id === item.id,
+      )!.revision,
       values: [
         { field_id: boolean.id, value: true },
         { field_id: select.id, value: option.id },
       ],
     });
-    expect(updated.updated_at).toBe(item.updated_at);
+    expect(updated.revision).toBe(item.revision + 1);
+    // Two frontend clients holding the same item revision cannot overwrite or delete a newer save.
+    await expect(
+      items.updateInventoryItem(inventory.id, item.id, {
+        expected_revision: item.revision,
+        values: [],
+      }),
+    ).rejects.toMatchObject({ status: 409, code: "inventory_item_conflict" });
+    await expect(
+      items.deleteInventoryItem(inventory.id, item.id, item.revision),
+    ).rejects.toMatchObject({ status: 409, code: "inventory_item_conflict" });
+    expect(await items.getInventoryItems(inventory.id)).toEqual([updated]);
     expect(
       updated.values.find((value) => value.field_id === boolean.id)?.value,
     ).toBe(true);
@@ -258,6 +272,9 @@ test("frontend clients complete configuration and item CRUD against Express", as
     ).toBe(option.id);
     await expect(
       items.updateInventoryItem(inventory.id, item.id, {
+        expected_revision: (await items.getInventoryItems(inventory.id)).find(
+          (entry) => entry.id === item.id,
+        )!.revision,
         values: [{ field_id: select.id, value: option.id }],
       }),
     ).rejects.toMatchObject({
@@ -286,10 +303,19 @@ test("frontend clients complete configuration and item CRUD against Express", as
     )!;
     expect(assigned.value).toBe(1);
     const replaced = await items.updateInventoryItem(inventory.id, item.id, {
+      expected_revision: (await items.getInventoryItems(inventory.id)).find(
+        (entry) => entry.id === item.id,
+      )!.revision,
       values: [],
     });
     expect(replaced.values).toEqual([assigned]);
-    await items.deleteInventoryItem(inventory.id, item.id);
+    await items.deleteInventoryItem(
+      inventory.id,
+      item.id,
+      (await items.getInventoryItems(inventory.id)).find(
+        (entry) => entry.id === item.id,
+      )!.revision,
+    );
     const nextNumbered = await items.createInventoryItem(inventory.id, {
       values: [],
     });
@@ -313,9 +339,21 @@ test("frontend clients complete configuration and item CRUD against Express", as
       values: [],
     });
     expect(reusedNumbered.values[0]?.value).toBe(1);
-    await items.deleteInventoryItem(inventory.id, reusedNumbered.id);
+    await items.deleteInventoryItem(
+      inventory.id,
+      reusedNumbered.id,
+      (await items.getInventoryItems(inventory.id)).find(
+        (entry) => entry.id === reusedNumbered.id,
+      )!.revision,
+    );
     expect(
-      await items.deleteInventoryItem(inventory.id, nextNumbered.id),
+      await items.deleteInventoryItem(
+        inventory.id,
+        nextNumbered.id,
+        (await items.getInventoryItems(inventory.id)).find(
+          (entry) => entry.id === nextNumbered.id,
+        )!.revision,
+      ),
     ).toBeUndefined();
     expect(await items.getInventoryItems(inventory.id)).toEqual([]);
     // Verify URL drafts and form payloads round-trip through the real backend without losing display text.
@@ -355,7 +393,12 @@ test("frontend clients complete configuration and item CRUD against Express", as
     const bareLink = await items.updateInventoryItem(
       inventory.id,
       linkItem.id,
-      { values: [createValueInput(urlField, { ...linkValue, label: "" })!] },
+      {
+        expected_revision: (await items.getInventoryItems(inventory.id)).find(
+          (entry) => entry.id === linkItem.id,
+        )!.revision,
+        values: [createValueInput(urlField, { ...linkValue, label: "" })!],
+      },
     );
     expect(
       bareLink.values.find((value) => value.field_id === urlField.id)?.value,
@@ -370,12 +413,20 @@ test("frontend clients complete configuration and item CRUD against Express", as
       );
       await expect(
         items.updateInventoryItem(inventory.id, linkItem.id, {
+          expected_revision: (await items.getInventoryItems(inventory.id)).find(
+            (entry) => entry.id === linkItem.id,
+          )!.revision,
           values: [{ field_id: urlField.id, value }],
         }),
       ).rejects.toMatchObject({ status: 422 });
     }
     await expect(
-      items.updateInventoryItem(inventory.id, linkItem.id, { values: [] }),
+      items.updateInventoryItem(inventory.id, linkItem.id, {
+        expected_revision: (await items.getInventoryItems(inventory.id)).find(
+          (entry) => entry.id === linkItem.id,
+        )!.revision,
+        values: [],
+      }),
     ).rejects.toMatchObject({ status: 422 });
     await fields.updateInventoryField(inventory.id, urlField.id, {
       is_required: false,
@@ -383,7 +434,12 @@ test("frontend clients complete configuration and item CRUD against Express", as
     const clearedLink = await items.updateInventoryItem(
       inventory.id,
       linkItem.id,
-      { values: [] },
+      {
+        expected_revision: (await items.getInventoryItems(inventory.id)).find(
+          (entry) => entry.id === linkItem.id,
+        )!.revision,
+        values: [],
+      },
     );
     expect(
       clearedLink.values.some((value) => value.field_id === urlField.id),
@@ -416,6 +472,9 @@ test("frontend clients complete configuration and item CRUD against Express", as
       inventory.id,
       linkItem.id,
       {
+        expected_revision: (await items.getInventoryItems(inventory.id)).find(
+          (entry) => entry.id === linkItem.id,
+        )!.revision,
         values: [
           { field_id: checkbox.id, value: false },
           { field_id: urlField.id, value: linkValue },
@@ -491,7 +550,13 @@ test("frontend clients complete configuration and item CRUD against Express", as
         (entry) => entry.id === unchecked.id,
       ),
     ).toEqual(unchecked);
-    await items.deleteInventoryItem(inventory.id, linkItem.id);
+    await items.deleteInventoryItem(
+      inventory.id,
+      linkItem.id,
+      (await items.getInventoryItems(inventory.id)).find(
+        (entry) => entry.id === linkItem.id,
+      )!.revision,
+    );
     expect(
       await fields.deleteInventoryField(inventory.id, select.id),
     ).toBeUndefined();

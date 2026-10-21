@@ -6,7 +6,10 @@ import {
   getInventoryItems,
   updateInventoryItem,
 } from "../services/inventoryItems";
-import type { InventoryItemInput } from "../types/inventoryItem";
+import type {
+  InventoryItemInput,
+  UpdateInventoryItemInput,
+} from "../types/inventoryItem";
 
 /** Define mutation variables for inventory item creation. */
 interface CreateInventoryItemVariables {
@@ -18,13 +21,14 @@ interface CreateInventoryItemVariables {
 interface UpdateInventoryItemVariables {
   inventoryId: string;
   itemId: string;
-  data: InventoryItemInput;
+  data: UpdateInventoryItemInput;
 }
 
 /** Define mutation variables for inventory item deletion. */
 interface DeleteInventoryItemVariables {
   inventoryId: string;
   itemId: string;
+  expectedRevision: number;
 }
 
 /** Return the item query key scoped to a single inventory. */
@@ -76,12 +80,30 @@ export function useDeleteInventoryItem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ inventoryId, itemId }: DeleteInventoryItemVariables) =>
-      deleteInventoryItem(inventoryId, itemId),
+    mutationFn: ({
+      inventoryId,
+      itemId,
+      expectedRevision,
+    }: DeleteInventoryItemVariables) =>
+      deleteInventoryItem(inventoryId, itemId, expectedRevision),
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({
         queryKey: getInventoryItemsQueryKey(variables.inventoryId),
       });
+    },
+  });
+}
+
+/**
+ * Explicitly reload current entries after a conflict without automatically resubmitting a stale draft.
+ * @returns A refresh mutation that updates the inventory's item query cache.
+ */
+export function useReloadInventoryItems() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (inventoryId: string) => getInventoryItems(inventoryId),
+    onSuccess: (items, inventoryId) => {
+      client.setQueryData(getInventoryItemsQueryKey(inventoryId), items);
     },
   });
 }

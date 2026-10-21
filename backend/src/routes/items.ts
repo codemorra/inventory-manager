@@ -49,7 +49,11 @@ export function itemRoutes({ items }: Services) {
 
   // Route for deleting a specific item by ID
   router.delete(`${path}/:item_id`, (request, response) => {
-    items.delete(request.params.inventory_id, request.params.item_id);
+    items.delete(
+      request.params.inventory_id,
+      request.params.item_id,
+      request.body,
+    );
     response.status(204).end();
   });
   return router;

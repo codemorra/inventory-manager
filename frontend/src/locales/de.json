@@ -237,6 +237,16 @@
     "checkbox": {
       "toggle": "{{field}} umschalten",
       "completeRequired": "Ergänze die fehlenden oder ungültigen Angaben, bevor du den Eintrag speicherst. Die Checkbox-Änderung ist noch nicht gespeichert."
+    },
+    "conflict": {
+      "edit": "Der Eintrag wurde inzwischen geändert oder gelöscht. Deine Eingaben bleiben erhalten. Lade den aktuellen Stand, bevor du erneut speicherst.",
+      "checkbox": "Die Checkbox-Änderung wurde nicht gespeichert, da der Eintrag inzwischen geändert oder gelöscht wurde. Lade die Liste neu und prüfe den aktuellen Stand.",
+      "delete": "Der Eintrag wurde inzwischen geändert oder gelöscht. Lade den aktuellen Stand, bevor du die Löschung erneut bestätigst.",
+      "discardAndReload": "Eingaben verwerfen und neu laden",
+      "reloadList": "Liste neu laden",
+      "reloadItem": "Aktuellen Eintrag laden",
+      "deleted": "Der Eintrag existiert nicht mehr. Deine Eingaben bleiben im Dialog erhalten; Speichern ist nicht möglich.",
+      "reloadFailed": "Der aktuelle Stand konnte nicht geladen werden. Bitte versuche es erneut."
     }
   },
   "navigation": {

@@ -132,6 +132,12 @@ test("adds field settings with compatible defaults without rewriting legacy rows
       assert.equal(last_assigned_id, 0);
       return existing;
     });
+    after[2] = (after[2] as Record<string, unknown>[]).map(
+      ({ revision, ...row }) => {
+        assert.equal(revision, 1);
+        return row;
+      },
+    );
     assert.deepEqual(after, before);
     const field = upgraded.db
       .select()
@@ -181,7 +187,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     assert.deepEqual(db.select().from(table).all(), []);
   assert.deepEqual(
     sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get(),
-    { count: 4 },
+    { count: 5 },
   );
 
   const inventory = db
@@ -242,7 +248,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     reopened.sqlite
       .prepare("SELECT count(*) AS count FROM __drizzle_migrations")
       .get(),
-    { count: 4 },
+    { count: 5 },
   );
 });
 
@@ -256,7 +262,9 @@ test("persists automatic numbering across database reopen and migration retries"
     field_type: "id",
   });
   const first = services.items.create(inventory.id, {});
-  services.items.delete(inventory.id, first.id);
+  services.items.delete(inventory.id, first.id, {
+    expected_revision: services.items.get(inventory.id, first.id).revision,
+  });
   connection.close();
   const reopened = openDatabase(path);
   connections.push(reopened);

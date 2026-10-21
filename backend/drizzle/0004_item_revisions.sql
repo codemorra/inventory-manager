@@ -1,0 +1,1 @@
+ALTER TABLE `inventory_items` ADD `revision` integer DEFAULT 1 NOT NULL;

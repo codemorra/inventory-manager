@@ -15,6 +15,7 @@ import type { InventoryItem } from "../../src/types/inventoryItem";
  */
 function item(value: unknown, index: number): InventoryItem {
   return {
+    revision: 1,
     id: String(index),
     inventory_id: "inventory",
     created_at: "",

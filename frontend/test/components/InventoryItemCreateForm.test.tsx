@@ -323,6 +323,7 @@ describe("InventoryItemCreateForm", () => {
   test("submits values matching their configured field types", async () => {
     const user = userEvent.setup();
     mockedCreateInventoryItem.mockResolvedValue({
+      revision: 1,
       id: "item-1",
       inventory_id: "inventory-1",
       values: [],
@@ -360,6 +361,7 @@ describe("InventoryItemCreateForm", () => {
   test("clears values after successful creation", async () => {
     const user = userEvent.setup();
     mockedCreateInventoryItem.mockResolvedValue({
+      revision: 1,
       id: "item-1",
       inventory_id: "inventory-1",
       values: [],

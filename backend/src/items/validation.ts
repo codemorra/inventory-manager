@@ -21,6 +21,14 @@ const valueInputSchema = z.object({
 export const itemInputSchema = z.object({
   values: z.array(valueInputSchema).default([]),
 });
+
+// Require an exact saved revision for replacement and deletion; never coerce strings or booleans.
+export const itemRevisionSchema = z.object({
+  expected_revision: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
+});
+export const itemUpdateSchema = itemInputSchema.extend(
+  itemRevisionSchema.shape,
+);
 export type ValueInput = z.infer<typeof valueInputSchema>;
 type Field = typeof inventoryFields.$inferSelect;
 type Option = typeof inventoryFieldOptions.$inferSelect;

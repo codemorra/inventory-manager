@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "./Modal";
 
@@ -10,6 +10,8 @@ interface DeleteConfirmationDialogProps {
   error: string | null;
   onClose: () => void;
   onConfirm: () => void;
+  confirmDisabled?: boolean;
+  children?: ReactNode;
 }
 
 /**
@@ -20,6 +22,8 @@ interface DeleteConfirmationDialogProps {
  * @param error The localized error message, if deletion failed.
  * @param onClose Callback used to cancel or dismiss the confirmation.
  * @param onConfirm Callback used to delete the selected object.
+ * @param confirmDisabled Whether a stale target must be reloaded before confirmation.
+ * @param children Optional conflict recovery controls.
  * @returns A themed confirmation dialog with cancel and delete actions.
  */
 export function DeleteConfirmationDialog({
@@ -29,6 +33,8 @@ export function DeleteConfirmationDialog({
   error,
   onClose,
   onConfirm,
+  confirmDisabled = false,
+  children,
 }: DeleteConfirmationDialogProps) {
   const { t } = useTranslation();
   const [trigger] = useState(() => document.activeElement);
@@ -56,6 +62,7 @@ export function DeleteConfirmationDialog({
             {error}
           </p>
         )}
+        {children}
         <div className="flex flex-wrap justify-end gap-2">
           <button
             autoFocus
@@ -68,9 +75,9 @@ export function DeleteConfirmationDialog({
           </button>
           <button
             className="rounded-md bg-danger-soft px-3 py-2 text-sm font-semibold text-danger enabled:hover:bg-danger/25 disabled:opacity-50"
-            disabled={isPending}
+            disabled={isPending || confirmDisabled}
             onClick={() => {
-              if (!isPending) onConfirm();
+              if (!isPending && !confirmDisabled) onConfirm();
             }}
             type="button"
           >

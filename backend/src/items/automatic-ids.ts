@@ -6,6 +6,7 @@ import {
 } from "../db/schema.js";
 import type { AppDatabase } from "../db/types.js";
 import { DomainError } from "../errors.js";
+import { advanceItemRevisions } from "../db/item-revisions.js";
 
 /**
  * Allocate and store a number inside the caller's item or editor transaction.
@@ -104,4 +105,9 @@ export function backfillAutomaticIds(
     .set({ lastAssignedId: items.length })
     .where(eq(inventoryFields.id, fieldId))
     .run();
+  const itemIds = db
+    .select({ id: inventoryItems.id })
+    .from(inventoryItems)
+    .where(eq(inventoryItems.inventoryId, inventoryId));
+  advanceItemRevisions(db, itemIds, new Date().toISOString());
 }
