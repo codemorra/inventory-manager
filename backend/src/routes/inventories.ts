@@ -10,6 +10,15 @@ import { inventoryResponse, fieldResponse } from "./responses.js";
 export function inventoryRoutes({ inventories, inventoryEditor }: Services) {
   const router = Router();
 
+  // Read the editor baseline atomically instead of mixing independently cached metadata and fields.
+  router.get("/:inventory_id/configuration", (request, response) => {
+    const result = inventoryEditor.read(request.params.inventory_id);
+    response.json({
+      inventory: inventoryResponse(result.inventory),
+      fields: result.fields.map(fieldResponse),
+    });
+  });
+
   // Save the editor draft as one transaction instead of separate HTTP mutations.
   router.patch("/:inventory_id/configuration", (request, response) => {
     const result = inventoryEditor.save(

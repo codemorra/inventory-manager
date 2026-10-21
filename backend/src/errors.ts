@@ -9,6 +9,7 @@ export class DomainError extends Error {
       | "inventory_field_options_not_supported"
       | "inventory_item_not_found"
       | "inventory_item_conflict"
+      | "inventory_configuration_conflict"
       | "automatic_id_exhausted"
       | "invalid_inventory_field_configuration"
       | "invalid_inventory_item_value",

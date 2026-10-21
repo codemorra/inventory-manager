@@ -6,6 +6,8 @@ import { createFieldService } from "../fields/service.js";
 import { createOptionService } from "../options/service.js";
 import { createInventoryService } from "./service.js";
 import { inventoryEditorSchema } from "./editor-validation.js";
+import { createInventoryRepository } from "./repository.js";
+import { DomainError } from "../errors.js";
 
 /**
  * Compose atomic persistence for inventory editor drafts.
@@ -14,6 +16,22 @@ import { inventoryEditorSchema } from "./editor-validation.js";
  */
 export function createInventoryEditorService(db: AppDatabase) {
   return {
+    /**
+     * Read metadata, revision, fields, and options as one consistent database snapshot.
+     * @param inventoryId The inventory whose configuration is requested.
+     * @returns The active inventory and its ordered field definitions with options.
+     */
+    read(inventoryId: string) {
+      return db.transaction((transaction) => {
+        const inventories = createInventoryService(transaction);
+        return {
+          inventory: inventories.get(inventoryId),
+          fields: createFieldService(transaction, inventories).list(
+            inventoryId,
+          ),
+        };
+      });
+    },
     /**
      * Commit all draft changes or leave every affected record unchanged.
      * @param inventoryId The inventory being edited.
@@ -25,9 +43,20 @@ export function createInventoryEditorService(db: AppDatabase) {
       return db.transaction((transaction) => {
         // Every nested service must use this transaction, including its validation reads.
         const inventories = createInventoryService(transaction);
+        inventories.get(inventoryId);
+        if (
+          !createInventoryRepository(transaction).claimConfiguration(
+            inventoryId,
+            draft.expected_revision,
+          )
+        )
+          throw new DomainError(
+            "inventory_configuration_conflict",
+            "The inventory configuration has changed. Reload it before saving.",
+          );
         const fields = createFieldService(transaction, inventories);
         const options = createOptionService(transaction, fields);
-        const inventory = inventories.update(inventoryId, draft.inventory);
+        inventories.update(inventoryId, draft.inventory);
         const createdFieldIds = new Map<string, string>();
         for (const change of draft.fields) {
           if (change.action === "create") {
@@ -103,7 +132,10 @@ export function createInventoryEditorService(db: AppDatabase) {
           });
         }
         // Newly created ID fields have backfilled assignments; other values retain their established semantics.
-        return { inventory, fields: fields.list(inventoryId) };
+        return {
+          inventory: inventories.get(inventoryId),
+          fields: fields.list(inventoryId),
+        };
       });
     },
   };

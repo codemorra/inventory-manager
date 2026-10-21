@@ -1,3 +1,4 @@
+import { configurationRevision } from "./helpers/configuration-revision.js";
 import assert from "node:assert/strict";
 import test, { type TestContext } from "node:test";
 import request from "supertest";
@@ -59,9 +60,10 @@ function fixture(context: TestContext) {
 /**
  * Capture every domain row, including lifecycle timestamps and tombstones.
  * @param connection The test database connection.
+ * @param omitClaim Whether to omit inventory revision and timestamp changes for accepted no-op saves.
  * @returns A complete snapshot for rollback and preservation assertions.
  */
-function snapshot(connection: DatabaseConnection) {
+function snapshot(connection: DatabaseConnection, omitClaim = false) {
   return [
     "inventory_groups",
     "inventories",
@@ -70,7 +72,17 @@ function snapshot(connection: DatabaseConnection) {
     "inventory_items",
     "inventory_item_values",
   ].map((table) =>
-    connection.sqlite.prepare("SELECT * FROM " + table + " ORDER BY id").all(),
+    connection.sqlite
+      .prepare("SELECT * FROM " + table + " ORDER BY id")
+      .all()
+      .map((row) => {
+        if (!omitClaim || table !== "inventories") return row;
+        return Object.fromEntries(
+          Object.entries(row as Record<string, unknown>).filter(
+            ([key]) => key !== "configuration_revision" && key !== "updated_at",
+          ),
+        );
+      }),
   );
 }
 
@@ -109,6 +121,10 @@ test("saves field order and settings with new draft fields and preserves old ite
         { client_id: "draft-link" },
         { field_id: f.title.id },
       ],
+      expected_revision: configurationRevision(
+        f.services,
+        `/inventories/${f.inventory.id}/configuration`,
+      ),
     })
     .expect(200);
   assert.deepEqual(
@@ -136,7 +152,7 @@ test("saves field order and settings with new draft fields and preserves old ite
   );
 });
 
-// Test normalized positions, unchanged no-op timestamps, and deleting the last active fields.
+// Test normalized positions, unchanged no-op content, and deleting the last active fields.
 test("reorders surviving fields and preserves no-op order saves", async (context) => {
   const f = fixture(context);
   await f.api
@@ -144,22 +160,34 @@ test("reorders surviving fields and preserves no-op order saves", async (context
     .send({
       fields: [{ action: "delete", field_id: f.title.id }],
       field_order: [{ field_id: f.type.id }],
+      expected_revision: configurationRevision(
+        f.services,
+        `/inventories/${f.inventory.id}/configuration`,
+      ),
     })
     .expect(200);
   assert.equal(f.services.fields.get(f.inventory.id, f.type.id).position, 0);
-  const before = snapshot(f);
+  const before = snapshot(f, true);
   await f.api
     .patch(`/inventories/${f.inventory.id}/configuration`)
     .send({
       field_order: [{ field_id: f.type.id }],
+      expected_revision: configurationRevision(
+        f.services,
+        `/inventories/${f.inventory.id}/configuration`,
+      ),
     })
     .expect(200);
-  assert.deepEqual(snapshot(f), before);
+  assert.deepEqual(snapshot(f, true), before);
   await f.api
     .patch(`/inventories/${f.inventory.id}/configuration`)
     .send({
       fields: [{ action: "delete", field_id: f.type.id }],
       field_order: [],
+      expected_revision: configurationRevision(
+        f.services,
+        `/inventories/${f.inventory.id}/configuration`,
+      ),
     })
     .expect(200);
   assert.deepEqual(f.services.fields.list(f.inventory.id), []);
@@ -227,6 +255,10 @@ test("rejects invalid field orders without persisting any draft changes", async 
           },
         ],
         field_order,
+        expected_revision: configurationRevision(
+          f.services,
+          `/inventories/${f.inventory.id}/configuration`,
+        ),
       })
       .expect(422);
     assert.deepEqual(snapshot(f), before);
@@ -269,7 +301,13 @@ test("rejects invalid field orders without persisting any draft changes", async 
   for (const draft of invalidDrafts) {
     await f.api
       .patch(`/inventories/${f.inventory.id}/configuration`)
-      .send(draft)
+      .send({
+        ...draft,
+        expected_revision: configurationRevision(
+          f.services,
+          `/inventories/${f.inventory.id}/configuration`,
+        ),
+      })
       .expect(422);
     assert.deepEqual(snapshot(f), before);
   }
@@ -290,6 +328,10 @@ test("rolls back the entire draft when writing a field position fails", async (c
         { action: "update", field_id: f.title.id, data: { is_required: true } },
       ],
       field_order: [{ field_id: f.type.id }, { field_id: f.title.id }],
+      expected_revision: configurationRevision(
+        f.services,
+        `/inventories/${f.inventory.id}/configuration`,
+      ),
     })
     .expect(500);
   assert.deepEqual(snapshot(f), before);
@@ -329,6 +371,10 @@ test("saves metadata, new fields, renames, deletions, and options together", asy
           data: { name: "DisplayPort" },
         },
       ],
+      expected_revision: configurationRevision(
+        f.services,
+        `/inventories/${f.inventory.id}/configuration`,
+      ),
     })
     .expect(200);
   assert.equal(result.body.inventory.name, "Cable collection");
@@ -369,6 +415,8 @@ test("appends new fields and options after surviving positions when a draft dele
       { action: "delete", field_id: f.type.id, option_id: f.usb.id },
       { action: "create", field_id: f.type.id, data: { name: "DisplayPort" } },
     ],
+    expected_revision: f.services.inventories.get(f.inventory.id)
+      .configurationRevision,
   });
   assert.deepEqual(
     result.fields.map((field) => [field.name, field.position]),
@@ -386,21 +434,28 @@ test("appends new fields and options after surviving positions when a draft dele
   );
 });
 
-// Test no-op saves, unchanged timestamps, and an empty active selection option list.
+// Test no-op content preservation and an empty active selection option list.
 test("preserves no-op saves and permits deleting all existing options", async (context) => {
   const f = fixture(context);
-  const before = snapshot(f);
+  const before = snapshot(f, true);
   await f.api
     .patch(`/inventories/${f.inventory.id}/configuration`)
-    .send({})
+    .send({
+      expected_revision: configurationRevision(
+        f.services,
+        `/inventories/${f.inventory.id}/configuration`,
+      ),
+    })
     .expect(200);
-  assert.deepEqual(snapshot(f), before);
+  assert.deepEqual(snapshot(f, true), before);
   f.services.inventoryEditor.save(f.inventory.id, {
     options: [f.usb, f.hdmi].map((option) => ({
       action: "delete",
       field_id: f.type.id,
       option_id: option.id,
     })),
+    expected_revision: f.services.inventories.get(f.inventory.id)
+      .configurationRevision,
   });
   assert.deepEqual(
     f.services.fields.read(f.inventory.id, f.type.id).options,
@@ -416,6 +471,10 @@ test("field deletion clears dependent content and preserves unrelated values", a
     .patch(`/inventories/${f.inventory.id}/configuration`)
     .send({
       fields: [{ action: "delete", field_id: f.type.id }],
+      expected_revision: configurationRevision(
+        f.services,
+        `/inventories/${f.inventory.id}/configuration`,
+      ),
     })
     .expect(200);
   assert.equal(result.body.fields.length, 1);
@@ -561,15 +620,33 @@ test("rejects invalid or conflicting changes and rolls back the entire draft", a
         inventory: { name: "Must roll back" },
         fields: [{ action: "create", data: { name: "Temporary" } }, ...fields],
         options,
+        expected_revision: configurationRevision(
+          f.services,
+          `/inventories/${f.inventory.id}/configuration`,
+        ),
       })
       .expect(status);
     assert.deepEqual(snapshot(f), before);
   }
-  await f.api.patch("/inventories/missing/configuration").send({}).expect(404);
+  await f.api
+    .patch("/inventories/missing/configuration")
+    .send({
+      expected_revision: configurationRevision(
+        f.services,
+        "/inventories/missing/configuration",
+      ),
+    })
+    .expect(404);
   const before = snapshot(f);
   await f.api
     .patch(`/inventories/${f.inventory.id}/configuration`)
-    .send({ inventory: { group_id: null } })
+    .send({
+      inventory: { group_id: null },
+      expected_revision: configurationRevision(
+        f.services,
+        `/inventories/${f.inventory.id}/configuration`,
+      ),
+    })
     .expect(422);
   assert.deepEqual(snapshot(f), before);
 });
@@ -600,14 +677,26 @@ test("rolls back persistence failures and permits resubmitting the same draft", 
   );
   await f.api
     .patch(`/inventories/${f.inventory.id}/configuration`)
-    .send(draft)
+    .send({
+      ...draft,
+      expected_revision: configurationRevision(
+        f.services,
+        `/inventories/${f.inventory.id}/configuration`,
+      ),
+    })
     .expect(500);
   assert.deepEqual(snapshot(f), before);
   assert.equal(f.errors.length, 1);
   f.sqlite.exec("DROP TRIGGER fail_editor_insert");
   await f.api
     .patch(`/inventories/${f.inventory.id}/configuration`)
-    .send(draft)
+    .send({
+      ...draft,
+      expected_revision: configurationRevision(
+        f.services,
+        `/inventories/${f.inventory.id}/configuration`,
+      ),
+    })
     .expect(200);
   assert.equal(f.services.inventories.get(f.inventory.id).name, "Updated");
   assert.equal(f.services.fields.list(f.inventory.id).length, 3);

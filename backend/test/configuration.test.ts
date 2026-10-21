@@ -35,6 +35,7 @@ test("inventory HTTP CRUD preserves the frontend DTO, ordering, partial updates,
     .expect(201);
   const id = created.body.id as string;
   assert.deepEqual(Object.keys(created.body).sort(), [
+    "configuration_revision",
     "created_at",
     "description",
     "group_id",

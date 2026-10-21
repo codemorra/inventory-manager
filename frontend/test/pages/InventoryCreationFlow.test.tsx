@@ -45,6 +45,7 @@ test.each([
   async ({ initialPath, mobile }) => {
     const user = userEvent.setup();
     const existing = {
+      configuration_revision: 1,
       id: "existing",
       name: "Existing collection",
       description: null,

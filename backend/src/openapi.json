@@ -1109,7 +1109,7 @@
         "tags": ["inventories"],
         "summary": "Save Inventory Editor Draft",
         "operationId": "save_inventory_editor_draft",
-        "description": "Apply inventory metadata, field operations, and option operations in one transaction. Any validation, ownership, or storage failure rolls back all changes. Omitted operation arrays leave existing records unchanged. Existing field types and text limits cannot be changed; group membership is preserved. Each existing field or option may be changed only once per save, and options cannot be changed when their field is being deleted. New fields include their initial options in their create data. Deleting a field clears its stored values and options while retaining deletion tombstones. Field order is optional and must reference the complete final field set. New ID fields backfill existing active items in this transaction; any later failure rolls back those assignments too.",
+        "description": "Apply inventory metadata, field operations, and option operations in one transaction. Any validation, ownership, or storage failure rolls back all changes. Omitted operation arrays leave existing records unchanged. Existing field types and text limits cannot be changed; group membership is preserved. Each existing field or option may be changed only once per save, and options cannot be changed when their field is being deleted. New fields include their initial options in their create data. Deleting a field clears its stored values and options while retaining deletion tombstones. Field order is optional and must reference the complete final field set. New ID fields backfill existing active items in this transaction; any later failure rolls back those assignments too. The required expected_revision must match the snapshot loaded through GET configuration. Every accepted draft advances the revision, including no-op saves; field, option, and metadata writes may advance it further. The response contains the final revision. Concurrent configuration changes, including changes through individual endpoints or group membership changes, cause HTTP 409 without applying any draft changes. Item value changes and automatic ID counter increments do not invalidate configuration snapshots. Clients must preserve the draft and request an explicit discard-and-reload instead of automatically retrying.",
         "parameters": [
           {
             "name": "inventory_id",
@@ -1152,11 +1152,60 @@
               }
             }
           },
+          "409": {
+            "description": "Stale inventory configuration; no changes were saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Invalid or conflicting draft operations; nothing was saved"
           },
           "500": {
             "description": "Unexpected persistence failure; the entire transaction is rolled back"
+          }
+        }
+      },
+      "get": {
+        "tags": ["inventories"],
+        "summary": "Read Inventory Configuration",
+        "operationId": "read_inventory_configuration",
+        "description": "Read inventory metadata, its configuration revision, and all active fields and options from one consistent database transaction.",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coherent editor snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEditorResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Inventory is missing or deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1683,6 +1732,12 @@
               }
             ],
             "description": "Optional single-level group membership. Set null to remove membership."
+          },
+          "configuration_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "Monotonic configuration revision. Read together with field definitions through the configuration endpoint before editing."
           }
         },
         "type": "object",
@@ -1692,7 +1747,8 @@
           "description",
           "created_at",
           "updated_at",
-          "group_id"
+          "group_id",
+          "configuration_revision"
         ],
         "title": "InventoryRead",
         "description": "Represent an active inventory in API responses."
@@ -2070,8 +2126,15 @@
                 }
               ]
             }
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "Revision from the complete configuration snapshot opened by this editor. A stale draft is rejected without applying any operations."
           }
-        }
+        },
+        "required": ["expected_revision"]
       },
       "InventoryEditorResult": {
         "type": "object",

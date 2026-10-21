@@ -74,7 +74,10 @@
   "inventories": {
     "editor": {
       "finishForm": "Complete or cancel the open field or option form before saving.",
-      "invalidDraft": "New selection fields need at least one option with a unique, non-empty name."
+      "invalidDraft": "New selection fields need at least one option with a unique, non-empty name.",
+      "conflict": "This inventory has changed or was deleted. Your draft is preserved. Load the current configuration before saving again.",
+      "discardAndReload": "Discard draft and reload",
+      "reloadFailed": "The current configuration could not be loaded. Your draft is preserved."
     },
     "general": "General",
     "actions": {

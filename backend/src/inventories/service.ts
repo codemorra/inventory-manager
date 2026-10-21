@@ -26,6 +26,12 @@ export function createInventoryService(
   return {
     get,
     list: repository.list,
+
+    /**
+     * Creates a new inventory.
+     * @param input The input data for the new inventory.
+     * @returns The created inventory.
+     */
     create(input: unknown) {
       const data = inventoryCreateSchema.parse(input);
       if (data.group_id != null) groups.get(data.group_id);
@@ -35,6 +41,13 @@ export function createInventoryService(
         groupId: data.group_id ?? null,
       });
     },
+
+    /**
+     * Updates an existing inventory.
+     * @param id The ID of the inventory to update.
+     * @param input The input data for the update.
+     * @returns The updated inventory.
+     */
     update(id: string, input: unknown) {
       const data = inventoryUpdateSchema.parse(input);
       const inventory = get(id);
@@ -54,10 +67,12 @@ export function createInventoryService(
         data.description !== inventory.description
       )
         changes.description = data.description;
-      return Object.keys(changes).length
-        ? repository.update(id, changes)
-        : inventory;
+      if (!Object.keys(changes).length) return inventory;
+      repository.update(id, changes);
+      // SQLite RETURNING precedes AFTER triggers; reread the final configuration revision.
+      return get(id);
     },
+
     /**
      * Clear an inventory and all dependent content atomically, without deleting its group.
      * @param id The active inventory to delete.

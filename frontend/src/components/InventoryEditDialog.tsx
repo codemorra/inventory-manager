@@ -1,7 +1,10 @@
 import { type SyntheticEvent, useCallback, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useInventoryEditor } from "../hooks/useInventoryEditor";
-import { useInventoryFields } from "../hooks/useInventoryFields";
+import {
+  useInventoryEditor,
+  useInventoryConfiguration,
+  useReloadInventoryConfiguration,
+} from "../hooks/useInventoryEditor";
 import type { InventoryField } from "../types/inventoryField";
 import {
   InventoryDraftContext,
@@ -32,7 +35,7 @@ interface InventoryEditDialogProps {
  */
 export function InventoryEditDialog(props: InventoryEditDialogProps) {
   const { t } = useTranslation();
-  const query = useInventoryFields(props.inventory.id);
+  const query = useInventoryConfiguration(props.inventory.id);
   if (!query.data) {
     return (
       <Modal title={t("inventories.titles.edit")} onClose={props.onClose}>
@@ -70,7 +73,8 @@ export function InventoryEditDialog(props: InventoryEditDialogProps) {
     <InventoryEditorSession
       key={props.inventory.id}
       {...props}
-      initialFields={query.data}
+      inventory={query.data.inventory}
+      initialFields={query.data.fields}
     />
   );
 }
@@ -100,10 +104,18 @@ function InventoryEditorSession({
   const [name, setName] = useState(inventory.name);
   const [description, setDescription] = useState(inventory.description ?? "");
   // Capture one snapshot per session; background refetches must not overwrite user edits.
-  const [original] = useState(initialFields);
+  const [original, setOriginal] = useState(initialFields);
+  const [revision, setRevision] = useState(inventory.configuration_revision);
   const [fields, setFields] = useState(initialFields);
   const [pendingEditors, setPendingEditors] = useState<string[]>([]);
   const update = useInventoryEditor(inventory.id);
+  const reload = useReloadInventoryConfiguration(inventory.id);
+  const busy = update.isPending || reload.isPending;
+  const conflict =
+    update.error instanceof ApiError &&
+    ["inventory_configuration_conflict", "inventory_not_found"].includes(
+      update.error.code ?? "",
+    );
   const validDraft = isValidFieldDraft(original, fields);
   const setPendingEditor = useCallback((id: string, active: boolean) => {
     setPendingEditors((current) =>
@@ -118,10 +130,10 @@ function InventoryEditorSession({
   }, []);
   const draft: InventoryDraftActions = {
     fields,
-    disabled: update.isPending,
-    canReorder: !update.isPending && pendingEditors.length === 0,
+    disabled: busy,
+    canReorder: !busy && pendingEditors.length === 0,
     moveField: (sourceId, targetId, side) => {
-      if (!update.isPending && pendingEditors.length === 0)
+      if (!busy && pendingEditors.length === 0)
         setFields((current) =>
           moveDraftField(current, sourceId, targetId, side),
         );
@@ -145,7 +157,7 @@ function InventoryEditorSession({
 
   // Discard this session on dismissal unless an atomic save is still pending.
   function close() {
-    if (!update.isPending) onClose();
+    if (!busy) onClose();
   }
 
   /**
@@ -155,19 +167,40 @@ function InventoryEditorSession({
   function save(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (
-      update.isPending ||
+      busy ||
+      conflict ||
       pendingEditors.length ||
       !validDraft ||
       !name.trim()
     )
       return;
     update.mutate(
-      buildInventoryEditorInput(original, fields, {
-        name: name.trim(),
-        description: description.trim() || null,
-      }),
+      buildInventoryEditorInput(
+        original,
+        fields,
+        {
+          name: name.trim(),
+          description: description.trim() || null,
+        },
+        revision,
+      ),
       { onSuccess: onClose },
     );
+  }
+
+  // Discard the draft only after an explicit refresh succeeds; failed reads leave all inputs intact.
+  function reloadConfiguration() {
+    if (busy || pendingEditors.length) return;
+    reload.mutate(undefined, {
+      onSuccess: (result) => {
+        setOriginal(result.fields);
+        setFields(result.fields);
+        setName(result.inventory.name);
+        setDescription(result.inventory.description ?? "");
+        setRevision(result.inventory.configuration_revision);
+        update.reset();
+      },
+    });
   }
 
   return (
@@ -186,7 +219,7 @@ function InventoryEditorSession({
               key={entry}
               type="button"
               aria-current={section === entry ? "page" : undefined}
-              disabled={update.isPending || pendingEditors.length > 0}
+              disabled={busy || pendingEditors.length > 0}
               className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50 ${section === entry ? "border-accent bg-accent-soft text-accent" : "border-transparent text-muted enabled:hover:bg-control-hover enabled:hover:border-accent/50 hover:text-foreground"}`}
               onClick={() => setSection(entry)}
             >
@@ -212,7 +245,7 @@ function InventoryEditorSession({
                 className={inputClass}
                 maxLength={255}
                 required
-                disabled={update.isPending}
+                disabled={busy}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
               />
@@ -221,7 +254,7 @@ function InventoryEditorSession({
               {t("common.fields.description")}
               <textarea
                 className={`${inputClass} min-h-28 resize-y`}
-                disabled={update.isPending}
+                disabled={busy}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
               />
@@ -243,15 +276,32 @@ function InventoryEditorSession({
             className="shrink-0 rounded-md bg-danger-soft p-3 text-sm text-danger"
             role="alert"
           >
-            {update.error instanceof ApiError
-              ? update.error.message
-              : t("inventories.errors.update")}
+            {conflict
+              ? t("inventories.editor.conflict")
+              : update.error instanceof ApiError
+                ? update.error.message
+                : t("inventories.errors.update")}
+          </p>
+        )}
+        {conflict && (
+          <button
+            className="mt-3 shrink-0 self-start rounded-md border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover disabled:opacity-50"
+            disabled={busy || pendingEditors.length > 0}
+            type="button"
+            onClick={reloadConfiguration}
+          >
+            {t("inventories.editor.discardAndReload")}
+          </button>
+        )}
+        {reload.error && (
+          <p className="mt-3 shrink-0 text-sm text-danger" role="alert">
+            {t("inventories.editor.reloadFailed")}
           </p>
         )}
         <div className="mt-5 flex shrink-0 flex-wrap justify-end gap-2 border-t border-shell pt-4">
           <button
             className="rounded-md border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:opacity-50"
-            disabled={update.isPending}
+            disabled={busy}
             onClick={close}
             type="button"
           >
@@ -260,7 +310,8 @@ function InventoryEditorSession({
           <button
             className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-surface enabled:hover:bg-accent-hover disabled:opacity-50"
             disabled={
-              update.isPending ||
+              busy ||
+              conflict ||
               !name.trim() ||
               !validDraft ||
               pendingEditors.length > 0

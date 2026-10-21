@@ -22,7 +22,12 @@ vi.mock("../../src/services/inventoryGroups", () => ({
 const inventories = [
   { id: "games", name: "Games", description: "Board games" },
   { id: "books", name: "Books", description: "Games and programming" },
-].map((inventory) => ({ ...inventory, created_at: "", updated_at: "" }));
+].map((inventory) => ({
+  ...inventory,
+  configuration_revision: 1,
+  created_at: "",
+  updated_at: "",
+}));
 
 beforeEach(() => {
   vi.mocked(getInventories).mockResolvedValue(inventories);

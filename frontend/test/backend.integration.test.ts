@@ -175,9 +175,12 @@ test("frontend clients complete configuration and item CRUD against Express", as
     ).not.toBe(item.values.find((value) => value.field_id === boolean.id)?.id);
 
     // Exercise the draft client's atomic contract against the actual SQLite-backed server.
-    const { saveInventoryConfiguration } =
+    const { saveInventoryConfiguration, getInventoryConfiguration } =
       await import("../src/services/inventoryEditor");
+    const editorSnapshot = await getInventoryConfiguration(inventory.id);
     let saved = await saveInventoryConfiguration(inventory.id, {
+      expected_revision: (await getInventoryConfiguration(inventory.id))
+        .inventory.configuration_revision,
       inventory: {
         name: "Saved editor draft",
         description: "Atomic configuration",
@@ -208,6 +211,18 @@ test("frontend clients complete configuration and item CRUD against Express", as
       saved.fields[1]?.options.find((entry) => entry.id === option.id)?.name,
     ).toBe("Priority");
     expect(await fields.getInventoryFields(inventory.id)).toEqual(saved.fields);
+    await expect(
+      saveInventoryConfiguration(inventory.id, {
+        expected_revision: editorSnapshot.inventory.configuration_revision,
+        inventory: { name: "Stale draft", description: null },
+        fields: [],
+        options: [],
+      }),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: "inventory_configuration_conflict",
+    });
+    expect(await getInventoryConfiguration(inventory.id)).toEqual(saved);
     expect(await items.getInventoryItems(inventory.id)).toEqual([updated]);
     // Exercise generated saved/temporary order references against the real transaction endpoint.
     const { buildInventoryEditorInput, createDraftField } =
@@ -225,6 +240,8 @@ test("frontend clients complete configuration and item CRUD against Express", as
           name: saved.inventory.name,
           description: saved.inventory.description,
         },
+        (await getInventoryConfiguration(inventory.id)).inventory
+          .configuration_revision,
       ),
     );
     expect(saved.fields.map((field) => [field.name, field.position])).toEqual([
@@ -238,6 +255,8 @@ test("frontend clients complete configuration and item CRUD against Express", as
     expect(await items.getInventoryItems(inventory.id)).toEqual([updated]);
     await expect(
       saveInventoryConfiguration(inventory.id, {
+        expected_revision: (await getInventoryConfiguration(inventory.id))
+          .inventory.configuration_revision,
         inventory: { name: "Must roll back", description: null },
         fields: [
           {
@@ -288,10 +307,16 @@ test("frontend clients complete configuration and item CRUD against Express", as
     });
     const numbered = await saveInventoryConfiguration(
       inventory.id,
-      buildInventoryEditorInput(saved.fields, [numberDraft, ...saved.fields], {
-        name: saved.inventory.name,
-        description: saved.inventory.description,
-      }),
+      buildInventoryEditorInput(
+        saved.fields,
+        [numberDraft, ...saved.fields],
+        {
+          name: saved.inventory.name,
+          description: saved.inventory.description,
+        },
+        (await getInventoryConfiguration(inventory.id)).inventory
+          .configuration_revision,
+      ),
     );
     const automatic = numbered.fields.find(
       (field) => field.field_type === "id",
@@ -333,6 +358,8 @@ test("frontend clients complete configuration and item CRUD against Express", as
           name: saved.inventory.name,
           description: saved.inventory.description,
         },
+        (await getInventoryConfiguration(inventory.id)).inventory
+          .configuration_revision,
       ),
     );
     const reusedNumbered = await items.createInventoryItem(inventory.id, {
@@ -365,10 +392,16 @@ test("frontend clients complete configuration and item CRUD against Express", as
     });
     const linkConfiguration = await saveInventoryConfiguration(
       inventory.id,
-      buildInventoryEditorInput(currentFields, [...currentFields, urlDraft], {
-        name: saved.inventory.name,
-        description: saved.inventory.description,
-      }),
+      buildInventoryEditorInput(
+        currentFields,
+        [...currentFields, urlDraft],
+        {
+          name: saved.inventory.name,
+          description: saved.inventory.description,
+        },
+        (await getInventoryConfiguration(inventory.id)).inventory
+          .configuration_revision,
+      ),
     );
     const urlField = linkConfiguration.fields.find(
       (field) => field.field_type === "url",
@@ -460,6 +493,8 @@ test("frontend clients complete configuration and item CRUD against Express", as
           name: saved.inventory.name,
           description: saved.inventory.description,
         },
+        (await getInventoryConfiguration(inventory.id)).inventory
+          .configuration_revision,
       ),
     );
     const checkbox = checkboxConfiguration.fields.find(
@@ -521,6 +556,8 @@ test("frontend clients complete configuration and item CRUD against Express", as
       unchecked.values.find((value) => value.field_id === checkbox.id)?.value,
     ).toBe(false);
     const laterRequired = await saveInventoryConfiguration(inventory.id, {
+      expected_revision: (await getInventoryConfiguration(inventory.id))
+        .inventory.configuration_revision,
       inventory: {
         name: saved.inventory.name,
         description: saved.inventory.description,

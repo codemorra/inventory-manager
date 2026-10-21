@@ -118,6 +118,12 @@ test("adds field settings with compatible defaults without rewriting legacy rows
     const after = tables.map((table) =>
       upgraded.sqlite.prepare("SELECT * FROM " + table + " ORDER BY id").all(),
     );
+    after[0] = (after[0] as Record<string, unknown>[]).map(
+      ({ configuration_revision, ...row }) => {
+        assert.equal(configuration_revision, 1);
+        return row;
+      },
+    );
     after[1] = (after[1] as Record<string, unknown>[]).map((row) => {
       const {
         is_required,
@@ -187,7 +193,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     assert.deepEqual(db.select().from(table).all(), []);
   assert.deepEqual(
     sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get(),
-    { count: 5 },
+    { count: 6 },
   );
 
   const inventory = db
@@ -248,7 +254,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     reopened.sqlite
       .prepare("SELECT count(*) AS count FROM __drizzle_migrations")
       .get(),
-    { count: 5 },
+    { count: 6 },
   );
 });
 

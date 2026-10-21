@@ -13,6 +13,7 @@ import { MemoryRouter } from "react-router-dom";
 import { saveInventoryConfiguration } from "../../src/services/inventoryEditor";
 vi.mock("../../src/services/inventoryEditor", () => ({
   saveInventoryConfiguration: vi.fn(),
+  getInventoryConfiguration: vi.fn(async () => ({ inventory, fields: [] })),
 }));
 vi.mock("../../src/services/inventoryFields", () => ({
   getInventoryFields: vi.fn().mockResolvedValue([]),
@@ -33,6 +34,7 @@ const mockedDeleteInventory = vi.mocked(deleteInventory);
 const mockedUpdateInventory = vi.mocked(saveInventoryConfiguration);
 
 const inventory = {
+  configuration_revision: 1,
   id: "inventory-1",
   name: "Cables",
   description: "Cable collection",
@@ -105,6 +107,7 @@ describe("InventoryTable", () => {
 
     await waitFor(() => {
       expect(mockedUpdateInventory).toHaveBeenCalledWith("inventory-1", {
+        expected_revision: 1,
         inventory: { name: "Tools", description: "Updated description" },
         fields: [],
         options: [],
@@ -183,7 +186,9 @@ describe("InventoryTable", () => {
     expect(
       screen.getByRole("dialog", { name: "Edit inventory" }),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Save changes" }),
+    );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Unable to reach the backend.",

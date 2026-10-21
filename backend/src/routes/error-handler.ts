@@ -20,7 +20,8 @@ export function errorHandler(
     // Handle domain-specific errors first
     if (error instanceof DomainError) {
       const status =
-        error.code === "inventory_item_conflict"
+        error.code === "inventory_item_conflict" ||
+        error.code === "inventory_configuration_conflict"
           ? 409
           : error.code === "inventory_field_options_not_supported" ||
               error.code === "automatic_id_exhausted" ||

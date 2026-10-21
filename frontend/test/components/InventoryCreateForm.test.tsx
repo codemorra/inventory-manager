@@ -51,6 +51,7 @@ describe("InventoryCreateForm", () => {
   test("submits the entered inventory data", async () => {
     const user = userEvent.setup();
     mockedCreateInventory.mockResolvedValue({
+      configuration_revision: 1,
       id: "inventory-1",
       name: "Cables",
       description: "Cable collection",
@@ -86,6 +87,7 @@ describe("InventoryCreateForm", () => {
   test("clears fields after a successful submission", async () => {
     const user = userEvent.setup();
     mockedCreateInventory.mockResolvedValue({
+      configuration_revision: 1,
       id: "inventory-1",
       name: "Cables",
       description: null,

@@ -1,6 +1,7 @@
 /** Represent an inventory returned by the API. */
 export interface Inventory {
   id: string;
+  configuration_revision: number;
   name: string;
   description: string | null;
   group_id?: string | null;
