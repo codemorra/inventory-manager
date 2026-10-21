@@ -442,6 +442,8 @@ test("field deletion clears dependent content and preserves unrelated values", a
   );
   assert.deepEqual(f.services.items.read(f.inventory.id, f.item.id), {
     ...f.item,
+    revision: f.item.revision + 1,
+    updatedAt: field.deleted_at,
     values: f.item.values.filter((value) => value.fieldId !== f.type.id),
   });
 });

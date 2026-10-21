@@ -237,6 +237,16 @@
     "checkbox": {
       "toggle": "Toggle {{field}}",
       "completeRequired": "Complete the missing or invalid values before saving this item. The checkbox change has not been saved yet."
+    },
+    "conflict": {
+      "edit": "This item has changed or was deleted. Your inputs are preserved. Load the current version before saving again.",
+      "checkbox": "The checkbox change was not saved because this item has changed or was deleted. Reload the list and review its current values.",
+      "delete": "This item has changed or was deleted. Load the current version before confirming deletion again.",
+      "discardAndReload": "Discard inputs and reload",
+      "reloadList": "Reload list",
+      "reloadItem": "Load current item",
+      "deleted": "This item no longer exists. Your inputs remain in the dialog, but cannot be saved.",
+      "reloadFailed": "The current version could not be loaded. Please try again."
     }
   },
   "navigation": {

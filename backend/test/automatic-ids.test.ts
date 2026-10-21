@@ -1,3 +1,4 @@
+import { itemRevision } from "./helpers/item-revision.js";
 import assert from "node:assert/strict";
 import test, { type TestContext } from "node:test";
 import { eq } from "drizzle-orm";
@@ -47,7 +48,10 @@ test("assigns independent numbers and preserves their records during replacement
       .map((value) => value.value),
     [1, 1],
   );
-  const replaced = services.items.update(inventory.id, item.id, {});
+  const replaced = services.items.update(inventory.id, item.id, {
+    ...{},
+    expected_revision: services.items.get(inventory.id, item.id).revision,
+  });
   assert.deepEqual(
     replaced.values,
     item.values.filter((value) => value.fieldId !== title.id),
@@ -72,8 +76,12 @@ test("does not reuse deleted numbers by default and clears deleted values", (con
   });
   const first = services.items.create(inventory.id, {});
   const second = services.items.create(inventory.id, {});
-  services.items.delete(inventory.id, first.id);
-  services.items.delete(inventory.id, second.id);
+  services.items.delete(inventory.id, first.id, {
+    expected_revision: services.items.get(inventory.id, first.id).revision,
+  });
+  services.items.delete(inventory.id, second.id, {
+    expected_revision: services.items.get(inventory.id, second.id).revision,
+  });
   assert.equal(services.items.create(inventory.id, {}).values[0]?.value, 3);
   const deleted = sqlite
     .prepare(
@@ -96,8 +104,12 @@ test("reuses the smallest free number only when explicitly enabled", (context) =
   const items = Array.from({ length: 4 }, () =>
     services.items.create(inventory.id, {}),
   );
-  services.items.delete(inventory.id, items[1]!.id);
-  services.items.delete(inventory.id, items[3]!.id);
+  services.items.delete(inventory.id, items[1]!.id, {
+    expected_revision: services.items.get(inventory.id, items[1]!.id).revision,
+  });
+  services.items.delete(inventory.id, items[3]!.id, {
+    expected_revision: services.items.get(inventory.id, items[3]!.id).revision,
+  });
   assert.equal(services.items.create(inventory.id, {}).values[0]?.value, 2);
   services.fields.update(inventory.id, field.id, { reuse_deleted_ids: false });
   assert.equal(services.items.create(inventory.id, {}).values[0]?.value, 5);
@@ -117,7 +129,9 @@ test("backfills active items by creation time and technical ID", (context) => {
       .set({ createdAt: "2026-01-01T00:00:00.000Z" })
       .where(eq(inventoryItems.id, item.id))
       .run();
-  services.items.delete(inventory.id, items[0]!.id);
+  services.items.delete(inventory.id, items[0]!.id, {
+    expected_revision: services.items.get(inventory.id, items[0]!.id).revision,
+  });
   const before = services.items.list(inventory.id);
   const field = services.fields.create(inventory.id, {
     name: "Number",
@@ -133,7 +147,7 @@ test("backfills active items by creation time and technical ID", (context) => {
       saved.values.find((value) => value.fieldId === field.id)?.value,
       index + 1,
     );
-    assert.equal(saved.updatedAt, item.updatedAt);
+    assert.equal(saved.revision, item.revision + 1);
   });
   assert.equal(services.items.create(inventory.id, {}).values[0]?.value, 4);
 });
@@ -165,7 +179,12 @@ test("rolls back failed item saves and editor backfills", (context) => {
   );
   assert.equal(services.fields.list(inventory.id).length, 2);
   assert.deepEqual(services.items.read(inventory.id, item.id), before);
-  assert.throws(() => services.items.update(inventory.id, item.id, {}));
+  assert.throws(() =>
+    services.items.update(inventory.id, item.id, {
+      ...{},
+      expected_revision: services.items.get(inventory.id, item.id).revision,
+    }),
+  );
   assert.deepEqual(services.items.read(inventory.id, item.id), before);
 });
 
@@ -185,7 +204,13 @@ test("rejects client-owned ID values and invalid reuse preferences through the A
   for (const value of [1, 9, null, "2", false]) {
     const input = { values: [{ field_id: field.id, value }] };
     await api.post(path).send(input).expect(422);
-    await api.patch(`${path}/${item.id}`).send(input).expect(422);
+    await api
+      .patch(`${path}/${item.id}`)
+      .send({
+        ...input,
+        expected_revision: itemRevision(services, `${path}/${item.id}`),
+      })
+      .expect(422);
   }
   for (const reuse of [null, "true", 1]) {
     await api

@@ -1,3 +1,4 @@
+import { itemRevision } from "./helpers/item-revision.js";
 import assert from "node:assert/strict";
 import test, { type TestContext } from "node:test";
 import request from "supertest";
@@ -34,10 +35,19 @@ test("checkbox fields accept only booleans and preserve required-field replaceme
   assert.equal(created.body.field_type, "checkbox");
   assert.deepEqual(services.items.read(inventory.id, old.id).values, []);
   await api.post(`${base}/items`).send({}).expect(422);
-  await api.patch(`${base}/items/${old.id}`).send({}).expect(422);
   await api
     .patch(`${base}/items/${old.id}`)
-    .send({ values: [{ field_id: id, value: false }] })
+    .send({
+      ...{},
+      expected_revision: itemRevision(services, `${base}/items/${old.id}`),
+    })
+    .expect(422);
+  await api
+    .patch(`${base}/items/${old.id}`)
+    .send({
+      ...{ values: [{ field_id: id, value: false }] },
+      expected_revision: itemRevision(services, `${base}/items/${old.id}`),
+    })
     .expect(200);
   for (const value of [false, true]) {
     const result = await api
@@ -56,7 +66,10 @@ test("checkbox fields accept only booleans and preserve required-field replaceme
       .expect(422);
     await api
       .patch(`${base}/items/${old.id}`)
-      .send({ values: [{ field_id: id, value }] })
+      .send({
+        ...{ values: [{ field_id: id, value }] },
+        expected_revision: itemRevision(services, `${base}/items/${old.id}`),
+      })
       .expect(422);
   }
   assert.deepEqual(
@@ -81,7 +94,10 @@ test("checkbox fields accept only booleans and preserve required-field replaceme
     .expect(200);
   const cleared = await api
     .patch(`${base}/items/${old.id}`)
-    .send({ values: [] })
+    .send({
+      ...{ values: [] },
+      expected_revision: itemRevision(services, `${base}/items/${old.id}`),
+    })
     .expect(200);
   assert.deepEqual(cleared.body.values, []);
 });
@@ -162,7 +178,12 @@ test("saves field flags atomically without forcing backfills of existing items",
   assert.equal(saved.fields[0]?.isRequired, true);
   assert.equal(saved.fields[0]?.isSortable, false);
   assert.deepEqual(services.items.read(inventory.id, item.id), item);
-  assert.throws(() => services.items.update(inventory.id, item.id, {}));
+  assert.throws(() =>
+    services.items.update(inventory.id, item.id, {
+      ...{},
+      expected_revision: services.items.get(inventory.id, item.id).revision,
+    }),
+  );
 });
 
 // Test HTTP(S)-only structured links with optional display text and exact round trips.
@@ -238,7 +259,13 @@ test("new required fields leave old items readable but block incomplete creates 
       ...(value === undefined ? [] : [{ field_id: required.id, value }]),
     ];
     await api.post(path).send({ values }).expect(422);
-    await api.patch(`${path}/${item.id}`).send({ values }).expect(422);
+    await api
+      .patch(`${path}/${item.id}`)
+      .send({
+        ...{ values },
+        expected_revision: itemRevision(services, `${path}/${item.id}`),
+      })
+      .expect(422);
     assert.deepEqual(
       sqlite.prepare("SELECT * FROM inventory_item_values ORDER BY id").all(),
       before,
@@ -246,13 +273,22 @@ test("new required fields leave old items readable but block incomplete creates 
   }
   await api
     .patch(`${path}/${item.id}`)
-    .send({ values: [{ field_id: required.id, value: "Drawer" }] })
+    .send({
+      ...{ values: [{ field_id: required.id, value: "Drawer" }] },
+      expected_revision: itemRevision(services, `${path}/${item.id}`),
+    })
     .expect(200);
   const updated = services.items.read(inventory.id, item.id);
   assert.equal(updated.values.length, 1);
   assert.equal(updated.values[0]?.fieldId, required.id);
   services.fields.update(inventory.id, required.id, { is_required: false });
-  await api.patch(`${path}/${item.id}`).send({ values: [] }).expect(200);
+  await api
+    .patch(`${path}/${item.id}`)
+    .send({
+      ...{ values: [] },
+      expected_revision: itemRevision(services, `${path}/${item.id}`),
+    })
+    .expect(200);
 });
 
 // Test a later requirement toggle independently of adding a new field.
@@ -262,7 +298,12 @@ test("enabling a requirement does not rewrite an existing item's values", (conte
   const item = services.items.create(inventory.id, {});
   services.fields.update(inventory.id, field.id, { is_required: true });
   assert.deepEqual(services.items.read(inventory.id, item.id), item);
-  assert.throws(() => services.items.update(inventory.id, item.id, {}));
+  assert.throws(() =>
+    services.items.update(inventory.id, item.id, {
+      ...{},
+      expected_revision: services.items.get(inventory.id, item.id).revision,
+    }),
+  );
   assert.equal(
     (
       sqlite

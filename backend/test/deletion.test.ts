@@ -124,6 +124,8 @@ test("field deletion atomically clears its values and options without touching o
     f.services.items.read(f.target.inventory.id, f.target.item.id),
     {
       ...f.target.item,
+      revision: f.target.item.revision + 1,
+      updatedAt: field.deletedAt!,
       values: f.target.item.values.filter(
         (value) => value.fieldId !== field.id,
       ),
@@ -133,6 +135,8 @@ test("field deletion atomically clears its values and options without touching o
     f.services.items.read(f.target.inventory.id, secondItem.id),
     {
       ...secondItem,
+      revision: secondItem.revision + 1,
+      updatedAt: field.deletedAt!,
       values: secondItem.values.filter((value) => value.fieldId !== field.id),
     },
   );
@@ -213,7 +217,13 @@ test("inventory deletion clears descendants and retains UUIDs, relationships, an
     (value) => value.fieldId === f.target.text.id,
   )!;
   f.services.items.update(f.target.inventory.id, f.target.item.id, {
-    values: [{ field_id: f.target.text.id, value: "Updated title" }],
+    ...{
+      values: [{ field_id: f.target.text.id, value: "Updated title" }],
+    },
+    expected_revision: f.services.items.get(
+      f.target.inventory.id,
+      f.target.item.id,
+    ).revision,
   });
   const history = f.db
     .select()

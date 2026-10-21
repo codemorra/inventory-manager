@@ -221,6 +221,7 @@ describe("InventoryItemsPage", () => {
     mockedGetInventoryFields.mockResolvedValue(fields);
     mockedGetInventoryItems.mockResolvedValue([
       {
+        revision: 1,
         id: "item-1",
         inventory_id: "inventory-1",
         values: [

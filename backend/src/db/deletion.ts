@@ -1,4 +1,5 @@
-import { and, eq, inArray, isNull, type SQLWrapper } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql, type SQLWrapper } from "drizzle-orm";
+import { advanceItemRevisions } from "./item-revisions.js";
 import {
   inventoryFieldOptions,
   inventoryFields,
@@ -12,12 +13,26 @@ import type { AppDatabase } from "./types.js";
  * @param db The transaction shared with the parent deletion.
  * @param fieldIds The subquery selecting the affected field identifiers.
  * @param deletedAt The deletion timestamp shared by all newly deleted records.
+ * @param advanceRevisions Whether surviving item snapshots must be invalidated.
  */
 function tombstoneFieldDependents(
   db: AppDatabase,
   fieldIds: SQLWrapper,
   deletedAt: string,
+  advanceRevisions = true,
 ) {
+  if (advanceRevisions) {
+    const itemIds = db
+      .select({ id: inventoryItemValues.itemId })
+      .from(inventoryItemValues)
+      .where(
+        and(
+          inArray(inventoryItemValues.fieldId, fieldIds),
+          isNull(inventoryItemValues.deletedAt),
+        ),
+      );
+    advanceItemRevisions(db, itemIds, deletedAt);
+  }
   db.update(inventoryItemValues)
     .set({ value: null, deletedAt, updatedAt: deletedAt })
     .where(
@@ -76,7 +91,7 @@ export function tombstoneInventoryContents(
     .select({ id: inventoryItems.id })
     .from(inventoryItems)
     .where(eq(inventoryItems.inventoryId, inventoryId));
-  tombstoneFieldDependents(db, fieldIds, deletedAt);
+  tombstoneFieldDependents(db, fieldIds, deletedAt, false);
   db.update(inventoryItemValues)
     .set({ value: null, deletedAt, updatedAt: deletedAt })
     .where(
@@ -87,7 +102,11 @@ export function tombstoneInventoryContents(
     )
     .run();
   db.update(inventoryItems)
-    .set({ deletedAt, updatedAt: deletedAt })
+    .set({
+      deletedAt,
+      updatedAt: deletedAt,
+      revision: sql`${inventoryItems.revision} + 1`,
+    })
     .where(
       and(
         eq(inventoryItems.inventoryId, inventoryId),

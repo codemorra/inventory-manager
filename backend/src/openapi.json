@@ -366,7 +366,7 @@
       "patch": {
         "tags": ["inventory items"],
         "summary": "Update Item",
-        "description": "Replace all editable values of an active item in one transaction. Omitted editable values are cleared with deletion tombstones. Automatic ID assignments remain unchanged and must not be included in the request. All current required fields must be supplied; false and zero are valid values. Invalid input leaves existing values and assignments unchanged.",
+        "description": "Replace all editable values of an active item in one transaction. Omitted editable values are cleared with deletion tombstones. Automatic ID assignments remain unchanged and must not be included in the request. All current required fields must be supplied; false and zero are valid values. Invalid input leaves existing values and assignments unchanged. The required expected_revision must match the current revision. Successful replacements increment revision and update updated_at, including no-op replacements.",
         "operationId": "update_item_inventories__inventory_id__items__item_id__patch",
         "parameters": [
           {
@@ -409,6 +409,16 @@
               }
             }
           },
+          "409": {
+            "description": "The item revision is stale; no values, tombstones, or revisions were changed. Reload before explicitly retrying.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -431,7 +441,7 @@
       "delete": {
         "tags": ["inventory items"],
         "summary": "Delete Item",
-        "description": "Delete an inventory item and tombstone its values.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    item_id: Inventory item UUID.\n    session: Active database session.\n\nReturns:\n    None.",
+        "description": "Delete an item and clear its values atomically only when expected_revision matches. Stale requests return 409; already deleted items return 404. The request body is required.",
         "operationId": "delete_item_inventories__inventory_id__items__item_id__delete",
         "parameters": [
           {
@@ -457,13 +467,33 @@
           "204": {
             "description": "Successful Response"
           },
+          "409": {
+            "description": "The item revision is stale; no values, tombstones, or revisions were changed. Reload before explicitly retrying.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
-            "description": "Validation Error",
+            "description": "Missing or invalid expected_revision.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryItemDelete"
               }
             }
           }
@@ -1518,10 +1548,22 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "Monotonically increasing item revision. New and migrated items start at 1."
           }
         },
         "type": "object",
-        "required": ["id", "inventory_id", "created_at", "updated_at"],
+        "required": [
+          "id",
+          "inventory_id",
+          "created_at",
+          "updated_at",
+          "revision"
+        ],
         "title": "InventoryItemRead",
         "description": "Represent an active inventory item in API responses."
       },
@@ -1533,11 +1575,18 @@
             },
             "type": "array",
             "title": "Values"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "Revision of the item snapshot being edited. Must match the current stored revision."
           }
         },
         "type": "object",
         "title": "InventoryItemUpdate",
-        "description": "Replace all editable values of an inventory item, preserving automatic ID assignments."
+        "description": "Replace all editable values of an inventory item, preserving automatic ID assignments.",
+        "required": ["expected_revision"]
       },
       "InventoryItemValueInput": {
         "properties": {
@@ -2057,6 +2106,19 @@
         },
         "required": ["url"],
         "description": "Value stored by a URL field. No network request is made to validate or fetch this address."
+      },
+      "InventoryItemDelete": {
+        "type": "object",
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "Revision of the item snapshot being edited. Must match the current stored revision."
+          }
+        },
+        "required": ["expected_revision"],
+        "description": "Require the saved revision before deleting an item."
       }
     }
   }

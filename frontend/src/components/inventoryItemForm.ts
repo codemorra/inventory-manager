@@ -1,6 +1,9 @@
 import type { InventoryField } from "../types/inventoryField";
 import type { InventoryItemValueInput } from "../types/inventoryItem";
-import type { InventoryItem, InventoryItemInput } from "../types/inventoryItem";
+import type {
+  InventoryItem,
+  UpdateInventoryItemInput,
+} from "../types/inventoryItem";
 import { isUrlInput, isWebAddress, type UrlInput } from "./url";
 import {
   durationFromSeconds,
@@ -168,7 +171,7 @@ export function createCheckboxReplacement(
   item: InventoryItem,
   fieldId: string,
   checked: boolean,
-): InventoryItemInput {
+): UpdateInventoryItemInput {
   const values = fields.flatMap((field) => {
     if (field.field_type === "id") return [];
     if (field.id === fieldId) return [{ field_id: field.id, value: checked }];
@@ -178,5 +181,5 @@ export function createCheckboxReplacement(
       return [{ field_id: field.id, value: false }];
     return stored ? [{ field_id: field.id, value: stored.value }] : [];
   });
-  return { values };
+  return { values, expected_revision: item.revision };
 }

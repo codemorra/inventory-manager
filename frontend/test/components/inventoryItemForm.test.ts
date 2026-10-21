@@ -49,6 +49,7 @@ test("builds complete checkbox replacements without coercing stored values", () 
     },
   ];
   const item = {
+    revision: 1,
     id: "item",
     inventory_id: field.inventory_id,
     created_at: "",
@@ -70,6 +71,7 @@ test("builds complete checkbox replacements without coercing stored values", () 
   const before = structuredClone(item);
   expect(createCheckboxReplacement(definitions, item, field.id, false)).toEqual(
     {
+      expected_revision: item.revision,
       values: [
         { field_id: field.id, value: false },
         {

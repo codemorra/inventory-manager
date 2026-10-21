@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import {
   useDeleteInventoryItem,
   useUpdateInventoryItem,
+  useReloadInventoryItems,
 } from "../hooks/useInventoryItems";
 import { ApiError } from "../services/api";
 import type {
@@ -32,6 +33,22 @@ interface InventoryItemListProps {
   fields: InventoryField[];
   items: InventoryItem[];
   actions?: ReactNode;
+}
+
+/**
+ * Identify stale or deleted item snapshots that cannot safely be retried unchanged.
+ * @param error The failed item request.
+ * @returns Whether explicit reloading is required before another write.
+ */
+function isItemConflict(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    [
+      "inventory_item_conflict",
+      "inventory_item_not_found",
+      "inventory_not_found",
+    ].includes(error.code ?? "")
+  );
 }
 
 /**
@@ -155,7 +172,10 @@ export function InventoryItemList({
           i18n.resolvedLanguage ?? "en",
         )
       : items;
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  // Retain the original item revision even when background refreshes replace the table data.
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const editingItemId = editingItem?.id ?? null;
+  const [reloadMissing, setReloadMissing] = useState(false);
   const [editValues, setEditValues] = useState<
     Record<string, InventoryItemFormValue>
   >({});
@@ -164,13 +184,22 @@ export function InventoryItemList({
   const checkboxInFlight = useRef(false);
   const [checkboxEditHint, setCheckboxEditHint] = useState(false);
   const [checkboxTarget, setCheckboxTarget] = useState<{
+    inventoryId: string;
     itemId: string;
     fieldId: string;
   } | null>(null);
   const deleteItem = useDeleteInventoryItem();
+  const reloadItems = useReloadInventoryItems();
   const isMutating =
-    updateItem.isPending || deleteItem.isPending || checkboxUpdate.isPending;
-  const editingItem = items.find((item) => item.id === editingItemId);
+    updateItem.isPending ||
+    deleteItem.isPending ||
+    checkboxUpdate.isPending ||
+    reloadItems.isPending;
+  const editConflict = isItemConflict(updateItem.error);
+  const checkboxConflict = isItemConflict(checkboxUpdate.error);
+  const deleteConflict = isItemConflict(deleteItem.error);
+  const recoveryClass =
+    "rounded-md border border-shell px-3 py-2 text-sm font-medium transition enabled:hover:bg-control-hover disabled:opacity-50";
 
   /**
    * Sort a column ascending initially and toggle its direction on subsequent clicks.
@@ -193,16 +222,19 @@ export function InventoryItemList({
    * @param item The inventory item to edit.
    */
   function startEditing(item: InventoryItem) {
+    updateItem.reset();
+    reloadItems.reset();
+    setReloadMissing(false);
     checkboxUpdate.reset();
     setCheckboxEditHint(false);
     setEditValues(getEditableValues(fields, item));
-    setEditingItemId(item.id);
+    setEditingItem(item);
   }
 
   // Cancel editing the current inventory item.
   function cancelEditing() {
     setCheckboxEditHint(false);
-    setEditingItemId(null);
+    setEditingItem(null);
     setEditValues({});
   }
 
@@ -233,7 +265,11 @@ export function InventoryItemList({
       setCheckboxEditHint(true);
       return;
     }
-    setCheckboxTarget({ itemId: item.id, fieldId: field.id });
+    setCheckboxTarget({
+      inventoryId: item.inventory_id,
+      itemId: item.id,
+      fieldId: field.id,
+    });
     // Block rapid consecutive toggles until persistence and the item query refresh have both finished.
     checkboxInFlight.current = true;
     checkboxUpdate.mutate(
@@ -257,7 +293,13 @@ export function InventoryItemList({
   function handleUpdate(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!editingItem || isMutating || !hasValidItemValues(fields, editValues)) {
+    if (
+      !editingItem ||
+      isMutating ||
+      editConflict ||
+      reloadMissing ||
+      !hasValidItemValues(fields, editValues)
+    ) {
       return;
     }
 
@@ -274,7 +316,7 @@ export function InventoryItemList({
       {
         inventoryId: editingItem.inventory_id,
         itemId: editingItem.id,
-        data: { values },
+        data: { values, expected_revision: editingItem.revision },
       },
       { onSuccess: cancelEditing },
     );
@@ -285,8 +327,21 @@ export function InventoryItemList({
    * @param item The item selected for deletion.
    */
   function handleDelete(item: InventoryItem) {
+    reloadItems.reset();
     deleteItem.reset();
     setDeletingTarget(item);
+  }
+
+  // Explicitly discard the local draft only after a successful refresh retrieves its current item.
+  function reloadEdit() {
+    if (!editingItem || isMutating) return;
+    reloadItems.mutate(editingItem.inventory_id, {
+      onSuccess: (fresh) => {
+        const item = fresh.find((entry) => entry.id === editingItem.id);
+        if (item) startEditing(item);
+        else setReloadMissing(true);
+      },
+    });
   }
 
   return (
@@ -305,6 +360,32 @@ export function InventoryItemList({
           </button>
         )}
       </InventoryToolbar>
+      {checkboxConflict && (
+        <div
+          role="alert"
+          className="mb-4 space-y-3 rounded-md border border-danger/30 bg-danger-soft p-3 text-sm text-danger"
+        >
+          <p>{t("items.conflict.checkbox")}</p>
+          <button
+            className={recoveryClass}
+            disabled={isMutating}
+            type="button"
+            onClick={() => {
+              if (!checkboxTarget) return;
+              reloadItems.mutate(checkboxTarget.inventoryId, {
+                onSuccess: () => checkboxUpdate.reset(),
+              });
+            }}
+          >
+            {t("items.conflict.reloadList")}
+          </button>
+        </div>
+      )}
+      {reloadItems.error && !editingItem && !deletingTarget && (
+        <p role="alert" className="mb-4 text-sm text-danger">
+          {t("items.conflict.reloadFailed")}
+        </p>
+      )}
       <div className="overflow-hidden rounded-md border border-shell bg-surface">
         <div
           className="overflow-x-auto"
@@ -404,6 +485,7 @@ export function InventoryItemList({
                               }
                               disabled={
                                 isMutating ||
+                                checkboxConflict ||
                                 editingItemId !== null ||
                                 deletingTarget !== null
                               }
@@ -416,6 +498,7 @@ export function InventoryItemList({
                               }
                             />
                             {checkboxUpdate.error &&
+                              !checkboxConflict &&
                               checkboxTarget?.itemId === item.id &&
                               checkboxTarget.fieldId === field.id && (
                                 <p
@@ -529,16 +612,43 @@ export function InventoryItemList({
                 className="mt-4 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
                 role="alert"
               >
-                {updateItem.error instanceof ApiError
-                  ? updateItem.error.message
-                  : t("items.errors.update")}
+                {editConflict
+                  ? t("items.conflict.edit")
+                  : updateItem.error instanceof ApiError
+                    ? updateItem.error.message
+                    : t("items.errors.update")}
+              </p>
+            )}
+            {editConflict && (
+              <button
+                className={`${recoveryClass} mt-3`}
+                type="button"
+                disabled={isMutating}
+                onClick={reloadEdit}
+              >
+                {t("items.conflict.discardAndReload")}
+              </button>
+            )}
+            {reloadMissing && (
+              <p role="alert" className="mt-3 text-sm text-danger">
+                {t("items.conflict.deleted")}
+              </p>
+            )}
+            {reloadItems.error && (
+              <p role="alert" className="mt-3 text-sm text-danger">
+                {t("items.conflict.reloadFailed")}
               </p>
             )}
 
             <div className="mt-6 flex flex-wrap justify-end gap-3">
               <button
                 className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isMutating || !hasValidItemValues(fields, editValues)}
+                disabled={
+                  isMutating ||
+                  editConflict ||
+                  reloadMissing ||
+                  !hasValidItemValues(fields, editValues)
+                }
                 type="submit"
               >
                 {updateItem.isPending
@@ -561,12 +671,15 @@ export function InventoryItemList({
         <DeleteConfirmationDialog
           title={t("items.titles.delete")}
           message={t("items.confirmDelete")}
-          isPending={deleteItem.isPending}
+          isPending={deleteItem.isPending || reloadItems.isPending}
+          confirmDisabled={deleteConflict}
           error={
             deleteItem.error
-              ? deleteItem.error instanceof ApiError
-                ? deleteItem.error.message
-                : t("items.errors.delete")
+              ? deleteConflict
+                ? t("items.conflict.delete")
+                : deleteItem.error instanceof ApiError
+                  ? deleteItem.error.message
+                  : t("items.errors.delete")
               : null
           }
           onClose={() => setDeletingTarget(null)}
@@ -575,11 +688,38 @@ export function InventoryItemList({
               {
                 inventoryId: deletingTarget.inventory_id,
                 itemId: deletingTarget.id,
+                expectedRevision: deletingTarget.revision,
               },
               { onSuccess: () => setDeletingTarget(null) },
             )
           }
-        />
+        >
+          {deleteConflict && (
+            <button
+              className={recoveryClass}
+              type="button"
+              disabled={isMutating}
+              onClick={() => {
+                reloadItems.mutate(deletingTarget.inventory_id, {
+                  onSuccess: (fresh) => {
+                    setDeletingTarget(
+                      fresh.find((entry) => entry.id === deletingTarget.id) ??
+                        null,
+                    );
+                    deleteItem.reset();
+                  },
+                });
+              }}
+            >
+              {t("items.conflict.reloadItem")}
+            </button>
+          )}
+          {reloadItems.error && (
+            <p role="alert" className="text-sm text-danger">
+              {t("items.conflict.reloadFailed")}
+            </p>
+          )}
+        </DeleteConfirmationDialog>
       )}
     </>
   );

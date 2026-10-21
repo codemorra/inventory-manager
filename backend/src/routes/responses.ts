@@ -22,6 +22,7 @@ export function itemResponse(item: Item) {
   return {
     id: item.id,
     inventory_id: item.inventoryId,
+    revision: item.revision,
     values: item.values.map((value) => ({
       id: value.id,
       field_id: value.fieldId,

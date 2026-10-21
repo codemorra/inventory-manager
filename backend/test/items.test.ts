@@ -1,3 +1,4 @@
+import { itemRevision } from "./helpers/item-revision.js";
 import assert from "node:assert/strict";
 import test, { type TestContext } from "node:test";
 import request from "supertest";
@@ -77,6 +78,7 @@ test("all editable field types pass definition/create/read/update through a comp
       "created_at",
       "id",
       "inventory_id",
+      "revision",
       "updated_at",
       "values",
     ]);
@@ -92,10 +94,16 @@ test("all editable field types pass definition/create/read/update through a comp
     await api.get(`${base}/items/${created.body.id}`).expect(200, created.body);
     const updated = await api
       .patch(`${base}/items/${created.body.id}`)
-      .send({ values: [{ field_id: field.id, value: input(second) }] })
+      .send({
+        ...{ values: [{ field_id: field.id, value: input(second) }] },
+        expected_revision: itemRevision(
+          services,
+          `${base}/items/${created.body.id}`,
+        ),
+      })
       .expect(200);
     assert.equal(updated.body.id, created.body.id);
-    assert.equal(updated.body.updated_at, created.body.updated_at);
+    assert.equal(updated.body.revision, created.body.revision + 1);
     assert.notEqual(updated.body.values[0].id, created.body.values[0].id);
     assert.deepEqual(updated.body.values[0].value, input(second));
   }
@@ -132,7 +140,10 @@ test("replacement, omitted values, and deletion preserve tombstones and list ord
   );
   await api
     .patch(`${base}/${item.id}`)
-    .send({ values: [{ field_id: field.id, value: "Replacement" }] })
+    .send({
+      ...{ values: [{ field_id: field.id, value: "Replacement" }] },
+      expected_revision: itemRevision(services, `${base}/${item.id}`),
+    })
     .expect(200);
   const firstTombstone = db
     .select()
@@ -143,13 +154,24 @@ test("replacement, omitted values, and deletion preserve tombstones and list ord
   assert.ok(firstTombstone?.deletedAt);
   const cleared = await api
     .patch(`${base}/${item.id}`)
-    .send({ ignored: true })
+    .send({
+      ...{ ignored: true },
+      expected_revision: itemRevision(services, `${base}/${item.id}`),
+    })
     .expect(200);
   assert.deepEqual(cleared.body.values, []);
   services.items.update(inventory.id, item.id, {
-    values: [{ field_id: field.id, value: "Last" }],
+    ...{
+      values: [{ field_id: field.id, value: "Last" }],
+    },
+    expected_revision: services.items.get(inventory.id, item.id).revision,
   });
-  const deleted = await api.delete(`${base}/${item.id}`).expect(204);
+  const deleted = await api
+    .delete(`${base}/${item.id}`)
+    .send({
+      expected_revision: itemRevision(services, `${base}/${item.id}`),
+    })
+    .expect(204);
   assert.equal(deleted.text, "");
   const values = db.select().from(inventoryItemValues).all();
   assert.equal(values.length, 3);
@@ -174,7 +196,12 @@ test("replacement, omitted values, and deletion preserve tombstones and list ord
       message: "Inventory item not found.",
     },
   });
-  await api.delete(`${base}/${item.id}`).expect(404);
+  await api
+    .delete(`${base}/${item.id}`)
+    .send({
+      expected_revision: itemRevision(services, `${base}/${item.id}`),
+    })
+    .expect(404);
   assert.deepEqual(
     (await api.get(base).expect(200)).body.map((row: { id: string }) => row.id),
     [empty.id],
@@ -199,13 +226,13 @@ test("item errors preserve parent scoping, DTO precedence, and structured value 
         ? "/inventories/missing/items"
         : `/inventories/missing/items/${item.id}`;
     await api[method](path)
-      .send(method === "post" || method === "patch" ? {} : undefined)
+      .send({ expected_revision: 1 })
       .expect(404, missingParent);
   }
   await api.get("/inventories/missing/items").expect(404, missingParent);
   for (const method of ["get", "patch", "delete"] as const) {
     await api[method](`/inventories/${other.id}/items/${item.id}`)
-      .send(method === "patch" ? {} : undefined)
+      .send({ expected_revision: 1 })
       .expect(404, {
         detail: {
           code: "inventory_item_not_found",
@@ -245,7 +272,13 @@ test("item errors preserve parent scoping, DTO precedence, and structured value 
     .expect(422, invalidValueError);
   await api
     .patch(`/inventories/${inventory.id}/items/${item.id}`)
-    .send({ values: [{ field_id: field.id, value: "2026-02-30" }] })
+    .send({
+      ...{ values: [{ field_id: field.id, value: "2026-02-30" }] },
+      expected_revision: itemRevision(
+        services,
+        `/inventories/${inventory.id}/items/${item.id}`,
+      ),
+    })
     .expect(422, invalidValueError);
   assert.equal(errors.length, 0);
   assert.equal(db.select().from(inventoryItems).all().length, 1);
@@ -274,14 +307,18 @@ test("deleted options remain referenced until their field is removed", (context)
     error instanceof DomainError &&
     error.code === "invalid_inventory_item_value";
   assert.throws(
-    () => services.items.update(inventory.id, item.id, input),
+    () =>
+      services.items.update(inventory.id, item.id, {
+        ...input,
+        expected_revision: services.items.get(inventory.id, item.id).revision,
+      }),
     invalid,
   );
   assert.deepEqual(services.items.read(inventory.id, item.id), item);
   services.fields.delete(inventory.id, field.id);
-  assert.deepEqual(services.items.list(inventory.id), [
-    { ...item, values: [] },
-  ]);
+  const afterDelete = services.items.read(inventory.id, item.id);
+  assert.equal(afterDelete.revision, item.revision + 1);
+  assert.deepEqual(afterDelete.values, []);
   assert.throws(() => services.items.create(inventory.id, input), invalid);
   assert.throws(
     () =>
@@ -310,7 +347,10 @@ test("failed create, replacement, and delete transactions leave the entire item/
     assert.deepEqual(db.select().from(inventoryItemValues).all(), valuesBefore);
   };
   assert.throws(() =>
-    services.items.update(inventory.id, item.id, input("Far too long")),
+    services.items.update(inventory.id, item.id, {
+      ...input("Far too long"),
+      expected_revision: services.items.get(inventory.id, item.id).revision,
+    }),
   );
   unchanged();
   sqlite.exec(
@@ -319,12 +359,19 @@ test("failed create, replacement, and delete transactions leave the entire item/
   assert.throws(() => services.items.create(inventory.id, input("New")));
   unchanged();
   assert.throws(() =>
-    services.items.update(inventory.id, item.id, input("New")),
+    services.items.update(inventory.id, item.id, {
+      ...input("New"),
+      expected_revision: services.items.get(inventory.id, item.id).revision,
+    }),
   );
   unchanged();
   sqlite.exec(
     "DROP TRIGGER fail_value; CREATE TRIGGER fail_tombstone BEFORE UPDATE ON inventory_item_values BEGIN SELECT RAISE(ABORT, 'Synthetic deletion failure'); END;",
   );
-  assert.throws(() => services.items.delete(inventory.id, item.id));
+  assert.throws(() =>
+    services.items.delete(inventory.id, item.id, {
+      expected_revision: services.items.get(inventory.id, item.id).revision,
+    }),
+  );
   unchanged();
 });

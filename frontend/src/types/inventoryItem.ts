@@ -11,6 +11,7 @@ export interface InventoryItemValue {
 export interface InventoryItem {
   id: string;
   inventory_id: string;
+  revision: number;
   values: InventoryItemValue[];
   created_at: string;
   updated_at: string;
@@ -25,4 +26,9 @@ export interface InventoryItemValueInput {
 /** Define inventory item values sent when creating or replacing an item. */
 export interface InventoryItemInput {
   values: InventoryItemValueInput[];
+}
+
+// Require the revision captured when the edit or checkbox operation began.
+export interface UpdateInventoryItemInput extends InventoryItemInput {
+  expected_revision: number;
 }

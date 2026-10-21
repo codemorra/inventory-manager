@@ -1,5 +1,9 @@
 import { request } from "./api";
-import type { InventoryItem, InventoryItemInput } from "../types/inventoryItem";
+import type {
+  InventoryItem,
+  InventoryItemInput,
+  UpdateInventoryItemInput,
+} from "../types/inventoryItem";
 
 /**
  * Retrieve active items for an inventory.
@@ -41,7 +45,7 @@ export function createInventoryItem(
 export function updateInventoryItem(
   inventoryId: string,
   itemId: string,
-  data: InventoryItemInput,
+  data: UpdateInventoryItemInput,
 ): Promise<InventoryItem> {
   return request<InventoryItem>(`/inventories/${inventoryId}/items/${itemId}`, {
     method: "PATCH",
@@ -54,13 +58,16 @@ export function updateInventoryItem(
  *
  * @param inventoryId - Parent inventory identifier.
  * @param itemId - Inventory item identifier.
+ * @param expectedRevision - Revision captured when deletion was requested.
  * @returns Completion of the deletion request.
  */
 export function deleteInventoryItem(
   inventoryId: string,
   itemId: string,
+  expectedRevision: number,
 ): Promise<void> {
   return request<void>(`/inventories/${inventoryId}/items/${itemId}`, {
     method: "DELETE",
+    body: JSON.stringify({ expected_revision: expectedRevision }),
   });
 }
