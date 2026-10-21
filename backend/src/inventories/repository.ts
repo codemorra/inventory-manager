@@ -33,14 +33,15 @@ export function createInventoryRepository(db: AppDatabase) {
       },
     ) =>
       db.update(inventories).set(changes).where(active(id)).returning().get(),
-    tombstone: (id: string) =>
+    tombstone: (id: string, deletedAt = new Date().toISOString()) =>
       db
         .update(inventories)
         .set({
           name: "",
           description: null,
           groupId: null,
-          deletedAt: new Date().toISOString(),
+          deletedAt,
+          updatedAt: deletedAt,
         })
         .where(active(id))
         .run(),

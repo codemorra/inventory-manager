@@ -183,7 +183,7 @@
       "delete": {
         "tags": ["inventories"],
         "summary": "Delete Inventory",
-        "description": "Delete an inventory using a tombstone.\n\nArgs:\n    inventory_id: Inventory UUID.\n    session: Active database session.\n\nReturns:\n    None.",
+        "description": "Delete an inventory and clear its fields, selection options, items, and stored values atomically. Preserve record identifiers, relationships, and deletion tombstones. The containing group and other inventories remain unchanged.",
         "operationId": "delete_inventory_inventories__inventory_id__delete",
         "parameters": [
           {
@@ -674,7 +674,7 @@
       "delete": {
         "tags": ["inventory fields"],
         "summary": "Delete Inventory Field",
-        "description": "Delete an inventory field using a tombstone.\n\nArgs:\n    inventory_id: Parent inventory UUID.\n    field_id: Inventory field UUID.\n    session: Active database session.\n\nReturns:\n    None.",
+        "description": "Delete a field and clear its stored values and option names in one transaction. Retain identities and deletion tombstones; keep the inventory, its items, and unrelated field values unchanged.",
         "operationId": "delete_inventory_field_inventories__inventory_id__fields__field_id__delete",
         "parameters": [
           {
@@ -1079,7 +1079,7 @@
         "tags": ["inventories"],
         "summary": "Save Inventory Editor Draft",
         "operationId": "save_inventory_editor_draft",
-        "description": "Apply inventory metadata, field operations, and option operations in one transaction. Any validation, ownership, or storage failure rolls back all changes. Omitted operation arrays leave existing records unchanged. Existing field types and text limits cannot be changed; group membership is preserved. Each existing field or option may be changed only once per save, and options cannot be changed when their field is being deleted. New fields include their initial options in their create data. Existing item values retain their established deletion semantics. Field order is optional and must reference the complete final field set. New ID fields backfill existing active items in this transaction; any later failure rolls back those assignments too. Deleting an ID field clears its number values while preserving tombstones.",
+        "description": "Apply inventory metadata, field operations, and option operations in one transaction. Any validation, ownership, or storage failure rolls back all changes. Omitted operation arrays leave existing records unchanged. Existing field types and text limits cannot be changed; group membership is preserved. Each existing field or option may be changed only once per save, and options cannot be changed when their field is being deleted. New fields include their initial options in their create data. Deleting a field clears its stored values and options while retaining deletion tombstones. Field order is optional and must reference the complete final field set. New ID fields backfill existing active items in this transaction; any later failure rolls back those assignments too.",
         "parameters": [
           {
             "name": "inventory_id",

@@ -1,7 +1,6 @@
 import type { AppDatabase } from "../db/types.js";
 import type { inventoryFieldOptions, inventoryFields } from "../db/schema.js";
-import { inventoryItemValues } from "../db/schema.js";
-import { and, eq, isNull } from "drizzle-orm";
+import { tombstoneFieldContents } from "../db/deletion.js";
 import { DomainError } from "../errors.js";
 import type { InventoryService } from "../inventories/service.js";
 import { createOptionRepository } from "../options/repository.js";
@@ -64,14 +63,32 @@ export function createFieldService(
   }
 
   return {
+    /**
+     * Retrieves an inventory field by its ID, ensuring it exists.
+     * @param inventoryId - The ID of the inventory.
+     * @param fieldId - The ID of the field.
+     * @returns The inventory field.
+     * @throws DomainError if the field is not found.
+     */
     get,
     read(inventoryId: string, fieldId: string) {
       return { ...get(inventoryId, fieldId), options: options.list(fieldId) };
     },
+    /**
+     * Lists all inventory fields for a given inventory.
+     * @param inventoryId - The ID of the inventory.
+     * @returns The list of inventory fields with their options.
+     */
     list(inventoryId: string) {
       inventories.get(inventoryId);
       return withOptions(repository.list(inventoryId));
     },
+    /**
+     * Creates a new inventory field.
+     * @param inventoryId - The ID of the inventory.
+     * @param input - The data for the new field.
+     * @returns The created field with its options.
+     */
     create(inventoryId: string, input: unknown) {
       const data = fieldCreateSchema.parse(input);
       inventories.get(inventoryId);
@@ -99,6 +116,13 @@ export function createFieldService(
         };
       });
     },
+    /**
+     * Updates an existing field with new data.
+     * @param inventoryId The inventory owning the field.
+     * @param fieldId The ID of the field to update.
+     * @param input The new data for the field.
+     * @returns The updated field with its options.
+     */
     update(inventoryId: string, fieldId: string, input: unknown) {
       const data = fieldUpdateSchema.parse(input);
       const field = get(inventoryId, fieldId);
@@ -138,23 +162,21 @@ export function createFieldService(
         : field;
       return { ...updated, options: options.list(fieldId) };
     },
+    /**
+     * Clear a field and its values and options atomically, retaining deletion indicators.
+     * @param inventoryId The inventory owning the field.
+     * @param fieldId The active field to remove.
+     */
     delete(inventoryId: string, fieldId: string) {
-      const field = get(inventoryId, fieldId);
+      get(inventoryId, fieldId);
       db.transaction((transaction) => {
-        createFieldRepository(transaction).tombstone(inventoryId, fieldId);
-        if (field.fieldType === "id") {
-          // Remove automatic number content along with the field, retaining deletion indicators.
-          transaction
-            .update(inventoryItemValues)
-            .set({ value: null, deletedAt: new Date().toISOString() })
-            .where(
-              and(
-                eq(inventoryItemValues.fieldId, fieldId),
-                isNull(inventoryItemValues.deletedAt),
-              ),
-            )
-            .run();
-        }
+        const deletedAt = new Date().toISOString();
+        tombstoneFieldContents(transaction, fieldId, deletedAt);
+        createFieldRepository(transaction).tombstone(
+          inventoryId,
+          fieldId,
+          deletedAt,
+        );
       });
     },
   };

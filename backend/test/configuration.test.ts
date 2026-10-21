@@ -270,8 +270,8 @@ test("configuration APIs preserve scoped not-found codes, unsupported-option err
   assert.deepEqual(missing.body.detail[0].loc, ["body", "name"]);
 });
 
-// Test suite for verifying the behavior of option, field, and inventory deletion, ensuring child records and stored option IDs remain intact.
-test("option, field, and inventory deletion leaves child records and stored option IDs untouched", async (context) => {
+// Test option-only deletion preserves selections, while field and inventory deletion clear their descendants.
+test("field and inventory deletion clears child content and retains tombstones", async (context) => {
   const { api, db, services } = fixture(context);
   const inventory = services.inventories.create({
     name: "Synthetic",
@@ -322,9 +322,21 @@ test("option, field, and inventory deletion leaves child records and stored opti
   assert.ok(db.select().from(inventoryFields).get()?.deletedAt);
   assert.deepEqual(
     db.select().from(inventoryFieldOptions).all(),
-    optionsBefore,
+    optionsBefore.map((option) =>
+      option.deletedAt
+        ? option
+        : {
+            ...option,
+            name: "",
+            deletedAt: db.select().from(inventoryFields).get()!.deletedAt,
+            updatedAt: db.select().from(inventoryFields).get()!.updatedAt,
+          },
+    ),
   );
-  assert.deepEqual(db.select().from(inventoryItemValues).all(), [value]);
+  const cleared = db.select().from(inventoryItemValues).get()!;
+  assert.equal(cleared.id, value.id);
+  assert.equal(cleared.value, null);
+  assert.ok(cleared.deletedAt);
   await api.get(base).expect(404);
   await api.get(`${base}/options`).expect(404);
   const active = services.fields.create(inventory.id, { name: "Remaining" });
@@ -336,10 +348,18 @@ test("option, field, and inventory deletion leaves child records and stored opti
   ];
   const before = children.map((table) => db.select().from(table).all());
   await api.delete(`/inventories/${inventory.id}`).expect(204);
-  assert.deepEqual(
-    children.map((table) => db.select().from(table).all()),
-    before,
-  );
+  children.forEach((table, index) => {
+    const after = db.select().from(table).all();
+    assert.deepEqual(
+      after.map((row) => row.id),
+      before[index]!.map((row) => row.id),
+    );
+    for (const row of after) {
+      assert.ok(row.deletedAt);
+      if ("name" in row) assert.equal(row.name, "");
+      if ("value" in row) assert.equal(row.value, null);
+    }
+  });
   await api.get(`/inventories/${inventory.id}/fields/${active.id}`).expect(404);
   await api.get(`/inventories/${inventory.id}/fields`).expect(404);
 });
