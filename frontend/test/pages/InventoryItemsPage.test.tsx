@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { useState } from "react";
+import { TableEditSessionContext } from "../../src/components/tableEditSession";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { ApiError } from "../../src/services/api";
@@ -70,16 +72,24 @@ function renderInventoryItemsPage() {
     defaultOptions: { queries: { retry: false } },
   });
 
+  function Session() {
+    const [inventoryId, setInventoryId] = useState<string | null>(null);
+    return (
+      <TableEditSessionContext.Provider value={{ inventoryId, setInventoryId }}>
+        <MemoryRouter initialEntries={["/inventories/inventory-1/items"]}>
+          <Routes>
+            <Route
+              element={<InventoryItemsPage />}
+              path="/inventories/:inventoryId/items"
+            />
+          </Routes>
+        </MemoryRouter>
+      </TableEditSessionContext.Provider>
+    );
+  }
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/inventories/inventory-1/items"]}>
-        <Routes>
-          <Route
-            element={<InventoryItemsPage />}
-            path="/inventories/:inventoryId/items"
-          />
-        </Routes>
-      </MemoryRouter>
+      <Session />
     </QueryClientProvider>,
   );
 }
@@ -90,6 +100,53 @@ afterEach(() => {
 });
 
 describe("InventoryItemsPage", () => {
+  // Test the real page's settings and creation actions share the active table-edit lock.
+  test("locks inventory settings and creation until table editing ends", async () => {
+    const user = userEvent.setup();
+    vi.mocked(getInventories).mockResolvedValueOnce([
+      {
+        configuration_revision: 1,
+        id: "inventory-1",
+        name: "Games",
+        description: null,
+        created_at: timestamp,
+        updated_at: timestamp,
+      },
+    ]);
+    mockedGetInventoryFields.mockResolvedValue(fields);
+    mockedGetInventoryItems.mockResolvedValue([
+      {
+        id: "item",
+        inventory_id: "inventory-1",
+        revision: 1,
+        created_at: timestamp,
+        updated_at: timestamp,
+        values: [
+          {
+            id: "value",
+            field_id: "title-field",
+            value: "Game",
+            created_at: timestamp,
+            updated_at: timestamp,
+          },
+        ],
+      },
+    ]);
+    renderInventoryItemsPage();
+    await user.click(await screen.findByRole("button", { name: "Edit table" }));
+    expect(await screen.findByRole("textbox", { name: "Title" })).toHaveValue(
+      "Game",
+    );
+    expect(
+      screen.getByRole("button", { name: "Inventory settings" }),
+    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "New item" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(
+      screen.getByRole("button", { name: "Inventory settings" }),
+    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: "New item" })).toBeEnabled();
+  });
   // Test that the settings icon beside the title opens the shared inventory editor.
   test("opens inventory settings from the title row", async () => {
     const user = userEvent.setup();

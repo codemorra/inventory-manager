@@ -351,6 +351,31 @@
         "range": "The upper value must be greater than or equal to the first value.",
         "options": "Choose at least one available option."
       }
+    },
+    "edit": {
+      "start": "Edit table",
+      "loading": "Loading table editor…",
+      "changedCount_one": "{{count}} changed row",
+      "changedCount_other": "{{count}} changed rows",
+      "loadFailed": "The table editor could not be loaded. Try again.",
+      "saveFailed": "No changes were saved. Your draft is preserved; try saving again.",
+      "conflict": "The inventory or an entry has changed or was deleted. No changes were saved. Your draft is preserved. Discard it and reload before editing again.",
+      "correctErrors": "Correct the marked values before saving.",
+      "showField": "Show {{field}}",
+      "leaveTitle": "Discard table changes?",
+      "leaveDescription": "You have unsaved table changes. Leaving will discard them.",
+      "waitForSave": "The table is still being saved. Stay here until the request finishes.",
+      "stay": "Keep editing",
+      "discardAndLeave": "Discard and leave",
+      "validation": {
+        "required": "A value is required.",
+        "number": "Enter a finite number.",
+        "text": "The text exceeds the column limit.",
+        "options": "Choose available options.",
+        "url": "Enter a valid HTTP or HTTPS address.",
+        "duration": "Enter a valid duration.",
+        "temporal": "Enter a valid calendar date or time."
+      }
     }
   }
 }

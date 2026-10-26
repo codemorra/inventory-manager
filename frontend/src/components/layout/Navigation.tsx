@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
+import { TableEditSessionContext } from "../tableEditSession";
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -29,6 +30,9 @@ export function Navigation({
   onContext,
 }: NavigationProps) {
   const { t, i18n } = useTranslation();
+  const { inventoryId: editingInventoryId } = useContext(
+    TableEditSessionContext,
+  );
   const [search, setSearch] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
   const groupQuery = useInventoryGroups();
@@ -52,6 +56,7 @@ export function Navigation({
    * @param groupId The destination group, or null to remove membership.
    */
   function moveInventory(inventoryId: string, groupId: string | null) {
+    if (editingInventoryId) return;
     move.mutate({ inventoryId, data: { group_id: groupId } });
   }
 
@@ -207,7 +212,10 @@ export function Navigation({
               onMove={moveInventory}
               onContext={onContext}
               disabled={
-                move.isPending || groupQuery.isPending || groupQuery.isError
+                Boolean(editingInventoryId) ||
+                move.isPending ||
+                groupQuery.isPending ||
+                groupQuery.isError
               }
             />
           )}
@@ -220,7 +228,10 @@ export function Navigation({
             onMove={moveInventory}
             onContext={onContext}
             disabled={
-              move.isPending || groupQuery.isPending || groupQuery.isError
+              Boolean(editingInventoryId) ||
+              move.isPending ||
+              groupQuery.isPending ||
+              groupQuery.isError
             }
           />
         )}

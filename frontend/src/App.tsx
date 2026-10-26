@@ -1,31 +1,37 @@
 import "./App.css";
 
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
 
 import { AppShell } from "./components/layout/AppShell";
 import { InventoryOverviewPage } from "./pages/InventoryOverviewPage";
 import { InventoryItemsPage } from "./pages/InventoryItemsPage";
 import { InventoryFieldsPage } from "./pages/InventoryFieldsPage";
 
-/** Render the application router. */
-function App() {
-  return (
-    <BrowserRouter>
+// A data router supports explicit navigation blocking for unsaved table drafts.
+const router = createBrowserRouter([
+  {
+    element: (
       <AppShell>
-        <Routes>
-          <Route path="/" element={<InventoryOverviewPage />} />
-          <Route
-            path="/inventories/:inventoryId/items"
-            element={<InventoryItemsPage />}
-          />
-          <Route
-            path="/inventories/:inventoryId/fields"
-            element={<InventoryFieldsPage />}
-          />
-        </Routes>
+        <Outlet />
       </AppShell>
-    </BrowserRouter>
-  );
+    ),
+    children: [
+      { path: "/", element: <InventoryOverviewPage /> },
+      {
+        path: "/inventories/:inventoryId/items",
+        element: <InventoryItemsPage />,
+      },
+      {
+        path: "/inventories/:inventoryId/fields",
+        element: <InventoryFieldsPage />,
+      },
+    ],
+  },
+]);
+
+/** Render the application router with draft-aware navigation support. */
+function App() {
+  return <RouterProvider router={router} />;
 }
 
 export default App;

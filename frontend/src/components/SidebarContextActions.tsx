@@ -1,5 +1,6 @@
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
-import { type SyntheticEvent, useState } from "react";
+import { type SyntheticEvent, useContext, useState } from "react";
+import { TableEditSessionContext } from "./tableEditSession";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDeleteInventory } from "../hooks/useInventories";
@@ -40,6 +41,9 @@ export function SidebarContextActions({
   onOpenDialog,
 }: SidebarContextActionsProps) {
   const { t } = useTranslation();
+  const { inventoryId: editingInventoryId } = useContext(
+    TableEditSessionContext,
+  );
   const navigate = useNavigate();
   const location = useLocation();
   const [stage, setStage] = useState<"menu" | "edit" | "delete">("menu");
@@ -108,10 +112,12 @@ export function SidebarContextActions({
         actions={[
           {
             label: group ? t("contextMenu.rename") : t("common.actions.edit"),
+            disabled: Boolean(editingInventoryId),
             onSelect: () => openDialog("edit"),
           },
           {
             label: t("common.actions.delete"),
+            disabled: Boolean(editingInventoryId),
             danger: true,
             onSelect: () => openDialog("delete"),
           },

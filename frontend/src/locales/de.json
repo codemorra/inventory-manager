@@ -351,6 +351,31 @@
         "range": "Der obere Wert muss größer oder gleich dem ersten Wert sein.",
         "options": "Wähle mindestens eine verfügbare Option."
       }
+    },
+    "edit": {
+      "start": "Tabelle bearbeiten",
+      "loading": "Tabelleneditor wird geladen…",
+      "changedCount_one": "{{count}} geänderte Zeile",
+      "changedCount_other": "{{count}} geänderte Zeilen",
+      "loadFailed": "Der Tabelleneditor konnte nicht geladen werden. Versuche es erneut.",
+      "saveFailed": "Es wurden keine Änderungen gespeichert. Dein Entwurf bleibt erhalten; versuche es erneut.",
+      "conflict": "Das Inventar oder ein Eintrag wurde geändert oder gelöscht. Es wurde nichts gespeichert. Dein Entwurf bleibt erhalten. Verwirf ihn und lade die aktuellen Daten, bevor du weiterbearbeitest.",
+      "correctErrors": "Korrigiere die markierten Werte vor dem Speichern.",
+      "showField": "{{field}} einblenden",
+      "leaveTitle": "Tabellenänderungen verwerfen?",
+      "leaveDescription": "Es gibt ungespeicherte Tabellenänderungen. Beim Verlassen werden sie verworfen.",
+      "waitForSave": "Die Tabelle wird noch gespeichert. Warte hier, bis die Anfrage abgeschlossen ist.",
+      "stay": "Weiter bearbeiten",
+      "discardAndLeave": "Verwerfen und verlassen",
+      "validation": {
+        "required": "Ein Wert ist erforderlich.",
+        "number": "Gib eine endliche Zahl ein.",
+        "text": "Der Text überschreitet das Spaltenlimit.",
+        "options": "Wähle verfügbare Optionen.",
+        "url": "Gib eine gültige HTTP- oder HTTPS-Adresse ein.",
+        "duration": "Gib eine gültige Dauer ein.",
+        "temporal": "Gib ein gültiges Datum oder eine gültige Uhrzeit ein."
+      }
     }
   }
 }

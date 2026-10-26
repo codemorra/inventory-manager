@@ -16,6 +16,7 @@ import {
   type SidebarContextTarget,
 } from "../../src/components/SidebarContextActions";
 import { deleteInventory } from "../../src/services/inventories";
+import { TableEditSessionContext } from "../../src/components/tableEditSession";
 import {
   updateInventoryGroup,
   deleteInventoryGroup,
@@ -60,7 +61,7 @@ function Location() {
  * @param kind The selected sidebar object type.
  * @returns The callback used to observe completed or canceled actions.
  */
-function renderActions(kind: "inventory" | "group") {
+function renderActions(kind: "inventory" | "group", tableEditing = false) {
   const target: SidebarContextTarget = {
     x: 10,
     y: 20,
@@ -77,17 +78,35 @@ function renderActions(kind: "inventory" | "group") {
       }
     >
       <MemoryRouter initialEntries={["/inventories/games/items"]}>
-        <SidebarContextActions
-          target={target}
-          onClose={close}
-          onOpenDialog={vi.fn()}
-        />
-        <Location />
+        <TableEditSessionContext.Provider
+          value={{
+            inventoryId: tableEditing ? "games" : null,
+            setInventoryId: vi.fn(),
+          }}
+        >
+          <SidebarContextActions
+            target={target}
+            onClose={close}
+            onOpenDialog={vi.fn()}
+          />
+          <Location />
+        </TableEditSessionContext.Provider>
       </MemoryRouter>
     </QueryClientProvider>,
   );
   return close;
 }
+
+// Test organization/configuration actions cannot race an active table draft.
+test.each(["inventory", "group"] as const)(
+  "locks %s context mutations during table editing",
+  (kind) => {
+    renderActions(kind, true);
+    for (const action of screen.getAllByRole("menuitem"))
+      expect(action).toBeDisabled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  },
+);
 
 // Test that context editing updates only inventory metadata.
 test("edits an inventory from the context menu", async () => {

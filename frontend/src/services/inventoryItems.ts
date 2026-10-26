@@ -3,6 +3,7 @@ import type {
   InventoryItem,
   InventoryItemInput,
   UpdateInventoryItemInput,
+  UpdateInventoryItemsInput,
 } from "../types/inventoryItem";
 
 /**
@@ -48,6 +49,22 @@ export function updateInventoryItem(
   data: UpdateInventoryItemInput,
 ): Promise<InventoryItem> {
   return request<InventoryItem>(`/inventories/${inventoryId}/items/${itemId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Save changed table rows in one atomic request without retrying stale snapshots.
+ * @param inventoryId The inventory containing every submitted row.
+ * @param data Complete changed-row replacements and their original versions.
+ * @returns Saved items in request order with new revisions.
+ */
+export function updateInventoryItems(
+  inventoryId: string,
+  data: UpdateInventoryItemsInput,
+): Promise<InventoryItem[]> {
+  return request(`/inventories/${inventoryId}/items`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });

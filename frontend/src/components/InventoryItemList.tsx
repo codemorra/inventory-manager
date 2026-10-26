@@ -3,6 +3,8 @@ import {
   type ReactNode,
   type SyntheticEvent,
   useId,
+  useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -36,6 +38,11 @@ import { sortInventoryItems } from "./inventoryItemSorting";
 import { searchInventoryItems } from "./inventoryItemSearch";
 import { filterInventoryItems, itemFilterError } from "./inventoryItemFilters";
 import { InventoryItemFilters } from "./InventoryItemFilters";
+import { InventoryTableCellInput } from "./InventoryTableCellInput";
+import { getTableCellValue } from "./inventoryTableDraft";
+import { useInventoryTableEdit } from "../hooks/useInventoryTableEdit";
+import { TableEditSessionContext } from "./tableEditSession";
+import { UnsavedTableChanges } from "./UnsavedTableChanges";
 import type { ItemFilter } from "../types/itemFilter";
 import {
   createValueInput,
@@ -180,14 +187,28 @@ function getEditableValues(
  */
 export function InventoryItemList({
   inventoryId,
-  fields,
-  items,
+  fields: currentFields,
+  items: currentItems,
   actions,
 }: InventoryItemListProps) {
   const [deletingTarget, setDeletingTarget] = useState<InventoryItem | null>(
     null,
   );
   const { t, i18n } = useTranslation();
+  const tableEdit = useInventoryTableEdit(inventoryId);
+  const fields = tableEdit.draft?.fields ?? currentFields;
+  const items = tableEdit.draft?.items ?? currentItems;
+  const { setInventoryId: setEditingInventoryId } = useContext(
+    TableEditSessionContext,
+  );
+  useEffect(() => {
+    if (!tableEdit.active) return;
+    setEditingInventoryId(inventoryId);
+    return () =>
+      setEditingInventoryId((current) =>
+        current === inventoryId ? null : current,
+      );
+  }, [tableEdit.active, inventoryId, setEditingInventoryId]);
   const {
     view,
     toggleSort,
@@ -218,6 +239,12 @@ export function InventoryItemList({
     return () => observer.disconnect();
   }, []);
   const tableId = useId();
+  const previouslyEditing = useRef(false);
+  useEffect(() => {
+    if (previouslyEditing.current && !tableEdit.active)
+      document.getElementById(`${tableId}-edit`)?.focus();
+    previouslyEditing.current = tableEdit.active;
+  }, [tableEdit.active, tableId]);
   const locale = i18n.resolvedLanguage ?? "en";
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<ItemFilter[]>([]);
@@ -278,7 +305,16 @@ export function InventoryItemList({
     : view.columnWidths;
   const baseColumns = visibleFields.map((field) => ({
     field,
-    width: manualWidths[field.id] ?? automaticWidths[field.id],
+    // Editing may need wider controls, but never saves this temporary width as a preference.
+    width: Math.max(
+      manualWidths[field.id] ?? automaticWidths[field.id],
+      tableEdit.draft && field.field_type !== "id"
+        ? ({ url: 240, duration: 240, datetime: 200, date: 150, time: 135 }[
+            field.field_type as
+              "url" | "duration" | "datetime" | "date" | "time"
+          ] ?? 140)
+        : 0,
+    ),
   }));
   const displayWidths = distributeColumnWidths(
     baseColumns.map((column) => column.width),
@@ -326,11 +362,14 @@ export function InventoryItemList({
   const deleteItem = useDeleteInventoryItem();
   const reloadItems = useReloadInventoryItems();
   const isMutating =
+    tableEdit.loading ||
+    tableEdit.saving ||
     updateItem.isPending ||
     deleteItem.isPending ||
     checkboxUpdate.isPending ||
     reloadItems.isPending;
   const controlsDisabled =
+    tableEdit.active ||
     isMutating ||
     editingItem !== null ||
     deletingTarget !== null ||
@@ -356,6 +395,7 @@ export function InventoryItemList({
     source?: HTMLElement,
   ) {
     if (
+      tableEdit.active ||
       isMutating ||
       editingItem !== null ||
       deletingTarget !== null ||
@@ -541,6 +581,63 @@ export function InventoryItemList({
           {t("items.conflict.reloadFailed")}
         </p>
       )}
+      <UnsavedTableChanges
+        dirty={tableEdit.dirty}
+        saving={tableEdit.saving}
+        onDiscard={tableEdit.cancel}
+      />
+      {tableEdit.error && (
+        <div
+          role="alert"
+          className="mb-3 space-y-2 rounded-sm border border-danger/30 bg-danger-soft p-3 text-sm text-danger"
+        >
+          <p>
+            {t(
+              tableEdit.conflict
+                ? "table.edit.conflict"
+                : tableEdit.draft
+                  ? "table.edit.saveFailed"
+                  : "table.edit.loadFailed",
+            )}
+          </p>
+          {tableEdit.conflict && (
+            <button
+              type="button"
+              className={recoveryClass}
+              disabled={tableEdit.loading || tableEdit.saving}
+              onClick={tableEdit.begin}
+            >
+              {t("items.conflict.discardAndReload")}
+            </button>
+          )}
+        </div>
+      )}
+      {tableEdit.errors.length > 0 && (
+        <div
+          role="alert"
+          className="mb-3 rounded-sm border border-danger/30 bg-danger-soft p-3 text-sm text-danger"
+        >
+          <p>{t("table.edit.correctErrors")}</p>
+          {[
+            ...new Set(
+              tableEdit.errors
+                .filter((error) => hiddenFieldIds.includes(error.fieldId))
+                .map((error) => error.fieldId),
+            ),
+          ].map((fieldId) => (
+            <button
+              key={fieldId}
+              type="button"
+              className="mt-2 mr-2 rounded-sm border border-shell px-2 py-1"
+              onClick={() => toggleField(fieldId)}
+            >
+              {t("table.edit.showField", {
+                field: fields.find((field) => field.id === fieldId)?.name,
+              })}
+            </button>
+          ))}
+        </div>
+      )}
       <InventoryTableControls
         columns={fields.map((field) => ({
           id: field.id,
@@ -564,7 +661,80 @@ export function InventoryItemList({
             disabled={controlsDisabled}
           />
         }
-        actions={actions}
+        actions={
+          <>
+            {tableEdit.draft ? (
+              <>
+                <span className="text-xs text-muted">
+                  {t("table.edit.changedCount", {
+                    count: tableEdit.changedCount,
+                  })}
+                </span>
+                <button
+                  type="button"
+                  className="rounded-sm border border-shell px-2.5 py-1.5 text-sm enabled:hover:bg-control-hover disabled:opacity-50"
+                  disabled={tableEdit.loading || tableEdit.saving}
+                  onClick={tableEdit.cancel}
+                >
+                  {t("common.actions.cancel")}
+                </button>
+                <button
+                  type="button"
+                  className="rounded-sm bg-accent px-2.5 py-1.5 text-sm font-semibold text-surface enabled:hover:bg-accent-hover disabled:opacity-50"
+                  disabled={
+                    tableEdit.loading ||
+                    tableEdit.saving ||
+                    tableEdit.conflict ||
+                    !tableEdit.dirty ||
+                    tableEdit.errors.length > 0
+                  }
+                  onClick={tableEdit.commit}
+                >
+                  {t(
+                    tableEdit.saving
+                      ? "common.actions.saving"
+                      : "common.actions.saveChanges",
+                  )}
+                </button>
+              </>
+            ) : (
+              <button
+                id={`${tableId}-edit`}
+                type="button"
+                title={t("table.edit.start")}
+                aria-label={t(
+                  tableEdit.loading ? "table.edit.loading" : "table.edit.start",
+                )}
+                disabled={
+                  controlsDisabled ||
+                  items.length === 0 ||
+                  !fields.some((field) => field.field_type !== "id")
+                }
+                className="flex size-8 cursor-pointer items-center justify-center rounded-sm text-muted transition enabled:hover:bg-control-hover enabled:hover:text-accent focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => {
+                  setColumnMenu(null);
+                  tableEdit.begin();
+                }}
+              >
+                <svg
+                  aria-hidden="true"
+                  className="size-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15Z" />
+                </svg>
+              </button>
+            )}
+            <fieldset disabled={tableEdit.active} className="contents">
+              {actions}
+            </fieldset>
+          </>
+        }
         wrapText={wrapText}
         onWrapTextChange={setWrapText}
         disabled={controlsDisabled}
@@ -633,6 +803,7 @@ export function InventoryItemList({
                       <button
                         className={`relative block w-full cursor-pointer py-3 pr-7 pl-3 text-left font-semibold transition-colors enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sortField?.id === field.id ? "bg-accent-soft text-accent" : ""}`}
                         onClick={() => toggleSort(field.id)}
+                        disabled={tableEdit.active}
                         type="button"
                       >
                         <span
@@ -681,6 +852,7 @@ export function InventoryItemList({
                       fieldName={field.name}
                       width={baseWidth}
                       disabled={
+                        tableEdit.active ||
                         isMutating ||
                         editingItem !== null ||
                         deletingTarget !== null ||
@@ -732,7 +904,39 @@ export function InventoryItemList({
                           className={`h-13 border-r border-shell/60 px-3 py-2.5 align-top text-foreground transition-colors group-hover:bg-surface-hover ${hoveredItem === item.id ? "bg-surface-hover" : ""}`}
                           key={field.id}
                         >
-                          {field.field_type === "checkbox" ? (
+                          {tableEdit.draft && field.field_type !== "id" ? (
+                            <InventoryTableCellInput
+                              key={`${item.id}-${field.id}`}
+                              id={`${tableId}-${item.id}-${field.id}-input`}
+                              field={field}
+                              value={
+                                Object.hasOwn(
+                                  tableEdit.draft.changes[item.id] ?? {},
+                                  field.id,
+                                )
+                                  ? tableEdit.draft.changes[item.id][field.id]
+                                  : getTableCellValue(
+                                      field,
+                                      valuesByField.get(field.id)?.value,
+                                    )
+                              }
+                              disabled={
+                                tableEdit.saving ||
+                                tableEdit.loading ||
+                                tableEdit.conflict
+                              }
+                              error={
+                                tableEdit.errors.find(
+                                  (error) =>
+                                    error.itemId === item.id &&
+                                    error.fieldId === field.id,
+                                )?.error
+                              }
+                              onChange={(value) =>
+                                tableEdit.change(item.id, field.id, value)
+                              }
+                            />
+                          ) : field.field_type === "checkbox" ? (
                             <div className="min-h-6">
                               <input
                                 type="checkbox"
@@ -862,7 +1066,7 @@ export function InventoryItemList({
                       <button
                         className="rounded-md border border-shell px-2.5 py-1 font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
                         aria-describedby={`${tableId}-${item.id}`}
-                        disabled={isMutating}
+                        disabled={isMutating || tableEdit.active}
                         onClick={() => startEditing(item)}
                         type="button"
                       >
@@ -871,7 +1075,7 @@ export function InventoryItemList({
                       <button
                         className="rounded-md bg-danger-soft px-2.5 py-1 font-medium text-danger transition enabled:hover:bg-danger/25 disabled:cursor-not-allowed disabled:opacity-50"
                         aria-describedby={`${tableId}-${item.id}`}
-                        disabled={isMutating}
+                        disabled={isMutating || tableEdit.active}
                         onClick={() => handleDelete(item)}
                         type="button"
                       >

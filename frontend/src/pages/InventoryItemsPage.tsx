@@ -1,5 +1,7 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useContext } from "react";
+import { TableEditSessionContext } from "../components/tableEditSession";
 
 import { InventoryItemCreateForm } from "../components/InventoryItemCreateForm";
 import { InventoryItemList } from "../components/InventoryItemList";
@@ -14,6 +16,10 @@ import { ApiError } from "../services/api";
 export function InventoryItemsPage() {
   const { t } = useTranslation();
   const { inventoryId } = useParams();
+  const { inventoryId: editingInventoryId } = useContext(
+    TableEditSessionContext,
+  );
+  const tableEditing = editingInventoryId === inventoryId;
   const [searchParams, setSearchParams] = useSearchParams();
   const itemQuery = useInventoryItems(inventoryId ?? "");
   const fieldQuery = useInventoryFields(inventoryId ?? "");
@@ -50,6 +56,7 @@ export function InventoryItemsPage() {
               type="button"
               aria-label={t("inventories.settings")}
               title={t("inventories.settings")}
+              disabled={tableEditing}
               className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted transition enabled:hover:text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               onClick={openInventoryEditor}
             >
@@ -128,6 +135,7 @@ export function InventoryItemsPage() {
                 fields={fieldQuery.data}
                 inventoryId={inventoryId}
                 compact
+                disabled={tableEditing}
               />
             }
           />

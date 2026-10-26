@@ -14,6 +14,7 @@ interface DurationFieldInputProps {
   required: boolean;
   disabled: boolean;
   onChange: (value: DurationInput) => void;
+  compact?: boolean;
 }
 
 /**
@@ -33,6 +34,7 @@ export function DurationFieldInput({
   required,
   disabled,
   onChange,
+  compact = false,
 }: DurationFieldInputProps) {
   const { t } = useTranslation();
   const hasValue = Object.values(value).some((part) => part !== "");
@@ -40,10 +42,12 @@ export function DurationFieldInput({
   return (
     <fieldset
       disabled={disabled}
-      aria-describedby={`${id}-help`}
+      aria-describedby={compact ? undefined : `${id}-help`}
       className="min-w-0"
     >
-      <legend className="text-sm font-medium text-foreground">
+      <legend
+        className={compact ? "sr-only" : "text-sm font-medium text-foreground"}
+      >
         {label}
         {required && (
           <span aria-hidden="true" className="ml-1 text-accent">
@@ -51,13 +55,13 @@ export function DurationFieldInput({
           </span>
         )}
       </legend>
-      <div className="mt-2 grid grid-cols-3 gap-2">
+      <div className={`grid grid-cols-3 ${compact ? "gap-1" : "mt-2 gap-2"}`}>
         {(["hours", "minutes", "seconds"] as const).map((part) => (
           <IntegerSpinbox
             key={part}
             id={`${id}-${part}`}
             label={t(`items.duration.${part}`)}
-            describedBy={`${id}-help`}
+            describedBy={compact ? undefined : `${id}-help`}
             min={0}
             max={part === "hours" ? maximumDurationHours : 59}
             value={value[part]}
@@ -66,9 +70,11 @@ export function DurationFieldInput({
           />
         ))}
       </div>
-      <p id={`${id}-help`} className="mt-1.5 text-xs text-muted">
-        {t("items.duration.help")}
-      </p>
+      {!compact && (
+        <p id={`${id}-help`} className="mt-1.5 text-xs text-muted">
+          {t("items.duration.help")}
+        </p>
+      )}
       {invalid && (
         <p className="mt-1 text-xs text-danger" role="alert">
           {t("items.duration.invalid")}

@@ -5,6 +5,7 @@ import { SettingsDialog } from "../SettingsDialog";
 import { GroupCreateDialog } from "../GroupCreateDialog";
 import { useTheme } from "../../hooks/useTheme";
 import { Navigation } from "./Navigation";
+import { TableEditSessionContext } from "../tableEditSession";
 import {
   SidebarContextActions,
   type SidebarContextTarget,
@@ -22,6 +23,9 @@ interface AppShellProps {
  */
 export function AppShell({ children }: AppShellProps) {
   const { t } = useTranslation();
+  const [editingInventoryId, setEditingInventoryId] = useState<string | null>(
+    null,
+  );
   // Follow system appearance changes even while settings are closed.
   useTheme();
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
@@ -109,90 +113,97 @@ export function AppShell({ children }: AppShellProps) {
   );
 
   return (
-    <div className="min-h-dvh bg-canvas text-foreground">
-      {contextTarget && (
-        <SidebarContextActions
-          key={`${contextTarget.kind}-${contextTarget.entry.id}-${contextTarget.x}-${contextTarget.y}`}
-          target={contextTarget}
-          onClose={() => setContextTarget(null)}
-          onOpenDialog={() => setIsNavigationOpen(false)}
-        />
-      )}
-      {isGroupCreateOpen && (
-        <GroupCreateDialog onClose={() => setIsGroupCreateOpen(false)} />
-      )}
-      {isSettingsOpen && (
-        <SettingsDialog onClose={() => setIsSettingsOpen(false)} />
-      )}
-      <a
-        className="fixed left-4 top-3 z-50 -translate-y-24 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-surface focus:translate-y-0"
-        href="#page-content"
-      >
-        {t("navigation.skipToContent")}
-      </a>
-
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-shell bg-chrome lg:block">
-        {sidebarContent}
-      </aside>
-
-      {isNavigationOpen && (
-        <div
-          aria-label={t("navigation.mobileDialog")}
-          aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/50 lg:hidden"
-          role="dialog"
-        >
-          <button
-            aria-label={t("navigation.closeBackdrop")}
-            className="absolute inset-0 cursor-default"
-            onClick={() => setIsNavigationOpen(false)}
-            type="button"
+    <TableEditSessionContext.Provider
+      value={{
+        inventoryId: editingInventoryId,
+        setInventoryId: setEditingInventoryId,
+      }}
+    >
+      <div className="min-h-dvh bg-canvas text-foreground">
+        {contextTarget && (
+          <SidebarContextActions
+            key={`${contextTarget.kind}-${contextTarget.entry.id}-${contextTarget.x}-${contextTarget.y}`}
+            target={contextTarget}
+            onClose={() => setContextTarget(null)}
+            onOpenDialog={() => setIsNavigationOpen(false)}
           />
-          <aside className="relative flex h-full w-[min(20rem,88vw)] flex-col border-r border-shell bg-chrome shadow-raised">
-            <div className="flex shrink-0 justify-end px-4 pt-4">
-              <button
-                className="rounded-lg border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover enabled:hover:border-accent/50"
-                onClick={() => setIsNavigationOpen(false)}
-                type="button"
-              >
-                {t("navigation.close")}
-              </button>
-            </div>
-            <div className="min-h-0 flex-1">{sidebarContent}</div>
-          </aside>
-        </div>
-      )}
-
-      <div className="lg:pl-64">
-        <header className="flex min-h-14 items-center border-b border-shell bg-surface px-4 py-2 sm:px-6 lg:hidden">
-          <button
-            aria-label={t("navigation.open")}
-            className="rounded-lg border border-shell p-2.5 enabled:hover:bg-control-hover enabled:hover:border-accent/50 lg:hidden"
-            onClick={() => setIsNavigationOpen(true)}
-            type="button"
-          >
-            <svg
-              aria-hidden="true"
-              className="size-5"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeWidth="1.7"
-              viewBox="0 0 24 24"
-            >
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        </header>
-
-        <main
-          className="min-w-0 w-full px-4 py-6 sm:px-6 lg:py-8"
-          id="page-content"
-          tabIndex={-1}
+        )}
+        {isGroupCreateOpen && (
+          <GroupCreateDialog onClose={() => setIsGroupCreateOpen(false)} />
+        )}
+        {isSettingsOpen && (
+          <SettingsDialog onClose={() => setIsSettingsOpen(false)} />
+        )}
+        <a
+          className="fixed left-4 top-3 z-50 -translate-y-24 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-surface focus:translate-y-0"
+          href="#page-content"
         >
-          {children}
-        </main>
+          {t("navigation.skipToContent")}
+        </a>
+
+        <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-shell bg-chrome lg:block">
+          {sidebarContent}
+        </aside>
+
+        {isNavigationOpen && (
+          <div
+            aria-label={t("navigation.mobileDialog")}
+            aria-modal="true"
+            className="fixed inset-0 z-50 bg-black/50 lg:hidden"
+            role="dialog"
+          >
+            <button
+              aria-label={t("navigation.closeBackdrop")}
+              className="absolute inset-0 cursor-default"
+              onClick={() => setIsNavigationOpen(false)}
+              type="button"
+            />
+            <aside className="relative flex h-full w-[min(20rem,88vw)] flex-col border-r border-shell bg-chrome shadow-raised">
+              <div className="flex shrink-0 justify-end px-4 pt-4">
+                <button
+                  className="rounded-lg border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover enabled:hover:border-accent/50"
+                  onClick={() => setIsNavigationOpen(false)}
+                  type="button"
+                >
+                  {t("navigation.close")}
+                </button>
+              </div>
+              <div className="min-h-0 flex-1">{sidebarContent}</div>
+            </aside>
+          </div>
+        )}
+
+        <div className="lg:pl-64">
+          <header className="flex min-h-14 items-center border-b border-shell bg-surface px-4 py-2 sm:px-6 lg:hidden">
+            <button
+              aria-label={t("navigation.open")}
+              className="rounded-lg border border-shell p-2.5 enabled:hover:bg-control-hover enabled:hover:border-accent/50 lg:hidden"
+              onClick={() => setIsNavigationOpen(true)}
+              type="button"
+            >
+              <svg
+                aria-hidden="true"
+                className="size-5"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeWidth="1.7"
+                viewBox="0 0 24 24"
+              >
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </header>
+
+          <main
+            className="min-w-0 w-full px-4 py-6 sm:px-6 lg:py-8"
+            id="page-content"
+            tabIndex={-1}
+          >
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </TableEditSessionContext.Provider>
   );
 }
