@@ -277,6 +277,14 @@
     "savedAutomatically": "Changes are saved automatically in this browser."
   },
   "table": {
+    "search": {
+      "label": "Search inventory items",
+      "placeholder": "Search items…",
+      "clear": "Clear search",
+      "count": "{{count}} of {{total}} items",
+      "empty": "No matching items.",
+      "emptyDescription": "Try another search or clear it to show all items."
+    },
     "menu": {
       "label": "Inventory table controls",
       "view": "View",

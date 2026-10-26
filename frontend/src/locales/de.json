@@ -277,6 +277,14 @@
     "savedAutomatically": "Änderungen werden automatisch in diesem Browser gespeichert."
   },
   "table": {
+    "search": {
+      "label": "Inventareinträge durchsuchen",
+      "placeholder": "Einträge suchen…",
+      "clear": "Suche zurücksetzen",
+      "count": "{{count}} von {{total}} Einträgen",
+      "empty": "Keine passenden Einträge.",
+      "emptyDescription": "Ändere die Suche oder setze sie zurück, um alle Einträge anzuzeigen."
+    },
     "menu": {
       "label": "Steuerung der Inventartabelle",
       "view": "Ansicht",

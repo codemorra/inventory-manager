@@ -18,6 +18,7 @@ The screenshot uses synthetic demo data.
 - Single-level groups with drag-and-drop organization
 - Sidebar filtering by inventory title
 - Sortable item tables
+- Inventory-local text search across all fields
 - Per-inventory table views with column visibility, automatic/manual widths, and text wrapping
 - Required fields, per-column sorting controls, and drag-and-drop field ordering
 - Configurable text limits, selection options, web links, and automatic numbering
