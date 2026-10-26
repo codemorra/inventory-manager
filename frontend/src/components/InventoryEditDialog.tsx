@@ -20,6 +20,7 @@ import { ApiError } from "../services/api";
 import type { Inventory } from "../types/inventory";
 import { InventoryFieldsPanel } from "./InventoryFieldsPanel";
 import { Modal } from "./Modal";
+import { SaveInventoryTemplateDialog } from "./SaveInventoryTemplateDialog";
 
 // Define the shared inventory editor and its initially visible section.
 interface InventoryEditDialogProps {
@@ -106,17 +107,37 @@ function InventoryEditorSession({
   // Capture one snapshot per session; background refetches must not overwrite user edits.
   const [original, setOriginal] = useState(initialFields);
   const [revision, setRevision] = useState(inventory.configuration_revision);
+  const [savedMetadata, setSavedMetadata] = useState({
+    name: inventory.name,
+    description: inventory.description,
+  });
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [templateSaved, setTemplateSaved] = useState(false);
+  const [templateSourceConflict, setTemplateSourceConflict] = useState(false);
   const [fields, setFields] = useState(initialFields);
   const [pendingEditors, setPendingEditors] = useState<string[]>([]);
   const update = useInventoryEditor(inventory.id);
   const reload = useReloadInventoryConfiguration(inventory.id);
   const busy = update.isPending || reload.isPending;
   const conflict =
-    update.error instanceof ApiError &&
-    ["inventory_configuration_conflict", "inventory_not_found"].includes(
-      update.error.code ?? "",
-    );
+    templateSourceConflict ||
+    (update.error instanceof ApiError &&
+      ["inventory_configuration_conflict", "inventory_not_found"].includes(
+        update.error.code ?? "",
+      ));
   const validDraft = isValidFieldDraft(original, fields);
+  const editorInput = buildInventoryEditorInput(
+    original,
+    fields,
+    { name: name.trim(), description: description.trim() || null },
+    revision,
+  );
+  const dirty =
+    editorInput.inventory.name !== savedMetadata.name ||
+    editorInput.inventory.description !== savedMetadata.description ||
+    editorInput.fields.length > 0 ||
+    editorInput.options.length > 0 ||
+    editorInput.field_order !== undefined;
   const setPendingEditor = useCallback((id: string, active: boolean) => {
     setPendingEditors((current) =>
       active
@@ -198,10 +219,30 @@ function InventoryEditorSession({
         setName(result.inventory.name);
         setDescription(result.inventory.description ?? "");
         setRevision(result.inventory.configuration_revision);
+        setSavedMetadata({
+          name: result.inventory.name,
+          description: result.inventory.description,
+        });
+        setTemplateSourceConflict(false);
         update.reset();
       },
     });
   }
+
+  // Replace the visible editor while retaining its session; no unsaved draft is used as a source.
+  if (templateOpen)
+    return (
+      <SaveInventoryTemplateDialog
+        inventoryId={inventory.id}
+        revision={revision}
+        onClose={() => setTemplateOpen(false)}
+        onSaved={() => {
+          setTemplateOpen(false);
+          setTemplateSaved(true);
+        }}
+        onConflict={() => setTemplateSourceConflict(true)}
+      />
+    );
 
   return (
     <InventoryDraftContext.Provider value={draft}>
@@ -259,6 +300,32 @@ function InventoryEditorSession({
                 onChange={(event) => setDescription(event.target.value)}
               />
             </label>
+            <div className="border-t border-shell pt-4">
+              <button
+                type="button"
+                className="rounded-md border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:opacity-50"
+                disabled={
+                  busy || conflict || dirty || pendingEditors.length > 0
+                }
+                title={dirty ? t("templates.saveChangesFirst") : undefined}
+                onClick={() => {
+                  setTemplateSaved(false);
+                  setTemplateOpen(true);
+                }}
+              >
+                {t("templates.saveAs")}
+              </button>
+              {dirty && (
+                <p className="mt-2 text-sm text-muted">
+                  {t("templates.saveChangesFirst")}
+                </p>
+              )}
+              {templateSaved && (
+                <p role="status" className="mt-2 text-sm text-muted">
+                  {t("templates.saved")}
+                </p>
+              )}
+            </div>
           </form>
         )}
         {pendingEditors.length > 0 && (
@@ -271,7 +338,7 @@ function InventoryEditorSession({
             {t("inventories.editor.invalidDraft")}
           </p>
         )}
-        {update.error && (
+        {(update.error || templateSourceConflict) && (
           <p
             className="shrink-0 rounded-md bg-danger-soft p-3 text-sm text-danger"
             role="alert"

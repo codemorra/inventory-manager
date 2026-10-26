@@ -17,6 +17,7 @@ import {
   getInventoryConfiguration,
 } from "../../src/services/inventoryEditor";
 import { ApiError } from "../../src/services/api";
+import { saveInventoryTemplate } from "../../src/services/inventoryTemplates";
 import type { InventoryField } from "../../src/types/inventoryField";
 import { selectFieldType } from "../helpers/inventoryDraft";
 import {
@@ -28,6 +29,9 @@ import {
 vi.mock("../../src/services/inventoryEditor", () => ({
   saveInventoryConfiguration: vi.fn(),
   getInventoryConfiguration: vi.fn(),
+}));
+vi.mock("../../src/services/inventoryTemplates", () => ({
+  saveInventoryTemplate: vi.fn(),
 }));
 vi.mock("../../src/services/inventoryFields", () => ({
   getInventoryFields: vi.fn(),
@@ -866,5 +870,116 @@ test("keeps a long field list independently scrollable", async () => {
   expect(list).toHaveClass("overflow-y-auto", "min-h-0");
   expect(list).not.toContainElement(
     screen.getByRole("button", { name: "Save changes" }),
+  );
+});
+
+// The source action cannot bypass unsaved metadata or field configuration changes.
+test("allows template capture only from the unchanged saved inventory baseline", async () => {
+  const user = userEvent.setup();
+  renderEditor();
+  const action = await screen.findByRole("button", {
+    name: "Save as template",
+  });
+  expect(action).toBeEnabled();
+  const name = screen.getByRole("textbox", { name: "Name" });
+  await user.type(name, " edited");
+  expect(action).toBeDisabled();
+  expect(
+    screen.getByText("Save your inventory changes before creating a template."),
+  ).toBeInTheDocument();
+  await user.clear(name);
+  await user.type(name, "Games");
+  expect(action).toBeEnabled();
+  await user.click(screen.getByRole("button", { name: "Fields" }));
+  await addTextField(user);
+  await user.click(screen.getByRole("button", { name: "General" }));
+  expect(
+    screen.getByRole("button", { name: "Save as template" }),
+  ).toBeDisabled();
+  expect(saveInventoryTemplate).not.toHaveBeenCalled();
+  expect(saveInventoryConfiguration).not.toHaveBeenCalled();
+});
+
+// Saving a template leaves the editor and inventory untouched and returns with a success status.
+test("saves a template from inventory settings and returns to the same editor", async () => {
+  const user = userEvent.setup();
+  vi.mocked(saveInventoryTemplate).mockResolvedValue({
+    id: "template",
+    revision: 1,
+    name: "Game structure",
+    description: null,
+    fields: [],
+    created_at: "",
+    updated_at: "",
+  });
+  const { close } = renderEditor();
+  await user.click(
+    await screen.findByRole("button", { name: "Save as template" }),
+  );
+  expect(
+    screen.getByRole("dialog", { name: "Save inventory as template" }),
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText("Name")).toHaveValue("");
+  expect(screen.getByLabelText("Description")).toHaveValue("");
+  await user.clear(screen.getByLabelText("Name"));
+  await user.type(screen.getByLabelText("Name"), "Game structure");
+  await user.click(screen.getByRole("button", { name: "Save template" }));
+  await screen.findByRole("dialog", { name: "Edit inventory" });
+  expect(screen.getByRole("status")).toHaveTextContent("Template saved.");
+  expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Games");
+  expect(saveInventoryTemplate).toHaveBeenCalledExactlyOnceWith({
+    name: "Game structure",
+    description: null,
+    source_inventory_id: "games",
+    expected_configuration_revision: 1,
+  });
+  expect(saveInventoryConfiguration).not.toHaveBeenCalled();
+  expect(close).not.toHaveBeenCalled();
+});
+
+// A failed source capture exposes the existing explicit configuration reload flow.
+test("requires explicit inventory reload after a template source conflict", async () => {
+  const user = userEvent.setup();
+  vi.mocked(saveInventoryTemplate).mockRejectedValue(
+    new ApiError(409, "Changed", "inventory_configuration_conflict"),
+  );
+  renderEditor();
+  await user.click(
+    await screen.findByRole("button", { name: "Save as template" }),
+  );
+  await user.type(screen.getByLabelText("Name"), "Blueprint");
+  await user.click(screen.getByRole("button", { name: "Save template" }));
+  await screen.findByRole("alert");
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(
+    screen.getByRole("button", { name: "Save as template" }),
+  ).toBeDisabled();
+  vi.mocked(getInventoryConfiguration).mockResolvedValue({
+    inventory: { ...inventory, name: "Latest", configuration_revision: 9 },
+    fields: [],
+  });
+  await user.click(
+    screen.getByRole("button", { name: "Discard draft and reload" }),
+  );
+  await waitFor(() =>
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Latest"),
+  );
+  await user.click(screen.getByRole("button", { name: "Save as template" }));
+  expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("");
+  await user.type(screen.getByLabelText("Name"), "Blueprint");
+  vi.mocked(saveInventoryTemplate).mockResolvedValue({
+    id: "template",
+    revision: 1,
+    name: "Latest",
+    description: null,
+    fields: [],
+    created_at: "",
+    updated_at: "",
+  });
+  await user.click(screen.getByRole("button", { name: "Save template" }));
+  await waitFor(() =>
+    expect(saveInventoryTemplate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ expected_configuration_revision: 9 }),
+    ),
   );
 });

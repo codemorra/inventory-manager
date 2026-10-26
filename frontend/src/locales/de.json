@@ -378,5 +378,26 @@
         "temporal": "Gib ein gültiges Datum oder eine gültige Uhrzeit ein."
       }
     }
+  },
+  "templates": {
+    "saveAs": "Als Vorlage speichern",
+    "saveTitle": "Inventar als Vorlage speichern",
+    "save": "Vorlage speichern",
+    "saved": "Vorlage gespeichert.",
+    "structureOnly": "Nur die Feldstruktur; Einträge werden nicht kopiert.",
+    "saveChangesFirst": "Speichere deine Inventaränderungen, bevor du eine Vorlage erstellst.",
+    "sourceConflict": "Das Inventar wurde geändert oder gelöscht. Kehre zu den Inventareinstellungen zurück und lade es neu, bevor du eine Vorlage speicherst.",
+    "saveFailed": "Die Vorlage konnte nicht gespeichert werden. Deine Eingaben bleiben erhalten.",
+    "template": "Vorlage",
+    "emptyInventory": "Leeres Inventar",
+    "loading": "Vorlagen werden geladen…",
+    "loadFailed": "Vorlagen konnten nicht geladen werden. Du kannst weiterhin ein leeres Inventar anlegen.",
+    "destinationGroup": "Gruppe",
+    "ungrouped": "Ohne Gruppe",
+    "groupsFailed": "Gruppen konnten nicht geladen werden.",
+    "fieldCount_one": "{{count}} Feld",
+    "fieldCount_other": "{{count}} Felder",
+    "selectionConflict": "Die gewählte Vorlage wurde geändert oder ist nicht mehr verfügbar. Lade sie neu oder wähle eine andere Vorlage. Deine Inventareingaben bleiben erhalten.",
+    "reloadSelection": "Gewählte Vorlage neu laden"
   }
 }

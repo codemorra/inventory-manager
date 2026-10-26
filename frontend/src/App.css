@@ -24,6 +24,8 @@
   --color-accent-soft: var(--app-accent-soft);
   --color-danger: var(--app-danger);
   --color-danger-soft: var(--app-danger-soft);
+  --color-success: var(--app-success);
+  --color-success-soft: var(--app-success-soft);
   --shadow-soft: var(--app-shadow-soft);
   --shadow-raised: var(--app-shadow-raised);
 }
@@ -54,6 +56,8 @@
   );
   --app-danger: #b4232f;
   --app-danger-soft: #fdebed;
+  --app-success: #26703d;
+  --app-success-soft: #e8f4eb;
   --app-shadow-soft: 0 1px 2px rgb(24 33 31 / 5%);
   --app-shadow-raised:
     0 8px 18px rgb(24 33 31 / 8%), 0 24px 56px rgb(24 33 31 / 14%);
@@ -80,6 +84,8 @@
   --app-accent-soft: #183c38;
   --app-danger: #ffadb5;
   --app-danger-soft: #48242a;
+  --app-success: #9cd6ac;
+  --app-success-soft: #233d2b;
   --app-shadow-soft: 0 1px 2px rgb(0 0 0 / 16%);
   --app-shadow-raised:
     0 8px 18px rgb(0 0 0 / 22%), 0 24px 56px rgb(0 0 0 / 38%);
