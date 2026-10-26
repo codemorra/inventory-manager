@@ -788,6 +788,37 @@ test("requires missing values only when editing an existing item and preserves e
 });
 
 describe("InventoryItemList", () => {
+  // Test that changing the table view keeps the active sort and never writes item values.
+  test("changes text wrapping through the view menu without modifying items or sorting", async () => {
+    const user = userEvent.setup();
+    const anotherItem: InventoryItem = {
+      ...items[0],
+      id: "item-2",
+      values: [
+        { ...items[0].values[0], id: "other-value", value: "Animal Crossing" },
+      ],
+    };
+    renderInventoryItemList([...items, anotherItem]);
+    await user.click(screen.getByRole("button", { name: "Title" }));
+    await user.click(screen.getByRole("button", { name: "View" }));
+    await user.click(
+      screen.getByRole("menuitemcheckbox", { name: "Wrap text" }),
+    );
+    await user.click(screen.getByRole("button", { name: "View" }));
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Wrap text" }),
+    ).not.toBeChecked();
+    expect(screen.getByRole("columnheader", { name: "Title" })).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+    expect(
+      within(screen.getAllByRole("row")[1]).getByText("Animal Crossing"),
+    ).toBeVisible();
+    expect(mockedUpdateInventoryItem).not.toHaveBeenCalled();
+    expect(mockedDeleteInventoryItem).not.toHaveBeenCalled();
+  });
+
   // Test that row actions have a hover surface distinct from the highlighted row.
   test("uses a distinct hover surface for the edit action", () => {
     renderInventoryItemList();

@@ -20,6 +20,7 @@ import {
 interface InventoryItemCreateFormProps {
   inventoryId: string;
   fields: InventoryField[];
+  compact?: boolean;
 }
 
 // Define properties for a field-specific form control.
@@ -218,11 +219,13 @@ export function InventoryItemFieldInput({
  * Render a modal form that creates inventory items.
  * @param inventoryId The inventory that will receive the new item.
  * @param fields The fields available for item values.
+ * @param compact Whether the creation button fits the compact table menu bar.
  * @returns The inventory item creation control.
  */
 export function InventoryItemCreateForm({
   inventoryId,
   fields,
+  compact = false,
 }: InventoryItemCreateFormProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -271,7 +274,7 @@ export function InventoryItemCreateForm({
   return (
     <>
       <button
-        className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+        className={`inline-flex cursor-pointer items-center justify-center gap-2 bg-accent text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50 ${compact ? "rounded-sm px-2.5 py-1.5" : "rounded-lg px-4 py-2.5"}`}
         disabled={fields.length === 0}
         onClick={() => setIsOpen(true)}
         type="button"

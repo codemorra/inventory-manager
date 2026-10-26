@@ -80,6 +80,7 @@
       "reloadFailed": "Der aktuelle Stand konnte nicht geladen werden. Dein Entwurf bleibt erhalten."
     },
     "general": "Allgemein",
+    "settings": "Inventareinstellungen",
     "actions": {
       "create": "Inventar erstellen",
       "creating": "Wird erstellt…",
@@ -276,6 +277,11 @@
     "savedAutomatically": "Änderungen werden automatisch in diesem Browser gespeichert."
   },
   "table": {
+    "menu": {
+      "label": "Steuerung der Inventartabelle",
+      "view": "Ansicht",
+      "wrapText": "Zeilenumbruch"
+    },
     "sortHint": "Wähle eine sortierbare Spaltenüberschrift, um zwischen aufsteigender, absteigender und ursprünglicher Reihenfolge zu wechseln. Beim Sortieren stehen leere Werte am Ende.",
     "actions": "Aktionen"
   }

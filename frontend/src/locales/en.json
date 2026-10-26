@@ -80,6 +80,7 @@
       "reloadFailed": "The current configuration could not be loaded. Your draft is preserved."
     },
     "general": "General",
+    "settings": "Inventory settings",
     "actions": {
       "create": "Create inventory",
       "creating": "Creating…",
@@ -276,6 +277,11 @@
     "savedAutomatically": "Changes are saved automatically in this browser."
   },
   "table": {
+    "menu": {
+      "label": "Inventory table controls",
+      "view": "View",
+      "wrapText": "Wrap text"
+    },
     "sortHint": "Select a sortable column heading to cycle through ascending, descending, and the original order. Empty values appear last when sorting.",
     "actions": "Actions"
   }

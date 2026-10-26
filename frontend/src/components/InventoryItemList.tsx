@@ -17,7 +17,7 @@ import { InventoryItemFieldInput } from "./InventoryItemCreateForm";
 import { Modal } from "./Modal";
 import { formatDuration } from "./duration";
 import { isUrlInput, isWebAddress, urlDisplayText } from "./url";
-import { InventoryToolbar } from "./InventoryToolbar";
+import { InventoryTableControls } from "./InventoryTableControls";
 import { sortInventoryItems, type ItemSort } from "./inventoryItemSorting";
 import {
   createValueInput,
@@ -160,6 +160,7 @@ export function InventoryItemList({
   );
   const { t, i18n } = useTranslation();
   const [sort, setSort] = useState<ItemSort | null>(null);
+  const [wrapText, setWrapText] = useState(true);
   const sortField = fields.find(
     (field) => field.id === sort?.fieldId && field.is_sortable,
   );
@@ -346,11 +347,6 @@ export function InventoryItemList({
 
   return (
     <>
-      <InventoryToolbar actions={actions}>
-        <p className="text-sm font-semibold text-heading">
-          {t("items.count", { count: items.length })}
-        </p>
-      </InventoryToolbar>
       {checkboxConflict && (
         <div
           role="alert"
@@ -377,7 +373,14 @@ export function InventoryItemList({
           {t("items.conflict.reloadFailed")}
         </p>
       )}
-      <div className="overflow-hidden rounded-md border border-shell bg-surface">
+      <InventoryTableControls
+        itemCount={items.length}
+        actions={actions}
+        wrapText={wrapText}
+        onWrapTextChange={setWrapText}
+        disabled={isMutating || editingItem !== null || deletingTarget !== null}
+      />
+      <div className="overflow-hidden rounded-b-md border border-shell bg-surface">
         <div
           className="overflow-x-auto"
           role="region"
@@ -508,7 +511,13 @@ export function InventoryItemList({
                               )}
                           </div>
                         ) : (
-                          <span className="line-clamp-3">
+                          <span
+                            className={
+                              wrapText
+                                ? "line-clamp-3 max-w-80 whitespace-pre-wrap wrap-break-word"
+                                : "block max-w-80 truncate"
+                            }
+                          >
                             {formatValue(
                               field,
                               valuesByField.get(field.id),

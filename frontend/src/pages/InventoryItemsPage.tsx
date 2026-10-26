@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { InventoryItemCreateForm } from "../components/InventoryItemCreateForm";
 import { InventoryItemList } from "../components/InventoryItemList";
 import { InventoryEditDialog } from "../components/InventoryEditDialog";
+import { InventoryTableControls } from "../components/InventoryTableControls";
 import { useInventoryFields } from "../hooks/useInventoryFields";
 import { useInventoryItems } from "../hooks/useInventoryItems";
 import { useInventories } from "../hooks/useInventories";
@@ -26,6 +27,16 @@ export function InventoryItemsPage() {
   const isPending = itemQuery.isPending || fieldQuery.isPending;
   const error = itemQuery.error ?? fieldQuery.error;
   const isError = itemQuery.isError || fieldQuery.isError;
+  const hasTable = !isPending && !isError && !!fieldQuery.data?.length;
+
+  /**
+   * Open the inventory editor while retaining other URL state.
+   */
+  function openInventoryEditor() {
+    const next = new URLSearchParams(searchParams);
+    next.set("edit", "general");
+    setSearchParams(next);
+  }
 
   return (
     <div>
@@ -36,15 +47,25 @@ export function InventoryItemsPage() {
           </h1>
           {inventory && (
             <button
-              className="shrink-0 rounded-md border border-shell px-3 py-2 text-sm font-medium enabled:hover:bg-control-hover enabled:hover:border-accent/50"
-              onClick={() => {
-                const next = new URLSearchParams(searchParams);
-                next.set("edit", "general");
-                setSearchParams(next);
-              }}
               type="button"
+              aria-label={t("inventories.settings")}
+              title={t("inventories.settings")}
+              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted transition enabled:hover:text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              onClick={openInventoryEditor}
             >
-              {t("inventories.titles.edit")}
+              <svg
+                aria-hidden="true"
+                className="size-7"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                viewBox="0 0 24 24"
+              >
+                <path d="M9.5 3h5l.5 2.2 1.4.8 2.2-.7 2.5 4.4-1.6 1.5v1.6l1.6 1.5-2.5 4.4-2.2-.7-1.4.8-.5 2.2h-5L9 18.8 7.6 18l-2.2.7-2.5-4.4 1.6-1.5v-1.6L2.9 9.7l2.5-4.4 2.2.7L9 5.2Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
             </button>
           )}
           {inventory?.description?.trim() && (
@@ -53,6 +74,12 @@ export function InventoryItemsPage() {
             </p>
           )}
         </header>
+
+        {!hasTable && (
+          <div className="mb-4 rounded-md border-b border-shell">
+            <InventoryTableControls />
+          </div>
+        )}
 
         {isPending && (
           <p
@@ -90,22 +117,20 @@ export function InventoryItemsPage() {
             </div>
           )}
 
-        {!isPending &&
-          !isError &&
-          fieldQuery.data &&
-          fieldQuery.data.length > 0 && (
-            <InventoryItemList
-              key={inventoryId}
-              fields={fieldQuery.data}
-              items={itemQuery.data ?? []}
-              actions={
-                <InventoryItemCreateForm
-                  fields={fieldQuery.data}
-                  inventoryId={inventoryId}
-                />
-              }
-            />
-          )}
+        {hasTable && fieldQuery.data && (
+          <InventoryItemList
+            key={inventoryId}
+            fields={fieldQuery.data}
+            items={itemQuery.data ?? []}
+            actions={
+              <InventoryItemCreateForm
+                fields={fieldQuery.data}
+                inventoryId={inventoryId}
+                compact
+              />
+            }
+          />
+        )}
       </div>
       {inventory &&
         ["general", "fields"].includes(searchParams.get("edit") ?? "") && (
