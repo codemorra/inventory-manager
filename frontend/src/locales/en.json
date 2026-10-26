@@ -378,5 +378,26 @@
         "temporal": "Enter a valid calendar date or time."
       }
     }
+  },
+  "templates": {
+    "saveAs": "Save as template",
+    "saveTitle": "Save inventory as template",
+    "save": "Save template",
+    "saved": "Template saved.",
+    "structureOnly": "Field structure only; no items are copied.",
+    "saveChangesFirst": "Save your inventory changes before creating a template.",
+    "sourceConflict": "The inventory has changed or was deleted. Return to inventory settings and reload it before saving a template.",
+    "saveFailed": "The template could not be saved. Your inputs have been kept.",
+    "template": "Template",
+    "emptyInventory": "Empty inventory",
+    "loading": "Loading templates…",
+    "loadFailed": "Templates could not be loaded. You can still create an empty inventory.",
+    "destinationGroup": "Group",
+    "ungrouped": "Ungrouped",
+    "groupsFailed": "Groups could not be loaded.",
+    "fieldCount_one": "{{count}} field",
+    "fieldCount_other": "{{count}} fields",
+    "selectionConflict": "The selected template has changed or is no longer available. Reload it or choose another template. Your inventory inputs have been kept.",
+    "reloadSelection": "Reload selected template"
   }
 }

@@ -17,6 +17,10 @@ vi.mock("../../src/services/inventories", () => ({
   updateInventory: vi.fn(),
   deleteInventory: vi.fn(),
 }));
+vi.mock("../../src/services/inventoryTemplates", () => ({
+  getInventoryTemplates: vi.fn().mockResolvedValue([]),
+  instantiateInventoryTemplate: vi.fn(),
+}));
 vi.mock("../../src/services/inventoryGroups", () => ({
   getInventoryGroups: vi.fn().mockResolvedValue([]),
   createInventoryGroup: vi.fn(),
