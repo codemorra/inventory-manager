@@ -20,6 +20,9 @@ interface TableColumn {
 // Configure the compact action row without coupling it to item mutations or routing.
 interface InventoryTableControlsProps {
   itemCount?: number;
+  totalItemCount?: number;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
   actions?: ReactNode;
   wrapText?: boolean;
   onWrapTextChange?: (wrap: boolean) => void;
@@ -37,6 +40,9 @@ interface InventoryTableControlsProps {
  */
 export function InventoryTableControls({
   itemCount,
+  totalItemCount,
+  searchQuery = "",
+  onSearchQueryChange,
   actions,
   wrapText = true,
   onWrapTextChange,
@@ -230,26 +236,76 @@ export function InventoryTableControls({
       aria-label={t("table.menu.label")}
       className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-t-md border border-b-0 border-shell bg-surface-muted p-1.5 text-sm text-foreground"
     >
-      <button
-        ref={trigger}
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={expanded}
-        aria-controls={expanded ? `${id}-menu` : undefined}
-        disabled={!available}
-        className={`cursor-pointer rounded-sm px-2.5 py-1.5 text-sm font-medium transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${expanded ? "bg-control-hover text-heading" : ""}`}
-        onKeyDown={handleKeyDown}
-        onClick={() => {
-          focusLast.current = false;
-          setOpen(!expanded);
-        }}
-      >
-        {t("table.menu.view")}
-      </button>
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <button
+          ref={trigger}
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={expanded}
+          aria-controls={expanded ? `${id}-menu` : undefined}
+          disabled={!available}
+          className={`cursor-pointer rounded-sm px-2.5 py-1.5 text-sm font-medium transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${expanded ? "bg-control-hover text-heading" : ""}`}
+          onKeyDown={handleKeyDown}
+          onClick={() => {
+            focusLast.current = false;
+            setOpen(!expanded);
+          }}
+        >
+          {t("table.menu.view")}
+        </button>
+        {onSearchQueryChange && (
+          <div className="relative w-56 max-w-full">
+            <input
+              id={`${id}-search`}
+              type="search"
+              aria-label={t("table.search.label")}
+              placeholder={t("table.search.placeholder")}
+              value={searchQuery}
+              disabled={disabled}
+              onChange={(event) => onSearchQueryChange(event.target.value)}
+              className="w-full rounded-sm border border-shell bg-surface py-1.5 pr-8 pl-2.5 text-sm text-foreground placeholder:text-muted focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-search-cancel-button]:appearance-none"
+            />
+            {searchQuery.length > 0 && (
+              <button
+                type="button"
+                aria-label={t("table.search.clear")}
+                title={t("table.search.clear")}
+                disabled={disabled}
+                className="absolute inset-y-0 right-0 flex w-8 cursor-pointer items-center justify-center rounded-sm text-muted transition enabled:hover:text-heading focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => {
+                  onSearchQueryChange("");
+                  document.getElementById(`${id}-search`)?.focus();
+                }}
+              >
+                <svg
+                  aria-hidden="true"
+                  className="size-4"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
+                  <path d="m4 4 8 8M12 4l-8 8" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
       <div className="ml-auto flex flex-wrap items-center gap-3">
         {itemCount !== undefined && (
-          <p className="text-xs tabular-nums text-muted">
-            {t("items.count", { count: itemCount })}
+          <p
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="text-xs tabular-nums text-muted"
+          >
+            {totalItemCount === undefined
+              ? t("items.count", { count: itemCount })
+              : t("table.search.count", {
+                  count: itemCount,
+                  total: totalItemCount,
+                })}
           </p>
         )}
         {actions}

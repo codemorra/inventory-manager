@@ -148,6 +148,86 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// Test search filters both panes before sorting without changing automatic base widths.
+test("searches before sorting, keeps widths stable, and restores all rows when cleared", async () => {
+  const user = userEvent.setup();
+  const another = {
+    ...items[0],
+    id: "item-2",
+    values: [{ ...items[0].values[0], value: "Gate Alpha" }],
+  };
+  const excluded = {
+    ...items[0],
+    id: "item-3",
+    values: [
+      {
+        ...items[0].values[0],
+        value:
+          "A very long title that must still determine the automatic width",
+      },
+    ],
+  };
+  renderInventoryItemList([...items, another, excluded]);
+  const table = screen.getAllByRole("table")[0];
+  const widths = () =>
+    Array.from(table.querySelectorAll("col")).map((col) => col.style.width);
+  const initialWidths = widths();
+  await user.click(
+    within(screen.getByRole("columnheader", { name: "Title" })).getByRole(
+      "button",
+      { name: "Title" },
+    ),
+  );
+  await user.type(
+    screen.getByRole("searchbox", { name: "Search inventory items" }),
+    "GATE",
+  );
+  expect(screen.getByRole("status")).toHaveTextContent("2 of 3 items");
+  expect(screen.queryByText(excluded.values[0].value)).not.toBeInTheDocument();
+  expect(within(table).getAllByRole("row")[1]).toHaveTextContent(
+    "Baldur's Gate 3",
+  );
+  expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(2);
+  expect(widths()).toEqual(initialWidths);
+  await user.click(screen.getByRole("button", { name: "Clear search" }));
+  expect(screen.getByRole("searchbox")).toHaveFocus();
+  expect(screen.getByRole("status")).toHaveTextContent("3 items");
+  expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(3);
+  expect(mockedUpdateInventoryItem).not.toHaveBeenCalled();
+  expect(mockedDeleteInventoryItem).not.toHaveBeenCalled();
+});
+
+// Test hiding a field does not remove it from the inventory-wide search scope.
+test("finds selection labels in hidden columns", async () => {
+  const user = userEvent.setup();
+  renderInventoryItemList();
+  fireEvent.contextMenu(screen.getByRole("columnheader", { name: "Genre" }));
+  await user.click(screen.getByRole("menuitem", { name: "Hide column" }));
+  await user.type(screen.getByRole("searchbox"), "rpg");
+  expect(
+    screen.queryByRole("columnheader", { name: "Genre" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByText("Baldur's Gate 3")).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent("1 of 1 items");
+});
+
+// Test no matches differs from a genuinely empty inventory and clears both table panes.
+test("shows a distinct no-results state and keeps search available in empty inventories", async () => {
+  const user = userEvent.setup();
+  const view = renderInventoryItemList();
+  await user.type(screen.getByRole("searchbox"), "missing");
+  expect(screen.getByText("No matching items.")).toBeVisible();
+  expect(screen.queryByText("No items yet.")).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Edit" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("0 of 1 items");
+  view.unmount();
+  renderInventoryItemList([]);
+  expect(screen.getByText("No items yet.")).toBeVisible();
+  expect(screen.getByRole("searchbox")).toBeEnabled();
+});
+
 // Test background refreshes cannot replace an open draft's concurrency precondition.
 test("preserves a stale edit until the user explicitly discards inputs and reloads", async () => {
   const user = userEvent.setup();

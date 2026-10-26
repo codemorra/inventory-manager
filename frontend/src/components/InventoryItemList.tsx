@@ -33,6 +33,7 @@ import { InventoryTableControls } from "./InventoryTableControls";
 import { ColumnResizeHandle } from "./ColumnResizeHandle";
 import { ContextMenu } from "./ContextMenu";
 import { sortInventoryItems } from "./inventoryItemSorting";
+import { searchInventoryItems } from "./inventoryItemSearch";
 import {
   createValueInput,
   createCheckboxReplacement,
@@ -215,6 +216,19 @@ export function InventoryItemList({
   }, []);
   const tableId = useId();
   const locale = i18n.resolvedLanguage ?? "en";
+  const [searchQuery, setSearchQuery] = useState("");
+  const matchingItems = useMemo(
+    () =>
+      searchInventoryItems(
+        items,
+        fields,
+        searchQuery,
+        { no: t("common.values.no"), yes: t("common.values.yes") },
+        locale,
+      ),
+    [items, fields, searchQuery, locale, t],
+  );
+  // Measure every loaded value so filtering never makes automatic columns jump.
   const columnContents = useMemo(
     () =>
       fields.map((field) => ({
@@ -244,7 +258,6 @@ export function InventoryItemList({
     dataTable,
     visibleFields.map((field) => field.id).join(","),
   );
-  const rowHeights = useTableRowHeights(dataTable, items);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   // The preview is a draft manual override; neither Auto flags nor surplus are persisted.
   const manualWidths = resizing
@@ -273,15 +286,14 @@ export function InventoryItemList({
   const sortField = fields.find(
     (field) => field.id === sort?.fieldId && field.is_sortable,
   );
-  const displayedItems =
-    sort && sortField
-      ? sortInventoryItems(
-          items,
-          sortField,
-          sort.direction,
-          i18n.resolvedLanguage ?? "en",
-        )
-      : items;
+  const displayedItems = useMemo(
+    () =>
+      sort && sortField
+        ? sortInventoryItems(matchingItems, sortField, sort.direction, locale)
+        : matchingItems,
+    [matchingItems, sort, sortField, locale],
+  );
+  const rowHeights = useTableRowHeights(dataTable, displayedItems);
   // Retain the original item revision even when background refreshes replace the table data.
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const editingItemId = editingItem?.id ?? null;
@@ -520,7 +532,10 @@ export function InventoryItemList({
         onToggleColumn={toggleField}
         onAutomaticWidths={() => setAutomaticColumnWidth()}
         allColumnsAutomatic={allVisibleColumnsAutomatic}
-        itemCount={items.length}
+        itemCount={matchingItems.length}
+        totalItemCount={searchQuery.trim() ? items.length : undefined}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
         actions={actions}
         wrapText={wrapText}
         onWrapTextChange={setWrapText}
@@ -768,17 +783,25 @@ export function InventoryItemList({
                   </tr>
                 );
               })}
-              {items.length === 0 && (
+              {displayedItems.length === 0 && (
                 <tr>
                   <td
                     className="px-6 py-12 text-center"
                     colSpan={visibleFields.length}
                   >
                     <p className="font-semibold text-heading">
-                      {t("items.empty")}
+                      {t(
+                        items.length === 0
+                          ? "items.empty"
+                          : "table.search.empty",
+                      )}
                     </p>
                     <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
-                      {t("items.emptyDescription")}
+                      {t(
+                        items.length === 0
+                          ? "items.emptyDescription"
+                          : "table.search.emptyDescription",
+                      )}
                     </p>
                   </td>
                 </tr>
