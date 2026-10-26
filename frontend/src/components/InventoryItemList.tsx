@@ -210,13 +210,14 @@ export function InventoryItemList({
       );
   }, [tableEdit.active, inventoryId, setEditingInventoryId]);
   const {
-    view,
+    view: currentView,
     toggleSort,
     toggleField,
     setWrapText,
     setColumnWidth,
     setAutomaticColumnWidth,
   } = useInventoryView(inventoryId, fields);
+  const view = tableEdit.draft?.presentation.view ?? currentView;
   const { sort, wrapText, hiddenFieldIds } = view;
   const visibleFields = fields.filter(
     (field) => !hiddenFieldIds.includes(field.id),
@@ -245,12 +246,20 @@ export function InventoryItemList({
       document.getElementById(`${tableId}-edit`)?.focus();
     previouslyEditing.current = tableEdit.active;
   }, [tableEdit.active, tableId]);
-  const locale = i18n.resolvedLanguage ?? "en";
+  const currentLocale = i18n.resolvedLanguage ?? "en";
+  const locale = tableEdit.draft?.presentation.locale ?? currentLocale;
+  const noLabel =
+    tableEdit.draft?.presentation.booleanLabels.no ?? t("common.values.no");
+  const yesLabel =
+    tableEdit.draft?.presentation.booleanLabels.yes ?? t("common.values.yes");
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<ItemFilter[]>([]);
   const activeFilters = useMemo(
-    () => filters.filter((filter) => !itemFilterError(filter, fields)),
-    [filters, fields],
+    () =>
+      (tableEdit.draft?.presentation.filters ?? filters).filter(
+        (filter) => !itemFilterError(filter, fields),
+      ),
+    [tableEdit.draft?.presentation.filters, filters, fields],
   );
   const matchingItems = useMemo(
     () =>
@@ -259,14 +268,14 @@ export function InventoryItemList({
           items,
           fields,
           searchQuery,
-          { no: t("common.values.no"), yes: t("common.values.yes") },
+          { no: noLabel, yes: yesLabel },
           locale,
         ),
         fields,
         activeFilters,
         locale,
       ),
-    [items, fields, searchQuery, activeFilters, locale, t],
+    [items, fields, searchQuery, activeFilters, locale, noLabel, yesLabel],
   );
   // Measure every loaded value so filtering never makes automatic columns jump.
   const columnContents = useMemo(
@@ -281,7 +290,7 @@ export function InventoryItemList({
           const content = formatValue(
             field,
             stored,
-            { no: t("common.values.no"), yes: t("common.values.yes") },
+            { no: noLabel, yes: yesLabel },
             locale,
           );
           return typeof content === "string"
@@ -291,7 +300,7 @@ export function InventoryItemList({
               : "";
         }),
       })),
-    [fields, items, locale, t],
+    [fields, items, locale, noLabel, yesLabel],
   );
   const automaticWidths = useAutomaticColumnWidths(
     columnContents,
@@ -335,13 +344,24 @@ export function InventoryItemList({
   const sortField = fields.find(
     (field) => field.id === sort?.fieldId && field.is_sortable,
   );
-  const displayedItems = useMemo(
+  const sortedItems = useMemo(
     () =>
       sort && sortField
         ? sortInventoryItems(matchingItems, sortField, sort.direction, locale)
         : matchingItems,
     [matchingItems, sort, sortField, locale],
   );
+  const displayedItems = tableEdit.draft?.displayedItems ?? sortedItems;
+  // Explicit reload starts a fresh session; deferred storage/language changes apply to that new baseline.
+  function beginTableEditing() {
+    tableEdit.begin({
+      view: currentView,
+      searchQuery,
+      filters,
+      locale: currentLocale,
+      booleanLabels: { no: t("common.values.no"), yes: t("common.values.yes") },
+    });
+  }
   const rowHeights = useTableRowHeights(dataTable, displayedItems);
   // Retain the original item revision even when background refreshes replace the table data.
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
@@ -605,7 +625,7 @@ export function InventoryItemList({
               type="button"
               className={recoveryClass}
               disabled={tableEdit.loading || tableEdit.saving}
-              onClick={tableEdit.begin}
+              onClick={beginTableEditing}
             >
               {t("items.conflict.discardAndReload")}
             </button>
@@ -629,7 +649,7 @@ export function InventoryItemList({
               key={fieldId}
               type="button"
               className="mt-2 mr-2 rounded-sm border border-shell px-2 py-1"
-              onClick={() => toggleField(fieldId)}
+              onClick={() => tableEdit.showField(fieldId)}
             >
               {t("table.edit.showField", {
                 field: fields.find((field) => field.id === fieldId)?.name,
@@ -647,7 +667,7 @@ export function InventoryItemList({
         onToggleColumn={toggleField}
         onAutomaticWidths={() => setAutomaticColumnWidth()}
         allColumnsAutomatic={allVisibleColumnsAutomatic}
-        itemCount={matchingItems.length}
+        itemCount={displayedItems.length}
         totalItemCount={
           searchQuery.trim() || activeFilters.length ? items.length : undefined
         }
@@ -665,7 +685,10 @@ export function InventoryItemList({
           <>
             {tableEdit.draft ? (
               <>
-                <span className="text-xs text-muted">
+                <span
+                  className="text-xs text-muted"
+                  title={t("table.edit.stableView")}
+                >
                   {t("table.edit.changedCount", {
                     count: tableEdit.changedCount,
                   })}
@@ -713,7 +736,7 @@ export function InventoryItemList({
                 className="flex size-8 cursor-pointer items-center justify-center rounded-sm text-muted transition enabled:hover:bg-control-hover enabled:hover:text-accent focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => {
                   setColumnMenu(null);
-                  tableEdit.begin();
+                  beginTableEditing();
                 }}
               >
                 <svg
@@ -901,7 +924,7 @@ export function InventoryItemList({
                       );
                       return (
                         <td
-                          className={`h-13 border-r border-shell/60 px-3 py-2.5 align-top text-foreground transition-colors group-hover:bg-surface-hover ${hoveredItem === item.id ? "bg-surface-hover" : ""}`}
+                          className={`h-13 border-r border-shell/60 px-3 py-2.5 align-top text-foreground transition-colors last:border-r-0 group-hover:bg-surface-hover ${hoveredItem === item.id ? "bg-surface-hover" : ""}`}
                           key={field.id}
                         >
                           {tableEdit.draft && field.field_type !== "id" ? (
@@ -1060,28 +1083,58 @@ export function InventoryItemList({
                   onPointerLeave={() => setHoveredItem(null)}
                 >
                   <td
-                    className={`h-13 px-4 py-2.5 align-top transition-colors ${hoveredItem === item.id ? "bg-surface-hover" : ""}`}
+                    // Leave room for row borders below the 52 px source minimum (32 px buttons + 16 px padding).
+                    className={`h-13 px-4 py-2 align-top transition-colors ${hoveredItem === item.id ? "bg-surface-hover" : ""}`}
                   >
                     <div className="flex justify-end gap-2 whitespace-nowrap">
                       <button
-                        className="rounded-md border border-shell px-2.5 py-1 font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex size-8 cursor-pointer items-center justify-center rounded-sm border border-shell transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label={t("common.actions.edit")}
+                        title={t("common.actions.edit")}
                         aria-describedby={`${tableId}-${item.id}`}
                         disabled={isMutating || tableEdit.active}
                         onClick={() => startEditing(item)}
                         type="button"
                       >
-                        {t("common.actions.edit")}
+                        <svg
+                          aria-hidden="true"
+                          className="size-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15Z" />
+                        </svg>
                       </button>
                       <button
-                        className="rounded-md bg-danger-soft px-2.5 py-1 font-medium text-danger transition enabled:hover:bg-danger/25 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex size-8 cursor-pointer items-center justify-center rounded-sm bg-danger-soft text-danger transition enabled:hover:bg-danger/25 focus-visible:outline-2 focus-visible:outline-danger disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label={t(
+                          deleteItem.isPending
+                            ? "common.actions.deleting"
+                            : "common.actions.delete",
+                        )}
+                        title={t("common.actions.delete")}
+                        aria-busy={deleteItem.isPending || undefined}
                         aria-describedby={`${tableId}-${item.id}`}
                         disabled={isMutating || tableEdit.active}
                         onClick={() => handleDelete(item)}
                         type="button"
                       >
-                        {deleteItem.isPending
-                          ? t("common.actions.deleting")
-                          : t("common.actions.delete")}
+                        <svg
+                          aria-hidden="true"
+                          className="size-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" />
+                        </svg>
                       </button>
                     </div>
                   </td>

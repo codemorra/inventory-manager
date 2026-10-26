@@ -24,6 +24,8 @@ import { ApiError } from "../../src/services/api";
 import { filterField, filterItem } from "../helpers/itemFilters";
 import type { InventoryItem } from "../../src/types/inventoryItem";
 import type { InventoryField } from "../../src/types/inventoryField";
+import i18n from "../../src/i18n";
+import { chooseOptions } from "../helpers/choices";
 
 vi.mock("../../src/services/inventoryItems", () => ({
   getInventoryItems: vi.fn(),
@@ -114,6 +116,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 /**
@@ -179,6 +183,214 @@ async function start(user: ReturnType<typeof userEvent.setup>) {
     expect(within(row()).getByRole("textbox", { name: "Title" })).toBeVisible(),
   );
 }
+
+// Test active search/filter/sort and columns remain stable across edits, language and other-tab changes.
+test("freezes row membership, ordering and presentation until editing ends", async () => {
+  serverItems[0] = {
+    ...serverItems[0],
+    values: serverItems[0].values.map((value) =>
+      value.field_id === "text-field" ? { ...value, value: "Alpha" } : value,
+    ),
+  };
+  serverItems[1] = {
+    ...serverItems[1],
+    values: serverItems[1].values.map((value) =>
+      value.field_id === "text-field" ? { ...value, value: "Beta" } : value,
+    ),
+  };
+  serverItems.push({
+    ...original,
+    id: "excluded",
+    values: original.values.map((value) =>
+      value.field_id === "boolean-field" ? { ...value, value: false } : value,
+    ),
+  });
+  const user = userEvent.setup();
+  const { client } = renderTable();
+  await user.type(screen.getByRole("searchbox"), "yes");
+  await user.click(screen.getByRole("button", { name: "Filters" }));
+  await user.click(screen.getByRole("button", { name: "Add filter" }));
+  await chooseOptions(user, "Column", ["Quantity"]);
+  await chooseOptions(user, "Condition", ["is at least"]);
+  await user.type(screen.getByRole("spinbutton", { name: "Value" }), "2");
+  await user.click(screen.getByRole("button", { name: "Apply" }));
+  const heading = screen.getByRole("columnheader", { name: "Title" });
+  await user.click(within(heading).getByRole("button", { name: "Title" }));
+  await user.click(within(heading).getByRole("button", { name: "Title" }));
+  await start(user);
+  const ids = () =>
+    Array.from(document.querySelectorAll<HTMLElement>("tr[data-item-id]")).map(
+      (row) => row.dataset.itemId,
+    );
+  expect(ids()).toEqual(["second", "first"]);
+  const title = within(row()).getByRole("textbox", { name: "Title" });
+  await user.clear(title);
+  await user.type(title, "ZZZ");
+  const quantity = within(row()).getByRole("textbox", { name: "Quantity" });
+  await user.clear(quantity);
+  await user.type(quantity, "0");
+  expect(ids()).toEqual(["second", "first"]);
+  const table = screen.getAllByRole("table")[0];
+  const widths = () =>
+    Array.from(table.querySelectorAll("col")).map((col) => col.style.width);
+  const before = widths();
+  const external = {
+    version: 1,
+    sort: { fieldId: "number-field", direction: "ascending" },
+    hiddenFieldIds: ["text-field"],
+    wrapText: false,
+    columnWidths: { "text-field": 1000 },
+  };
+  act(() => {
+    localStorage.setItem(
+      "inventory-manager-view:inventory",
+      JSON.stringify(external),
+    );
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "inventory-manager-view:inventory" }),
+    );
+    client.setQueryData(["inventories", "inventory", "items"], []);
+  });
+  await act(async () => {
+    await i18n.changeLanguage("de");
+  });
+  expect(ids()).toEqual(["second", "first"]);
+  expect(title).toHaveValue("ZZZ");
+  expect(heading).toHaveAttribute("aria-sort", "descending");
+  expect(widths()).toEqual(before);
+  expect(screen.getByRole("status")).toHaveTextContent("2 von 3 Einträgen");
+  expect(
+    JSON.parse(localStorage.getItem("inventory-manager-view:inventory")!),
+  ).toEqual(external);
+  // Restore the simulated remote result before leaving; only presentation changes are deferred.
+  act(() =>
+    client.setQueryData(["inventories", "inventory", "items"], serverItems),
+  );
+  await user.click(screen.getByRole("button", { name: "Abbrechen" }));
+  expect(
+    screen.queryByRole("columnheader", { name: "Title" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("0 von 3 Einträgen");
+  expect(updateInventoryItems).not.toHaveBeenCalled();
+});
+
+// Test saved values are re-evaluated by the original search only after the atomic write completes.
+test("reapplies search after saving a row that no longer matches", async () => {
+  const user = userEvent.setup();
+  renderTable();
+  await user.type(screen.getByRole("searchbox"), "First");
+  await start(user);
+  const title = within(row()).getByRole("textbox", { name: "Title" });
+  await user.clear(title);
+  await user.type(title, "Renamed");
+  expect(row()).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent("1 of 2 items");
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  expect(await screen.findByText("No matching items.")).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent("0 of 2 items");
+  expect(vi.mocked(updateInventoryItems).mock.calls[0][1].items).toHaveLength(
+    1,
+  );
+});
+
+// Test icon-only row actions retain their names, row descriptions and localized hover help.
+test("provides translated names and tooltips for compact row actions", async () => {
+  renderTable();
+  for (const [locale, edit, remove] of [
+    ["en", "Edit", "Delete"],
+    ["de", "Bearbeiten", "Löschen"],
+  ]) {
+    await act(async () => {
+      await i18n.changeLanguage(locale);
+    });
+    for (const name of [edit, remove]) {
+      for (const button of screen.getAllByRole("button", { name })) {
+        expect(button).toHaveAttribute("title", name);
+        expect(button).toHaveAttribute("aria-describedby");
+        expect(button.textContent?.trim()).toBe("");
+        expect(button.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+      }
+    }
+  }
+});
+
+// Test the independent action pane follows source row growth and shrinking while cells are edited.
+test("keeps action rows aligned as edited cell contents and errors change row height", async () => {
+  const subscriptions: {
+    targets: Set<Element>;
+    callback: ResizeObserverCallback;
+    observer: ResizeObserver;
+  }[] = [];
+  vi.stubGlobal(
+    "ResizeObserver",
+    class implements ResizeObserver {
+      targets = new Set<Element>();
+      constructor(callback: ResizeObserverCallback) {
+        subscriptions.push({ targets: this.targets, callback, observer: this });
+      }
+      observe(target: Element) {
+        this.targets.add(target);
+      }
+      unobserve(target: Element) {
+        this.targets.delete(target);
+      }
+      disconnect() {
+        this.targets.clear();
+      }
+    },
+  );
+  vi.stubGlobal(
+    "requestAnimationFrame",
+    vi.fn(() => 0),
+  );
+  vi.stubGlobal("cancelAnimationFrame", vi.fn());
+  const heights: Record<string, number> = { first: 84, second: 52 };
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+    function (this: HTMLElement) {
+      return {
+        x: 0,
+        y: 0,
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 0,
+        height:
+          this.tagName === "THEAD"
+            ? 41
+            : (heights[this.dataset.itemId ?? ""] ?? 0),
+        toJSON: () => ({}),
+      };
+    },
+  );
+  const user = userEvent.setup();
+  renderTable();
+  await start(user);
+  function resizeRows() {
+    act(() => {
+      for (const subscription of subscriptions)
+        if (
+          Array.from(subscription.targets).some(
+            (target) => target instanceof HTMLElement && target.dataset.itemId,
+          )
+        )
+          subscription.callback([], subscription.observer);
+    });
+  }
+  resizeRows();
+  const actions = screen.getByRole("table", { name: "Actions" });
+  const actionRows = actions.querySelectorAll("tbody tr");
+  expect(actionRows[0]).toHaveStyle({ height: "84px" });
+  expect(actionRows[1]).toHaveStyle({ height: "52px" });
+  const title = within(row("second")).getByRole("textbox", { name: "Title" });
+  await user.clear(title);
+  heights.first = 52;
+  heights.second = 108;
+  resizeRows();
+  expect(actionRows[0]).toHaveStyle({ height: "52px" });
+  expect(actionRows[1]).toHaveStyle({ height: "108px" });
+  expect(row("second").style.height).toBe("");
+});
 
 // Test typed edits save once, omit read-only IDs and retain hidden structured and legacy values.
 test("saves changed cells atomically and preserves hidden values, original versions and IDs", async () => {
@@ -351,6 +563,10 @@ test("validates cells and reveals missing required hidden values", async () => {
   await user.clear(title);
   await user.type(title, "Changed");
   await user.click(screen.getByRole("button", { name: "Show Hidden" }));
+  expect(
+    JSON.parse(localStorage.getItem("inventory-manager-view:inventory")!)
+      .hiddenFieldIds,
+  ).toEqual(["hidden"]);
   const required = within(row()).getByRole("textbox", { name: "Hidden" });
   expect(required).toHaveAttribute("aria-invalid", "true");
   await user.type(required, "Required");

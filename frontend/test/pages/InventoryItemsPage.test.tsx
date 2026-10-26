@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useState } from "react";
@@ -87,11 +87,12 @@ function renderInventoryItemsPage() {
       </TableEditSessionContext.Provider>
     );
   }
-  return render(
+  const view = render(
     <QueryClientProvider client={queryClient}>
       <Session />
     </QueryClientProvider>,
   );
+  return { ...view, client: queryClient };
 }
 
 afterEach(() => {
@@ -100,6 +101,56 @@ afterEach(() => {
 });
 
 describe("InventoryItemsPage", () => {
+  // Test background query failures or a removed configuration cannot unmount an unsaved table draft.
+  test("preserves the active table when background data fails or fields disappear", async () => {
+    const user = userEvent.setup();
+    mockedGetInventoryFields.mockResolvedValue(fields);
+    mockedGetInventoryItems.mockResolvedValue([
+      {
+        id: "item",
+        inventory_id: "inventory-1",
+        revision: 1,
+        created_at: timestamp,
+        updated_at: timestamp,
+        values: [
+          {
+            id: "value",
+            field_id: "title-field",
+            value: "Game",
+            created_at: timestamp,
+            updated_at: timestamp,
+          },
+        ],
+      },
+    ]);
+    const { client } = renderInventoryItemsPage();
+    await user.click(await screen.findByRole("button", { name: "Edit table" }));
+    const input = await screen.findByRole("textbox", { name: "Title" });
+    await user.clear(input);
+    await user.type(input, "Local draft");
+    mockedGetInventoryFields.mockRejectedValueOnce(
+      new Error("Background failure"),
+    );
+    await act(async () => {
+      await client.refetchQueries({
+        queryKey: ["inventories", "inventory-1", "fields"],
+        exact: true,
+      });
+    });
+    expect(input).toBeVisible();
+    expect(input).toHaveValue("Local draft");
+    act(() => {
+      client.setQueryData(["inventories", "inventory-1", "fields"], []);
+      client.setQueryData(["inventories", "inventory-1", "items"], []);
+    });
+    expect(input).toBeVisible();
+    expect(input).toHaveValue("Local draft");
+    expect(screen.queryByText("No fields configured")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(
+      await screen.findByRole("heading", { name: "No fields configured" }),
+    ).toBeVisible();
+  });
   // Test the real page's settings and creation actions share the active table-edit lock.
   test("locks inventory settings and creation until table editing ends", async () => {
     const user = userEvent.setup();

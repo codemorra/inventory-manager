@@ -354,6 +354,7 @@
     },
     "edit": {
       "start": "Tabelle bearbeiten",
+      "stableView": "Zeilen bleiben während der Bearbeitung an ihrem Platz. Sortierung und Filterung greifen nach dem Speichern oder Abbrechen wieder.",
       "loading": "Tabelleneditor wird geladen…",
       "changedCount_one": "{{count}} geänderte Zeile",
       "changedCount_other": "{{count}} geänderte Zeilen",

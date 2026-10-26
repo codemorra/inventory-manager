@@ -33,7 +33,9 @@ export function InventoryItemsPage() {
   const isPending = itemQuery.isPending || fieldQuery.isPending;
   const error = itemQuery.error ?? fieldQuery.error;
   const isError = itemQuery.isError || fieldQuery.isError;
-  const hasTable = !isPending && !isError && !!fieldQuery.data?.length;
+  // A background failure or removed field list must never unmount an active table draft.
+  const hasTable =
+    tableEditing || (!isPending && !isError && !!fieldQuery.data?.length);
 
   /**
    * Open the inventory editor while retaining other URL state.
@@ -88,7 +90,7 @@ export function InventoryItemsPage() {
           </div>
         )}
 
-        {isPending && (
+        {isPending && !tableEditing && (
           <p
             className="rounded-xl border border-shell bg-surface p-5 text-muted shadow-soft"
             role="status"
@@ -97,7 +99,7 @@ export function InventoryItemsPage() {
           </p>
         )}
 
-        {isError && (
+        {isError && !tableEditing && (
           <p
             className="rounded-xl border border-danger/30 bg-danger-soft px-5 py-4 text-danger"
             role="alert"
@@ -107,6 +109,7 @@ export function InventoryItemsPage() {
         )}
 
         {!isPending &&
+          !tableEditing &&
           !isError &&
           fieldQuery.data &&
           fieldQuery.data.length === 0 && (
@@ -124,15 +127,15 @@ export function InventoryItemsPage() {
             </div>
           )}
 
-        {hasTable && fieldQuery.data && (
+        {hasTable && (
           <InventoryItemList
             key={inventoryId}
             inventoryId={inventoryId}
-            fields={fieldQuery.data}
+            fields={fieldQuery.data ?? []}
             items={itemQuery.data ?? []}
             actions={
               <InventoryItemCreateForm
-                fields={fieldQuery.data}
+                fields={fieldQuery.data ?? []}
                 inventoryId={inventoryId}
                 compact
                 disabled={tableEditing}

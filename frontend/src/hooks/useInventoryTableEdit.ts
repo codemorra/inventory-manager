@@ -14,6 +14,11 @@ import {
   unchangedTableCell,
   type TableCellChanges,
 } from "../components/inventoryTableDraft";
+import {
+  captureTablePresentation,
+  presentInventoryItems,
+  type InventoryTablePresentation,
+} from "../components/inventoryTablePresentation";
 
 // An edit session owns its baseline independently of refreshed query data.
 interface TableDraft {
@@ -21,6 +26,8 @@ interface TableDraft {
   items: InventoryItem[];
   configurationRevision: number;
   changes: TableCellChanges;
+  presentation: InventoryTablePresentation;
+  displayedItems: InventoryItem[];
 }
 
 /**
@@ -34,15 +41,25 @@ export function useInventoryTableEdit(inventoryId: string) {
   const submitting = useRef(false);
   const load = useMutation({
     retry: false,
-    mutationFn: async () => {
+    mutationFn: async (requestedPresentation: InventoryTablePresentation) => {
       // Capture fields with their configuration revision before loading row versions.
       const configuration = await getInventoryConfiguration(inventoryId);
       const items = await getInventoryItems(inventoryId);
+      const presentation = captureTablePresentation(
+        requestedPresentation,
+        configuration.fields,
+      );
       return {
         fields: configuration.fields,
         configurationRevision: configuration.inventory.configuration_revision,
         items,
         changes: {},
+        presentation,
+        displayedItems: presentInventoryItems(
+          items,
+          configuration.fields,
+          presentation,
+        ),
       } satisfies TableDraft;
     },
   });
@@ -90,11 +107,14 @@ export function useInventoryTableEdit(inventoryId: string) {
       "inventory_not_found",
     ].includes(save.error.code ?? "");
 
-  /** Capture a fresh baseline only after the user explicitly starts or discards/reloads a session. */
-  function begin() {
+  /**
+   * Capture a fresh baseline only after an explicit start or discard/reload.
+   * @param presentation The view and matching rules selected when the session starts.
+   */
+  function begin(presentation: InventoryTablePresentation) {
     if (load.isPending || save.isPending || submitting.current) return;
     load.reset();
-    load.mutate(undefined, {
+    load.mutate(structuredClone(presentation), {
       onSuccess: (snapshot) => {
         client.setQueryData(
           ["inventories", inventoryId, "fields"],
@@ -108,6 +128,29 @@ export function useInventoryTableEdit(inventoryId: string) {
         save.reset();
       },
     });
+  }
+
+  /**
+   * Temporarily reveal an invalid hidden column without overwriting external saved preferences.
+   * @param fieldId The column whose required value needs correction in this draft.
+   */
+  function showField(fieldId: string) {
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            presentation: {
+              ...current.presentation,
+              view: {
+                ...current.presentation.view,
+                hiddenFieldIds: current.presentation.view.hiddenFieldIds.filter(
+                  (id) => id !== fieldId,
+                ),
+              },
+            },
+          }
+        : current,
+    );
   }
 
   /**
@@ -175,6 +218,7 @@ export function useInventoryTableEdit(inventoryId: string) {
     change,
     commit,
     cancel,
+    showField,
     conflict,
     error: load.error ?? save.error,
     loading: load.isPending,
