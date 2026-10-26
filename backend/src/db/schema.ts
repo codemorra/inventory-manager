@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import type { TemplateField } from "../templates/validation.js";
 
 const now = () => new Date().toISOString();
 
@@ -34,6 +35,24 @@ export const inventoryGroups = sqliteTable("inventory_groups", {
   ...lifecycleColumns(),
   name: text("name").notNull(),
 });
+
+// Independent structure snapshots: array order replaces source field/option IDs and positions.
+export const inventoryTemplates = sqliteTable(
+  "inventory_templates",
+  {
+    ...lifecycleColumns(),
+    revision: integer("revision").notNull().default(1),
+    name: text("name").notNull(),
+    description: text("description"),
+    fields: text("fields", { mode: "json" }).$type<TemplateField[]>().notNull(),
+  },
+  (table) => [
+    index("inventory_templates_active_name_idx").on(
+      table.deletedAt,
+      table.name,
+    ),
+  ],
+);
 
 // Inventories table
 export const inventories = sqliteTable(

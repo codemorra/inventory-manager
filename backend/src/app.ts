@@ -8,6 +8,7 @@ import { itemRoutes } from "./routes/items.js";
 import { errorHandler } from "./routes/error-handler.js";
 import { docsRoutes } from "./routes/docs.js";
 import { groupRoutes } from "./routes/groups.js";
+import { templateRoutes } from "./routes/templates.js";
 
 /**
  * Create and configure an Express application instance.
@@ -35,6 +36,7 @@ export function createApp(logger: Pick<Logger, "error">, services: Services) {
   });
   app.use(docsRoutes());
   app.use("/inventory-groups", groupRoutes(services));
+  app.use("/inventory-templates", templateRoutes(services));
 
   // Inventory-related routes
   app.use(

@@ -1288,6 +1288,332 @@
           }
         }
       }
+    },
+    "/inventory-templates": {
+      "get": {
+        "tags": ["inventory templates"],
+        "summary": "List active inventory templates",
+        "operationId": "list_inventory_templates",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryTemplateRead"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["inventory templates"],
+        "summary": "Save an independent inventory template",
+        "operationId": "create_inventory_template",
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryTemplateRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Requested active template, source inventory, or destination group not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale or exhausted template revision (inventory_template_conflict), or stale source configuration (inventory_configuration_conflict). No partial writes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid payload; no partial writes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Storage failure; all writes, revisions, and generated records are rolled back."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryTemplateCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventory-templates/{template_id}": {
+      "get": {
+        "tags": ["inventory templates"],
+        "summary": "Read an inventory template",
+        "operationId": "read_inventory_template",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryTemplateRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Requested active template, source inventory, or destination group not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "patch": {
+        "tags": ["inventory templates"],
+        "summary": "Update an inventory template atomically",
+        "operationId": "update_inventory_template",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryTemplateRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Requested active template, source inventory, or destination group not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale or exhausted template revision (inventory_template_conflict), or stale source configuration (inventory_configuration_conflict). No partial writes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid payload; no partial writes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Storage failure; all writes, revisions, and generated records are rolled back."
+          }
+        },
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryTemplateUpdate"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["inventory templates"],
+        "summary": "Delete and clear an inventory template",
+        "operationId": "delete_inventory_template",
+        "responses": {
+          "204": {
+            "description": "Deleted; blueprint content cleared and tombstone retained."
+          },
+          "404": {
+            "description": "Requested active template, source inventory, or destination group not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale or exhausted template revision (inventory_template_conflict), or stale source configuration (inventory_configuration_conflict). No partial writes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid payload; no partial writes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Storage failure; all writes, revisions, and generated records are rolled back."
+          }
+        },
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryTemplateRevision"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventory-templates/{template_id}/inventories": {
+      "post": {
+        "tags": ["inventory templates"],
+        "summary": "Create an empty inventory from a template",
+        "operationId": "instantiate_inventory_template",
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEditorResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Requested active template, source inventory, or destination group not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale or exhausted template revision (inventory_template_conflict), or stale source configuration (inventory_configuration_conflict). No partial writes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid payload; no partial writes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Storage failure; all writes, revisions, and generated records are rolled back."
+          }
+        },
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryTemplateInstantiate"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2316,6 +2642,235 @@
         },
         "required": ["expected_configuration_revision", "items"],
         "additionalProperties": false
+      },
+      "InventoryTemplateField": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "field_type": {
+            "$ref": "#/components/schemas/InventoryFieldType"
+          },
+          "max_length": {
+            "type": ["integer", "null"],
+            "minimum": 1,
+            "maximum": 1000,
+            "default": null
+          },
+          "is_required": {
+            "type": "boolean",
+            "default": false
+          },
+          "is_sortable": {
+            "type": "boolean",
+            "default": true
+          },
+          "reuse_deleted_ids": {
+            "type": "boolean",
+            "default": false
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255
+                }
+              },
+              "required": ["name"]
+            },
+            "default": []
+          }
+        },
+        "required": ["name", "field_type"],
+        "description": "Structure only; array order defines field/option order. Text max_length defaults to 255 and must be null for other types. Only ID fields may reuse deleted numbers. Only selection fields may contain options. Empty, repeated, and extended option lists preserve existing inventory configurations. No technical IDs, item values, counters, or view state are accepted."
+      },
+      "InventoryTemplateCreate": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "description": {
+                "type": ["string", "null"],
+                "default": null
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/InventoryTemplateField"
+                }
+              }
+            },
+            "required": ["name", "fields"]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "description": {
+                "type": ["string", "null"],
+                "default": null
+              },
+              "source_inventory_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expected_configuration_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "name",
+              "source_inventory_id",
+              "expected_configuration_revision"
+            ]
+          }
+        ],
+        "description": "Save an explicit ordered blueprint or capture one coherent active inventory configuration. Source items, IDs, counters, group membership, and view preferences are never copied. Source revision mismatches return 409 inventory_configuration_conflict."
+      },
+      "InventoryTemplateUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryTemplateField"
+            }
+          }
+        },
+        "required": ["expected_revision"],
+        "description": "Replace supplied properties atomically. Omitted fields preserve the structure; fields: [] clears it. Every accepted save, including a no-op, advances the revision. Existing inventories remain independent."
+      },
+      "InventoryTemplateRevision": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["expected_revision"]
+      },
+      "InventoryTemplateInstantiate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional single-level group membership. Set null to remove membership."
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["name", "expected_revision"],
+        "description": "Create an independent empty inventory in the requested active group, or ungrouped when omitted. New field and option IDs, normalized positions, and automatic counters starting at zero; first item receives 1. The template revision is checked but not changed. Inventory description is independent of template description."
+      },
+      "InventoryTemplateRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "description": {
+            "type": ["string", "null"],
+            "default": null
+          },
+          "id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryTemplateField"
+            }
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "revision",
+          "fields",
+          "created_at",
+          "updated_at"
+        ]
       }
     }
   }

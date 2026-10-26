@@ -1,5 +1,6 @@
 import type {
   inventories,
+  inventoryTemplates,
   inventoryFields,
   inventoryFieldOptions,
   inventoryItems,
@@ -7,6 +8,25 @@ import type {
 } from "../db/schema.js";
 
 type Inventory = typeof inventories.$inferSelect;
+
+/**
+ * Serialize a structure snapshot without exposing persistence lifecycle flags.
+ * @param template The saved blueprint.
+ * @returns Template metadata and ordered field definitions.
+ */
+export function templateResponse(
+  template: typeof inventoryTemplates.$inferSelect,
+) {
+  return {
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    revision: template.revision,
+    fields: template.fields,
+    created_at: template.createdAt,
+    updated_at: template.updatedAt,
+  };
+}
 type Option = typeof inventoryFieldOptions.$inferSelect;
 type Field = typeof inventoryFields.$inferSelect & { options: Option[] };
 type Item = typeof inventoryItems.$inferSelect & {
