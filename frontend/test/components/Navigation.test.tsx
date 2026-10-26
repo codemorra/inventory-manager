@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { Navigation } from "../../src/components/layout/Navigation";
 import { getInventories } from "../../src/services/inventories";
+import { TableEditSessionContext } from "../../src/components/tableEditSession";
 
 vi.mock("../../src/services/inventories", () => ({
   getInventories: vi.fn(),
@@ -39,7 +40,7 @@ afterEach(() => {
 });
 
 // Render sidebar navigation with an active inventory and isolated query cache.
-function renderNavigation() {
+function renderNavigation(tableEditing = false) {
   return render(
     <QueryClientProvider
       client={
@@ -47,13 +48,27 @@ function renderNavigation() {
       }
     >
       <MemoryRouter initialEntries={["/inventories/games/items"]}>
-        <Navigation onNavigate={onNavigate} />
+        <TableEditSessionContext.Provider
+          value={{
+            inventoryId: tableEditing ? "games" : null,
+            setInventoryId: vi.fn(),
+          }}
+        >
+          <Navigation onNavigate={onNavigate} />
+        </TableEditSessionContext.Provider>
       </MemoryRouter>
     </QueryClientProvider>,
   );
 }
 
 describe("Navigation inventory search", () => {
+  // Test edit sessions block membership mutations without disabling ordinary navigation links.
+  test("prevents inventory dragging during a table draft", async () => {
+    renderNavigation(true);
+    const link = await screen.findByRole("link", { name: "Games" });
+    expect(link).toHaveAttribute("draggable", "false");
+    expect(link).toHaveAttribute("href", "/inventories/games/items");
+  });
   // Test that filtering ignores case and surrounding spaces and only matches titles.
   test("filters titles while retaining the active inventory link", async () => {
     const user = userEvent.setup();

@@ -2,10 +2,45 @@ import { afterEach, expect, test, vi } from "vitest";
 import {
   deleteInventoryItem,
   updateInventoryItem,
+  updateInventoryItems,
 } from "../../src/services/inventoryItems";
 import { ApiError } from "../../src/services/api";
 
 afterEach(() => vi.unstubAllGlobals());
+
+// Test the atomic client transmits original versions and exposes the failed row without retries.
+test("sends one atomic request and preserves a row-specific conflict", async () => {
+  const fetch = vi.fn().mockResolvedValue({
+    ok: false,
+    status: 409,
+    json: async () => ({
+      detail: {
+        code: "inventory_item_conflict",
+        message: "Stale row.",
+        item_id: "second",
+      },
+    }),
+  });
+  vi.stubGlobal("fetch", fetch);
+  const input = {
+    expected_configuration_revision: 7,
+    items: [
+      { item_id: "first", expected_revision: 2, values: [] },
+      { item_id: "second", expected_revision: 3, values: [] },
+    ],
+  };
+  await expect(updateInventoryItems("inventory", input)).rejects.toMatchObject({
+    status: 409,
+    code: "inventory_item_conflict",
+    itemId: "second",
+  });
+  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(fetch.mock.calls[0][0]).toMatch(/\/inventories\/inventory\/items$/u);
+  expect(fetch.mock.calls[0][1]).toMatchObject({
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+});
 
 // Test item replacements transmit the captured revision alongside the complete editable values.
 test("sends the expected revision with an item replacement", async () => {

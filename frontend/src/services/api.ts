@@ -4,6 +4,7 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 interface ApiErrorDetail {
   code?: string;
   message?: string;
+  item_id?: string;
 }
 
 /** Define an API error response body. */
@@ -15,6 +16,7 @@ interface ApiErrorResponse {
 export class ApiError extends Error {
   status: number;
   code?: string;
+  itemId?: string;
 
   /**
    * Create an API error.
@@ -22,12 +24,14 @@ export class ApiError extends Error {
    * @param status - HTTP response status.
    * @param message - User-facing error message.
    * @param code - Optional stable API error code.
+   * @param itemId - Optional failed row identifier for atomic table saves.
    */
-  constructor(status: number, message: string, code?: string) {
+  constructor(status: number, message: string, code?: string, itemId?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.itemId = itemId;
   }
 }
 
@@ -59,6 +63,7 @@ export async function request<T>(
         response.status,
         detail.message ?? "An unexpected error occurred.",
         detail.code,
+        detail.item_id,
       );
     }
 

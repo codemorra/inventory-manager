@@ -21,6 +21,7 @@ interface InventoryItemCreateFormProps {
   inventoryId: string;
   fields: InventoryField[];
   compact?: boolean;
+  disabled?: boolean;
 }
 
 // Define properties for a field-specific form control.
@@ -226,6 +227,7 @@ export function InventoryItemCreateForm({
   inventoryId,
   fields,
   compact = false,
+  disabled = false,
 }: InventoryItemCreateFormProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -275,7 +277,7 @@ export function InventoryItemCreateForm({
     <>
       <button
         className={`inline-flex cursor-pointer items-center justify-center gap-2 bg-accent text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50 ${compact ? "rounded-sm px-2.5 py-1.5" : "rounded-lg px-4 py-2.5"}`}
-        disabled={fields.length === 0}
+        disabled={disabled || fields.length === 0}
         onClick={() => setIsOpen(true)}
         type="button"
       >
