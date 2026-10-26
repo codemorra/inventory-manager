@@ -14,6 +14,7 @@ export class DomainError extends Error {
       | "invalid_inventory_field_configuration"
       | "invalid_inventory_item_value",
     message: string,
+    public readonly itemId?: string,
   ) {
     super(message);
     this.name = "DomainError";

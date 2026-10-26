@@ -25,6 +25,15 @@ export function itemRoutes({ items }: Services) {
       );
   });
 
+  // Save every changed table row together; any failure rolls back the complete draft.
+  router.patch(path, (request, response) => {
+    response.json(
+      items
+        .updateMany(request.params.inventory_id, request.body)
+        .map(itemResponse),
+    );
+  });
+
   // Route for retrieving a specific item by ID
   router.get(`${path}/:item_id`, (request, response) => {
     response.json(
