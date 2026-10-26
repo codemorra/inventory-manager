@@ -52,11 +52,11 @@ at creation.
 
 The inventory page shows its title and optional description above the item table.
 The table toolbar provides the creation action and item count. Select a column
-heading to sort ascending, then select it again to sort descending. Sorting can be
-disabled separately for each field. Comparisons follow the field type; selections
+heading to sort ascending, select it again to sort descending, and a third time to
+restore the original order. Only the sorted column shows a direction chevron. Sorting
+can be disabled separately for each field. Comparisons follow the field type; selections
 use option names and links use their displayed text. Empty values appear last.
-**Reset sorting** restores the original order. Sorting changes the current view
-without changing stored data.
+Sorting changes the current view without changing stored data.
 
 Right-click a sidebar group to rename or delete it. Deleting a group preserves its
 inventories and moves them to **Without a group**. Deleting an inventory, item,

@@ -744,9 +744,7 @@ test("removes sorting controls and active sorting when a field becomes unsortabl
   const header = screen.getByRole("columnheader", { name: "Title" });
   expect(within(header).queryByRole("button")).not.toBeInTheDocument();
   expect(header).not.toHaveAttribute("aria-sort");
-  expect(
-    screen.queryByRole("button", { name: "Reset sorting" }),
-  ).not.toBeInTheDocument();
+  expect(header.querySelector("svg")).not.toBeInTheDocument();
   expect(
     within(screen.getAllByRole("row")[1]).getByText("Baldur's Gate 3"),
   ).toBeVisible();
@@ -802,7 +800,7 @@ describe("InventoryItemList", () => {
     );
   });
   // Test keyboard sorting, direction announcements, and restoration of API order.
-  test("sorts a column in both directions and resets the order", async () => {
+  test("cycles a column through both directions and original order using the keyboard", async () => {
     const user = userEvent.setup();
     const anotherItem: InventoryItem = {
       ...items[0],
@@ -811,28 +809,73 @@ describe("InventoryItemList", () => {
         { ...items[0].values[0], id: "other-value", value: "Animal Crossing" },
       ],
     };
-    renderInventoryItemList([...items, anotherItem]);
+    const lastItem: InventoryItem = {
+      ...items[0],
+      id: "item-3",
+      values: [
+        { ...items[0].values[0], id: "last-value", value: "Stardew Valley" },
+      ],
+    };
+    renderInventoryItemList([...items, anotherItem, lastItem]);
 
     const heading = screen.getByRole("columnheader", { name: "Title" });
     const sortButton = within(heading).getByRole("button", { name: "Title" });
+    expect(heading).not.toHaveAttribute("aria-sort");
+    expect(heading.querySelector("svg")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Reset sorting" }),
+    ).not.toBeInTheDocument();
     sortButton.focus();
     await user.keyboard("{Enter}");
     expect(heading).toHaveAttribute("aria-sort", "ascending");
+    expect(heading.querySelector("svg")).toBeInTheDocument();
     expect(
       within(screen.getAllByRole("row")[1]).getByText("Animal Crossing"),
     ).toBeInTheDocument();
 
-    await user.click(sortButton);
+    await user.keyboard(" ");
     expect(heading).toHaveAttribute("aria-sort", "descending");
     expect(
-      within(screen.getAllByRole("row")[1]).getByText("Baldur's Gate 3"),
+      within(screen.getAllByRole("row")[1]).getByText("Stardew Valley"),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Reset sorting" }));
+    await user.keyboard("{Enter}");
     expect(heading).not.toHaveAttribute("aria-sort");
+    expect(heading.querySelector("svg")).not.toBeInTheDocument();
     expect(
       within(screen.getAllByRole("row")[1]).getByText("Baldur's Gate 3"),
     ).toBeInTheDocument();
+    await user.click(sortButton);
+    expect(heading).toHaveAttribute("aria-sort", "ascending");
+  });
+
+  // Test that switching columns starts ascending and moves the single active indicator.
+  test("starts each newly selected column ascending with only one sort indicator", async () => {
+    const user = userEvent.setup();
+    renderInventoryItemList();
+    const title = screen.getByRole("columnheader", { name: "Title" });
+    const genre = screen.getByRole("columnheader", { name: "Genre" });
+    const played = screen.getByRole("columnheader", { name: "Played" });
+    const headings = [title, genre, played];
+    expect(headings.every((heading) => !heading.querySelector("svg"))).toBe(
+      true,
+    );
+
+    await user.click(within(title).getByRole("button"));
+    await user.click(within(title).getByRole("button"));
+    expect(title).toHaveAttribute("aria-sort", "descending");
+
+    await user.click(within(genre).getByRole("button"));
+    expect(genre).toHaveAttribute("aria-sort", "ascending");
+    expect(title).not.toHaveAttribute("aria-sort");
+    expect(title.querySelector("svg")).not.toBeInTheDocument();
+    expect(genre.querySelector("svg")).toBeInTheDocument();
+    expect(played.querySelector("svg")).not.toBeInTheDocument();
+
+    await user.click(within(title).getByRole("button"));
+    expect(title).toHaveAttribute("aria-sort", "ascending");
+    expect(genre).not.toHaveAttribute("aria-sort");
+    expect(genre.querySelector("svg")).not.toBeInTheDocument();
   });
 
   // Test that the item list renders fields as columns and items as rows

@@ -202,19 +202,19 @@ export function InventoryItemList({
     "rounded-md border border-shell px-3 py-2 text-sm font-medium transition enabled:hover:bg-control-hover disabled:opacity-50";
 
   /**
-   * Sort a column ascending initially and toggle its direction on subsequent clicks.
+   * Cycle a column through ascending, descending, and the original item order.
    * @param fieldId The identifier of the selected column.
    */
   function toggleSort(fieldId: string) {
     if (!fields.some((field) => field.id === fieldId && field.is_sortable))
       return;
-    setSort((current) => ({
-      fieldId,
-      direction:
-        current?.fieldId === fieldId && current.direction === "ascending"
-          ? "descending"
-          : "ascending",
-    }));
+    setSort((current) => {
+      if (current?.fieldId !== fieldId)
+        return { fieldId, direction: "ascending" };
+      return current.direction === "ascending"
+        ? { fieldId, direction: "descending" }
+        : null;
+    });
   }
 
   /**
@@ -350,15 +350,6 @@ export function InventoryItemList({
         <p className="text-sm font-semibold text-heading">
           {t("items.count", { count: items.length })}
         </p>
-        {sort && sortField && (
-          <button
-            className="rounded-md px-2 py-1 text-xs font-medium text-accent enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent"
-            onClick={() => setSort(null)}
-            type="button"
-          >
-            {t("table.resetSort")}
-          </button>
-        )}
       </InventoryToolbar>
       {checkboxConflict && (
         <div
@@ -408,31 +399,36 @@ export function InventoryItemList({
                   >
                     {field.is_sortable ? (
                       <button
-                        className={`flex w-full items-center gap-3 px-4 py-3 text-left font-semibold transition-colors enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sort?.fieldId === field.id ? "bg-accent-soft text-accent" : ""}`}
+                        className={`flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left font-semibold transition-colors enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sortField?.id === field.id ? "bg-accent-soft text-accent" : ""}`}
                         onClick={() => toggleSort(field.id)}
                         type="button"
                       >
                         <span>{field.name}</span>
-                        <svg
+                        {/* Reserve the indicator space so sorting never shifts the heading. */}
+                        <span
                           aria-hidden="true"
-                          className="size-3.5 shrink-0"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          viewBox="0 0 16 16"
+                          className="ml-auto flex size-3.5 shrink-0 items-center justify-center"
                         >
-                          {sort?.fieldId === field.id ? (
-                            <path
-                              d={
-                                sort.direction === "ascending"
-                                  ? "M8 13V3m-4 4 4-4 4 4"
-                                  : "M8 3v10m-4-4 4 4 4-4"
-                              }
-                            />
-                          ) : (
-                            <path d="m3 6 3-3 3 3M7 10l3 3 3-3" />
+                          {sortField?.id === field.id && sort && (
+                            <svg
+                              className="size-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="1.8"
+                              viewBox="0 0 16 16"
+                            >
+                              <path
+                                d={
+                                  sort.direction === "ascending"
+                                    ? "m4 10 4-4 4 4"
+                                    : "m4 6 4 4 4-4"
+                                }
+                              />
+                            </svg>
                           )}
-                        </svg>
+                        </span>
                       </button>
                     ) : (
                       <span className="block px-4 py-3">{field.name}</span>

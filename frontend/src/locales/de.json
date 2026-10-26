@@ -276,8 +276,7 @@
     "savedAutomatically": "Änderungen werden automatisch in diesem Browser gespeichert."
   },
   "table": {
-    "resetSort": "Sortierung zurücksetzen",
-    "sortHint": "Wähle eine Spaltenüberschrift, um auf- oder absteigend zu sortieren. Leere Werte stehen am Ende.",
+    "sortHint": "Wähle eine sortierbare Spaltenüberschrift, um zwischen aufsteigender, absteigender und ursprünglicher Reihenfolge zu wechseln. Beim Sortieren stehen leere Werte am Ende.",
     "actions": "Aktionen"
   }
 }
