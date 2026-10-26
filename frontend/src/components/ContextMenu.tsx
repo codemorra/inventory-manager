@@ -6,6 +6,8 @@ export interface ContextMenuAction {
   label: string;
   onSelect: () => void;
   danger?: boolean;
+  checked?: boolean;
+  disabled?: boolean;
 }
 
 // Define the position, accessible name, and actions of a context menu.
@@ -34,6 +36,7 @@ export function ContextMenu({
   onClose,
 }: ContextMenuProps) {
   const menu = useRef<HTMLDivElement>(null);
+  const hasIndicators = actions.some((action) => action.checked !== undefined);
 
   useLayoutEffect(() => {
     const element = menu.current;
@@ -42,7 +45,7 @@ export function ContextMenu({
     // Keep both menu edges visible when opened close to a viewport boundary.
     element.style.left = `${Math.max(8, Math.min(x, window.innerWidth - rect.width - 8))}px`;
     element.style.top = `${Math.max(8, Math.min(y, window.innerHeight - rect.height - 8))}px`;
-    element.querySelector<HTMLButtonElement>("button")?.focus();
+    element.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
   }, [x, y]);
 
   useEffect(() => {
@@ -54,13 +57,23 @@ export function ContextMenu({
       if (event.target instanceof Node && !menu.current?.contains(event.target))
         onClose();
     }
+    /**
+     * Keep scrolling inside the menu available while dismissing displaced anchors.
+     * @param event The scroll event whose target may be inside the menu.
+     */
+    function dismissOnScroll(event: Event) {
+      if (!(
+        event.target instanceof Node && menu.current?.contains(event.target)
+      ))
+        onClose();
+    }
     window.addEventListener("pointerdown", dismissOutside);
     window.addEventListener("resize", onClose);
-    window.addEventListener("scroll", onClose, true);
+    window.addEventListener("scroll", dismissOnScroll, true);
     return () => {
       window.removeEventListener("pointerdown", dismissOutside);
       window.removeEventListener("resize", onClose);
-      window.removeEventListener("scroll", onClose, true);
+      window.removeEventListener("scroll", dismissOnScroll, true);
     };
   }, [onClose]);
 
@@ -69,12 +82,14 @@ export function ContextMenu({
       ref={menu}
       role="menu"
       aria-label={label}
-      className="fixed z-60 min-w-44 max-w-[calc(100vw-1rem)] rounded-md border border-shell bg-surface p-1 text-sm text-foreground shadow-raised"
+      className="fixed z-60 max-h-[calc(100dvh-1rem)] min-w-44 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain rounded-md border border-shell bg-surface p-1 text-sm text-foreground shadow-raised"
       style={{ left: x, top: y }}
       onContextMenu={(event) => event.preventDefault()}
       onKeyDown={(event) => {
         const buttons = Array.from(
-          menu.current?.querySelectorAll<HTMLButtonElement>("button") ?? [],
+          menu.current?.querySelectorAll<HTMLButtonElement>(
+            "button:not(:disabled)",
+          ) ?? [],
         );
         const index = buttons.findIndex(
           (button) => button === document.activeElement,
@@ -101,12 +116,20 @@ export function ContextMenu({
       {actions.map((action) => (
         <button
           key={action.label}
-          role="menuitem"
+          role={action.checked === undefined ? "menuitem" : "menuitemcheckbox"}
+          aria-checked={action.checked}
+          disabled={action.disabled}
+          tabIndex={-1}
           type="button"
-          className={`block w-full rounded-md px-3 py-2 text-left outline-none ${action.danger ? "text-danger enabled:hover:bg-danger/25 focus:bg-danger-soft" : "enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover"}`}
+          className={`flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none disabled:cursor-not-allowed disabled:opacity-50 ${action.danger ? "text-danger enabled:hover:bg-danger/25 focus:bg-danger-soft" : "enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover"}`}
           onClick={action.onSelect}
         >
-          {action.label}
+          {hasIndicators && (
+            <span aria-hidden="true" className="w-4 shrink-0 text-accent">
+              {action.checked ? "✓" : ""}
+            </span>
+          )}
+          <span className="min-w-0 wrap-break-word">{action.label}</span>
         </button>
       ))}
     </div>,

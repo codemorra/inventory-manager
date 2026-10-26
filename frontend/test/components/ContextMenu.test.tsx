@@ -8,6 +8,38 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// Test marked actions stay selectable while unavailable actions are skipped by keyboard navigation.
+test("shows checked state, skips disabled actions, and keeps internal scrolling available", async () => {
+  const user = userEvent.setup();
+  const automatic = vi.fn();
+  const close = vi.fn();
+  render(
+    <ContextMenu
+      x={20}
+      y={20}
+      label="Column Title"
+      onClose={close}
+      actions={[
+        { label: "Automatic width", checked: true, onSelect: automatic },
+        { label: "Hide column", disabled: true, onSelect: vi.fn() },
+        { label: "Other action", onSelect: vi.fn() },
+      ]}
+    />,
+  );
+  expect(
+    screen.getByRole("menuitemcheckbox", { name: "Automatic width" }),
+  ).toBeChecked();
+  expect(screen.getByRole("menuitem", { name: "Hide column" })).toBeDisabled();
+  await user.keyboard("{ArrowDown}");
+  expect(screen.getByRole("menuitem", { name: "Other action" })).toHaveFocus();
+  await user.keyboard("{Home}{Enter}");
+  expect(automatic).toHaveBeenCalledOnce();
+  fireEvent.scroll(screen.getByRole("menu"));
+  expect(close).not.toHaveBeenCalled();
+  fireEvent.scroll(window);
+  expect(close).toHaveBeenCalledOnce();
+});
+
 // Test keyboard action selection and Escape dismissal.
 test("focuses menu actions and handles keyboard navigation", async () => {
   const user = userEvent.setup();

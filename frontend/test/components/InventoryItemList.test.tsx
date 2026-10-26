@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -21,6 +22,7 @@ import type { InventoryItem } from "../../src/types/inventoryItem";
 import { InventoryItemList } from "../../src/components/InventoryItemList";
 import { chooseOptions } from "../helpers/choices";
 import { useInventoryItems } from "../../src/hooks/useInventoryItems";
+import { inventoryViewStorageKey } from "../../src/hooks/useInventoryView";
 
 vi.mock("../../src/services/inventoryItems", () => ({
   createInventoryItem: vi.fn(),
@@ -143,6 +145,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 // Test background refreshes cannot replace an open draft's concurrency precondition.
@@ -599,7 +602,8 @@ test("shows automatic numbers and never submits them while editing an item", asy
   renderInventoryItemList([item], [automatic]);
   expect(screen.getByRole("cell", { name: "42" })).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Edit" }));
-  const input = screen.getByLabelText("Reference");
+  const dialog = screen.getByRole("dialog", { name: "Edit inventory item" });
+  const input = within(dialog).getByRole("textbox", { name: "Reference" });
   expect(input).toHaveValue("42");
   expect(input).toHaveAttribute("readonly");
   await user.type(input, "99");
@@ -810,6 +814,192 @@ test("requires missing values only when editing an existing item and preserves e
 });
 
 describe("InventoryItemList", () => {
+  // Test cursor-positioned settings enable Auto only for the chosen field and preserve other manual bases.
+  test("offers per-column Auto and visibility settings at the cursor", async () => {
+    const user = userEvent.setup();
+    const key = inventoryViewStorageKey("inventory-1");
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        version: 1,
+        columnWidths: { "title-field": 210, "genre-field": 190 },
+      }),
+    );
+    renderInventoryItemList();
+    fireEvent.contextMenu(screen.getByRole("columnheader", { name: "Title" }), {
+      clientX: 31,
+      clientY: 42,
+    });
+    expect(screen.getByRole("menu", { name: "Column Title" })).toHaveStyle({
+      left: "31px",
+      top: "42px",
+    });
+    const automatic = screen.getByRole("menuitemcheckbox", {
+      name: "Automatic width",
+    });
+    expect(automatic).not.toBeChecked();
+    await user.click(automatic);
+    expect(JSON.parse(localStorage.getItem(key)!).columnWidths).toEqual({
+      "genre-field": 190,
+    });
+    fireEvent.contextMenu(screen.getByRole("columnheader", { name: "Title" }), {
+      clientX: 40,
+      clientY: 50,
+    });
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Automatic width" }),
+    ).toBeChecked();
+    await user.keyboard("{Escape}");
+    fireEvent.contextMenu(screen.getByRole("columnheader", { name: "Genre" }), {
+      clientX: 40,
+      clientY: 50,
+    });
+    await user.click(screen.getByRole("menuitem", { name: "Hide column" }));
+    expect(
+      screen.queryByRole("columnheader", { name: "Genre" }),
+    ).not.toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem(key)!).columnWidths).toEqual({
+      "genre-field": 190,
+    });
+    await user.click(screen.getByRole("button", { name: "View" }));
+    const all = screen.getByRole("menuitemcheckbox", {
+      name: "Automatic widths",
+    });
+    expect(all).toBeChecked();
+    expect(all).toBeEnabled();
+    await user.click(all);
+    expect(JSON.parse(localStorage.getItem(key)!).columnWidths).toEqual({});
+  });
+
+  // Test keyboard invocation and the last-column visibility guard work in the header context menu.
+  test("opens column settings by keyboard and protects the last visible column", async () => {
+    const user = userEvent.setup();
+    renderInventoryItemList(items, [fields[0]]);
+    const title = screen.getByRole("button", { name: "Title" });
+    title.focus();
+    await user.keyboard("{Shift>}{F10}{/Shift}");
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Automatic width" }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("menuitem", { name: "Hide column" }),
+    ).toBeDisabled();
+    await user.keyboard("{Escape}");
+    expect(title).toHaveFocus();
+  });
+
+  // Test runtime surplus never writes preferences, including when manual and Auto columns coexist.
+  test("keeps window surplus out of persistence and saves only the resized column's base", async () => {
+    const user = userEvent.setup();
+    const callbacks = new Map<Element, (width: number) => void>();
+    vi.stubGlobal(
+      "ResizeObserver",
+      class implements ResizeObserver {
+        callback: ResizeObserverCallback;
+        constructor(callback: ResizeObserverCallback) {
+          this.callback = callback;
+        }
+        observe(target: Element) {
+          callbacks.set(target, (width) =>
+            this.callback(
+              [{ target, contentRect: { width } } as ResizeObserverEntry],
+              this,
+            ),
+          );
+        }
+        unobserve(target: Element) {
+          callbacks.delete(target);
+        }
+        disconnect = vi.fn();
+      },
+    );
+    const key = inventoryViewStorageKey("inventory-1");
+    localStorage.setItem(
+      key,
+      JSON.stringify({ version: 1, columnWidths: { "title-field": 180 } }),
+    );
+    const writes = vi.spyOn(Storage.prototype, "setItem");
+    renderInventoryItemList();
+    const viewport = screen.getByRole("region", { name: "Inventory items" });
+    const table = within(viewport).getByRole("table");
+    const columns = Array.from(table.querySelectorAll("col"));
+    act(() => callbacks.get(viewport)?.(1000));
+    const wideAuto = Number.parseFloat(columns[1].style.width);
+    expect(columns[0]).toHaveStyle({ width: "180px" });
+    act(() => callbacks.get(viewport)?.(600));
+    expect(columns[0]).toHaveStyle({ width: "180px" });
+    expect(Number.parseFloat(columns[1].style.width)).toBeLessThan(wideAuto);
+    act(() => callbacks.get(viewport)?.(200));
+    expect(
+      Number.parseFloat((table as HTMLTableElement).style.width),
+    ).toBeGreaterThan(200);
+    act(() => callbacks.get(viewport)?.(1000));
+    expect(writes).not.toHaveBeenCalled();
+    const handle = screen.getByRole("separator", { name: "Resize Genre" });
+    const base = Number(handle.getAttribute("aria-valuenow"));
+    expect(wideAuto).toBeGreaterThan(base);
+    handle.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(JSON.parse(localStorage.getItem(key)!).columnWidths).toEqual({
+      "title-field": 180,
+      "genre-field": base + 16,
+    });
+    expect(columns[0]).toHaveStyle({ width: "180px" });
+    await user.click(screen.getByRole("button", { name: "View" }));
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Automatic widths" }),
+    ).not.toBeChecked();
+  });
+
+  // Test pinned actions are outside the horizontal scroll region and still target their source item.
+  test("renders item actions independently of the scrolling data table", async () => {
+    const user = userEvent.setup();
+    renderInventoryItemList();
+    const data = screen.getByRole("region", { name: "Inventory items" });
+    const actions = screen.getByRole("table", { name: "Actions" });
+    expect(data).not.toContainElement(actions);
+    expect(
+      within(data).queryByRole("button", { name: "Edit" }),
+    ).not.toBeInTheDocument();
+    const edit = within(actions).getByRole("button", { name: "Edit" });
+    const sourceId = edit.getAttribute("aria-describedby")!;
+    expect(document.getElementById(sourceId)).toHaveTextContent(
+      "Baldur's Gate 3",
+    );
+    await user.click(edit);
+    expect(screen.getByRole("textbox", { name: "Title" })).toHaveValue(
+      "Baldur's Gate 3",
+    );
+  });
+
+  // Test column resizing persists presentation without sorting or modifying item data.
+  test("restores a resized column and resets widths through View", async () => {
+    const user = userEvent.setup();
+    const first = renderInventoryItemList();
+    const handle = screen.getByRole("separator", { name: "Resize Title" });
+    const initialWidth = Number(handle.getAttribute("aria-valuenow"));
+    handle.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(handle).toHaveAttribute("aria-valuenow", String(initialWidth + 16));
+    expect(
+      screen.getByRole("columnheader", { name: "Title" }),
+    ).not.toHaveAttribute("aria-sort");
+    first.unmount();
+    renderInventoryItemList();
+    expect(
+      screen.getByRole("separator", { name: "Resize Title" }),
+    ).toHaveAttribute("aria-valuenow", String(initialWidth + 16));
+    await user.click(screen.getByRole("button", { name: "View" }));
+    await user.click(
+      screen.getByRole("menuitemcheckbox", { name: "Automatic widths" }),
+    );
+    expect(
+      screen.getByRole("separator", { name: "Resize Title" }),
+    ).toHaveAttribute("aria-valuenow", String(initialWidth));
+    expect(mockedUpdateInventoryItem).not.toHaveBeenCalled();
+    expect(mockedDeleteInventoryItem).not.toHaveBeenCalled();
+  });
+
   // Test that hiding columns affects table presentation while edits still submit every field.
   test("hides columns, retains one visible column, and preserves hidden values when editing", async () => {
     const user = userEvent.setup();
@@ -830,7 +1020,7 @@ describe("InventoryItemList", () => {
     ).toBeDisabled();
     expect(
       within(screen.getAllByRole("row")[1]).getAllByRole("cell"),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     expect(screen.queryByText("Baldur's Gate 3")).not.toBeInTheDocument();
     await user.keyboard("{Escape}");
     await user.click(screen.getByRole("button", { name: "Edit" }));
@@ -919,7 +1109,7 @@ describe("InventoryItemList", () => {
     await user.click(screen.getByRole("menuitemcheckbox", { name: "Genre" }));
     first.unmount();
     renderInventoryItemList([]);
-    expect(screen.getByRole("cell")).toHaveAttribute("colspan", "3");
+    expect(screen.getByRole("cell")).toHaveAttribute("colspan", "2");
   });
 
   // Test that changing the table view keeps the active sort and never writes item values.
@@ -1071,10 +1261,9 @@ describe("InventoryItemList", () => {
     renderInventoryItemList();
 
     await user.click(screen.getByRole("button", { name: "Edit" }));
-    expect(
-      screen.getByRole("dialog", { name: "Edit inventory item" }),
-    ).toBeInTheDocument();
-    const titleInput = screen.getByLabelText("Title");
+    const dialog = screen.getByRole("dialog", { name: "Edit inventory item" });
+    expect(dialog).toBeInTheDocument();
+    const titleInput = within(dialog).getByRole("textbox", { name: "Title" });
     await user.clear(titleInput);
     await user.type(titleInput, "Divinity: Original Sin 2");
     await user.click(screen.getByRole("button", { name: "Save changes" }));

@@ -281,8 +281,19 @@
       "label": "Steuerung der Inventartabelle",
       "view": "Ansicht",
       "columns": "Spalten",
+      "automaticWidths": "Automatische Breiten",
       "keepColumn": "Mindestens eine Spalte muss sichtbar bleiben.",
       "wrapText": "Zeilenumbruch"
+    },
+    "columnMenu": {
+      "label": "Spalte {{field}}",
+      "automatic": "Automatische Breite",
+      "hide": "Spalte ausblenden"
+    },
+    "resize": {
+      "label": "Breite von {{field}} anpassen",
+      "value": "{{width}} Pixel",
+      "hint": "Ziehen, um die Grundbreite anzupassen. Mit den Pfeiltasten in kleinen Schritten, mit Umschalt in größeren Schritten. Doppelklick aktiviert die automatische Breite."
     },
     "sortHint": "Wähle eine sortierbare Spaltenüberschrift, um zwischen aufsteigender, absteigender und ursprünglicher Reihenfolge zu wechseln. Beim Sortieren stehen leere Werte am Ende.",
     "actions": "Aktionen"

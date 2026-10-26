@@ -40,6 +40,7 @@ test.each([
     sort: null,
     hiddenFieldIds: [],
     wrapText: true,
+    columnWidths: {},
   });
 });
 
@@ -113,6 +114,79 @@ test("synchronizes mounted tables and external storage changes", () => {
   });
   expect(first.result.current.view.hiddenFieldIds).toEqual(["first"]);
   expect(second.result.current.view.wrapText).toBe(true);
+});
+
+// Test stored widths survive reopening and hiding without retaining deleted field references.
+test("stores column widths across reopening and preserves hidden widths until their field is deleted", () => {
+  const first = renderHook(() => useInventoryView("inventory-1", fields));
+  act(() => first.result.current.setColumnWidth("first", 360));
+  act(() => first.result.current.setColumnWidth("second", 400));
+  act(() => first.result.current.toggleField("second"));
+  first.unmount();
+  const reopened = renderHook(
+    ({ currentFields }) => useInventoryView("inventory-1", currentFields),
+    {
+      initialProps: { currentFields: fields },
+    },
+  );
+  expect(reopened.result.current.view.columnWidths).toEqual({
+    first: 360,
+    second: 400,
+  });
+  expect(reopened.result.current.view.hiddenFieldIds).toEqual(["second"]);
+  act(() => reopened.result.current.setAutomaticColumnWidth("first"));
+  expect(reopened.result.current.view.columnWidths).toEqual({ second: 400 });
+  reopened.rerender({ currentFields: [fields[0]] });
+  expect(reopened.result.current.view.columnWidths).toEqual({});
+});
+
+// Test old manual preferences remain valid and Auto requires no separate stored flag.
+test("retains legacy manual widths and enables Auto solely by removing overrides", () => {
+  localStorage.setItem(
+    inventoryViewStorageKey("inventory-1"),
+    JSON.stringify({
+      version: 1,
+      columnWidths: { first: 1500 },
+      wrapText: false,
+      hiddenFieldIds: ["second"],
+    }),
+  );
+  const { result, rerender } = renderHook(
+    ({ currentFields }) => useInventoryView("inventory-1", currentFields),
+    { initialProps: { currentFields: fields } },
+  );
+  expect(result.current.view.columnWidths).toEqual({ first: 1500 });
+  act(() => result.current.setColumnWidth("second", 240));
+  expect(result.current.view.columnWidths).toEqual({
+    first: 1500,
+    second: 240,
+  });
+  act(() => result.current.setAutomaticColumnWidth("first"));
+  expect(result.current.view.columnWidths).toEqual({ second: 240 });
+  rerender({ currentFields: [...fields, { ...fields[0], id: "new" }] });
+  expect(result.current.view.columnWidths.new).toBeUndefined();
+  act(() => result.current.setAutomaticColumnWidth());
+  expect(result.current.view.columnWidths).toEqual({});
+  expect(result.current.view.hiddenFieldIds).toEqual(["second"]);
+  expect(result.current.view.wrapText).toBe(false);
+});
+
+// Test invalid or stale stored widths cannot break the table's layout.
+test("ignores invalid saved widths and clamps new resize requests", () => {
+  localStorage.setItem(
+    inventoryViewStorageKey("inventory-1"),
+    JSON.stringify({
+      version: 1,
+      columnWidths: { first: "large", second: -50, deleted: 300 },
+    }),
+  );
+  const { result } = renderHook(() => useInventoryView("inventory-1", fields));
+  expect(result.current.view.columnWidths).toEqual({});
+  act(() => result.current.setColumnWidth("first", 5000));
+  act(() => result.current.setColumnWidth("second", 20));
+  expect(result.current.view.columnWidths).toEqual({ first: 1200, second: 48 });
+  act(() => result.current.setAutomaticColumnWidth());
+  expect(result.current.view.columnWidths).toEqual({});
 });
 
 // Test view actions remain usable without persistent storage permission or quota.

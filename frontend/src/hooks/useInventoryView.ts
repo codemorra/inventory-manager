@@ -1,4 +1,9 @@
 import { useState, useSyncExternalStore } from "react";
+import {
+  clampColumnWidth,
+  MIN_COLUMN_WIDTH,
+  MAX_STORED_COLUMN_WIDTH,
+} from "../appearance/inventoryColumns";
 import type { InventoryField } from "../types/inventoryField";
 import type {
   InventoryViewPreferences,
@@ -78,6 +83,21 @@ function readView(
         : null,
     hiddenFieldIds,
     wrapText: typeof saved.wrapText === "boolean" ? saved.wrapText : true,
+    columnWidths:
+      saved.columnWidths &&
+      typeof saved.columnWidths === "object" &&
+      !Array.isArray(saved.columnWidths)
+        ? Object.fromEntries(
+            Object.entries(saved.columnWidths).filter(
+              ([id, width]) =>
+                activeIds.has(id) &&
+                typeof width === "number" &&
+                Number.isInteger(width) &&
+                width >= MIN_COLUMN_WIDTH &&
+                width <= MAX_STORED_COLUMN_WIDTH,
+            ),
+          )
+        : {},
   };
 }
 
@@ -85,7 +105,7 @@ function readView(
  * Persist table presentation per inventory without changing its configuration.
  * @param inventoryId The inventory whose preferences are read and written.
  * @param fields The current fields used to discard stale references.
- * @returns The safe view and actions for sorting, wrapping, and column visibility.
+ * @returns The safe view and actions for sorting, wrapping, column visibility, and widths.
  */
 export function useInventoryView(
   inventoryId: string,
@@ -176,5 +196,46 @@ export function useInventoryView(
     updateView((current) => ({ ...current, wrapText }));
   }
 
-  return { view, toggleSort, toggleField, setWrapText };
+  /**
+   * Save only the manually edited column's base, never a runtime layout or other widths.
+   * @param fieldId The field whose Auto mode is disabled by this manual edit.
+   * @param width The requested base width, excluding temporary display surplus.
+   */
+  function setColumnWidth(fieldId: string, width: number) {
+    if (!fields.some((field) => field.id === fieldId)) return;
+    updateView((current) => ({
+      ...current,
+      columnWidths: {
+        ...current.columnWidths,
+        [fieldId]: clampColumnWidth(width),
+      },
+    }));
+  }
+
+  /**
+   * Enable Auto by removing one manual override, or all overrides for this inventory.
+   * @param fieldId The field to make automatic, or undefined to make all fields automatic.
+   */
+  function setAutomaticColumnWidth(fieldId?: string) {
+    updateView((current) => ({
+      ...current,
+      columnWidths:
+        fieldId === undefined
+          ? {}
+          : Object.fromEntries(
+              Object.entries(current.columnWidths).filter(
+                ([id]) => id !== fieldId,
+              ),
+            ),
+    }));
+  }
+
+  return {
+    view,
+    toggleSort,
+    toggleField,
+    setWrapText,
+    setColumnWidth,
+    setAutomaticColumnWidth,
+  };
 }
