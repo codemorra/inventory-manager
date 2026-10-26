@@ -104,7 +104,7 @@ test.each([
     ).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Edit inventory" }),
+      screen.getByRole("button", { name: "Inventory settings" }),
     ).toBeEnabled();
     expect(createInventory).toHaveBeenCalledOnce();
   },

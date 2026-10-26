@@ -90,8 +90,8 @@ afterEach(() => {
 });
 
 describe("InventoryItemsPage", () => {
-  // Test that the visible edit action opens the shared editor instead of page tabs.
-  test("opens inventory editing from the page header", async () => {
+  // Test that the settings icon beside the title opens the shared inventory editor.
+  test("opens inventory settings from the title row", async () => {
     const user = userEvent.setup();
     vi.mocked(getInventories).mockResolvedValueOnce([
       {
@@ -106,12 +106,28 @@ describe("InventoryItemsPage", () => {
     mockedGetInventoryFields.mockResolvedValue(fields);
     mockedGetInventoryItems.mockResolvedValue([]);
     renderInventoryItemsPage();
-    await user.click(
-      await screen.findByRole("button", { name: "Edit inventory" }),
-    );
+    await screen.findByRole("button", { name: "New item" });
+    const header = screen
+      .getByRole("heading", { name: "Games" })
+      .closest("header")!;
+    const settings = within(header).getByRole("button", {
+      name: "Inventory settings",
+    });
+    expect(settings).toHaveAttribute("title", "Inventory settings");
+    const controls = screen.getByRole("group", {
+      name: "Inventory table controls",
+    });
+    expect(
+      within(controls).queryByRole("button", { name: "Inventory settings" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(controls).getByRole("button", { name: "View" }),
+    ).toBeEnabled();
+    await user.click(settings);
     expect(
       screen.getByRole("dialog", { name: "Edit inventory" }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "General" })).toHaveAttribute(
       "aria-current",
       "page",
@@ -176,10 +192,44 @@ describe("InventoryItemsPage", () => {
       const header = title.closest("header")!;
       expect(header.querySelector("p")).not.toBeInTheDocument();
       expect(
-        within(header).getByRole("button", { name: "Edit inventory" }),
+        within(header).getByRole("button", { name: "Inventory settings" }),
+      ).toBeEnabled();
+      expect(
+        screen.getByRole("button", { name: "Inventory settings" }),
       ).toBeEnabled();
     },
   );
+
+  // Test that an inventory without fields still has direct access to its editor.
+  test("opens the editor for an inventory without fields", async () => {
+    const user = userEvent.setup();
+    vi.mocked(getInventories).mockResolvedValueOnce([
+      {
+        configuration_revision: 1,
+        id: "inventory-1",
+        name: "Games",
+        description: null,
+        created_at: timestamp,
+        updated_at: timestamp,
+      },
+    ]);
+    mockedGetInventoryFields.mockResolvedValue([]);
+    mockedGetInventoryItems.mockResolvedValue([]);
+    renderInventoryItemsPage();
+    await screen.findByRole("heading", { name: "No fields configured" });
+    await user.click(
+      screen.getByRole("button", { name: "Inventory settings" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Fields" }));
+    expect(
+      screen.getByRole("dialog", { name: "Edit inventory" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Fields" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
 
   // Test that a loading state is displayed until fields and items are available
   test("displays a loading state until fields and items are available", () => {

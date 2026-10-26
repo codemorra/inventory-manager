@@ -30,9 +30,10 @@ group to assign it, or onto **Without a group** to remove its assignment. Groups
 can be collapsed, and inventories remain alphabetically ordered. The sidebar search
 filters inventory titles and reveals matching inventories inside collapsed groups.
 
-Creating an inventory opens its item page. Use **Edit inventory** on that page,
-or right-click an inventory in the sidebar and select **Edit**, to open its settings.
-The **General** section contains its name and description; **Fields** manages its
+Creating an inventory opens its item page. Use the **Inventory settings** gear
+beside the title, or right-click an inventory in the sidebar and select **Edit**,
+to open its settings. The **General** section contains its name and description;
+**Fields** manages its
 field definitions and selection options. All changes remain local drafts until
 **Save changes** commits them together. **Cancel**, closing the editor, or Escape
 discards the draft. A failed save keeps the draft available for correction or retry.
@@ -51,11 +52,16 @@ and selection options can be edited later. A field's type and text limit are fix
 at creation.
 
 The inventory page shows its title and optional description above the item table.
-The table toolbar provides the creation action and item count. Select a column
-heading to sort ascending, select it again to sort descending, and a third time to
-restore the original order. Only the sorted column shows a direction chevron. Sorting
-can be disabled separately for each field. Comparisons follow the field type; selections
-use option names and links use their displayed text. Empty values appear last.
+The compact table action row places **View** on the left and the item count and
+**New item** on the right. **View → Wrap text** switches
+between wrapped values (up to three lines) and a single truncated line. This view
+option applies to the current inventory page visit.
+
+Select a column heading to sort ascending, select it again to sort descending,
+and a third time to restore the original order. Only the sorted column shows a
+direction chevron. Sorting can be disabled separately for each field. Comparisons
+follow the field type; selections use option names and links use their displayed
+text. Empty values appear last.
 Sorting changes the current view without changing stored data.
 
 Right-click a sidebar group to rename or delete it. Deleting a group preserves its
