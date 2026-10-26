@@ -20,9 +20,10 @@ const fieldDragType = "application/x-inventory-manager-field";
 
 /**
  * Render field configuration inside the inventory editor.
+ * @param props Optional heading for other structure editors sharing the local draft controls.
  * @returns Local field actions and draft definitions.
  */
-export function InventoryFieldsPanel() {
+export function InventoryFieldsPanel({ title }: { title?: string } = {}) {
   const { t } = useTranslation();
   const {
     fields: inventoryFields,
@@ -163,7 +164,7 @@ export function InventoryFieldsPanel() {
       <div className="shrink-0">
         <InventoryToolbar actions={<InventoryFieldCreateForm />}>
           <h2 className="text-sm font-semibold text-heading">
-            {t("fields.title")}
+            {title ?? t("fields.title")}
           </h2>
         </InventoryToolbar>
       </div>
@@ -183,7 +184,7 @@ export function InventoryFieldsPanel() {
       {inventoryFields.length > 0 && (
         <ul
           ref={list}
-          aria-label={t("fields.title")}
+          aria-label={title ?? t("fields.title")}
           tabIndex={0}
           className="min-h-0 divide-y divide-shell overflow-y-auto overscroll-contain rounded-md border border-shell focus-visible:outline-2 focus-visible:outline-accent"
           onDragOver={(event) => {

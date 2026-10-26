@@ -398,6 +398,24 @@
     "fieldCount_one": "{{count}} field",
     "fieldCount_other": "{{count}} fields",
     "selectionConflict": "The selected template has changed or is no longer available. Reload it or choose another template. Your inventory inputs have been kept.",
-    "reloadSelection": "Reload selected template"
+    "reloadSelection": "Reload selected template",
+    "title": "Templates",
+    "description": "Reusable structures for new inventories.",
+    "editTitle": "Edit template",
+    "deleteTitle": "Delete template",
+    "sections": "Template sections",
+    "fields": "Fields",
+    "detailFailed": "The template could not be loaded. Your current inputs have been kept.",
+    "editConflict": "The template has changed or was deleted. Your draft has been kept. Reload it explicitly before saving again.",
+    "updateFailed": "The template could not be saved. Your draft has been kept.",
+    "deleteConflict": "The template has changed or was deleted. Reload it before confirming deletion again.",
+    "deleteFailed": "The template could not be deleted.",
+    "confirmDelete": "Delete “{{name}}”? Existing inventories will be kept.",
+    "reloadTarget": "Reload template",
+    "managementLoadFailed": "Templates could not be loaded.",
+    "empty": "No templates yet.",
+    "emptyHelp": "Save an inventory structure as a template in its inventory settings.",
+    "editNamed": "Edit template {{name}}",
+    "deleteNamed": "Delete template {{name}}"
   }
 }

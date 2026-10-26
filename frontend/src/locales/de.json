@@ -398,6 +398,24 @@
     "fieldCount_one": "{{count}} Feld",
     "fieldCount_other": "{{count}} Felder",
     "selectionConflict": "Die gewählte Vorlage wurde geändert oder ist nicht mehr verfügbar. Lade sie neu oder wähle eine andere Vorlage. Deine Inventareingaben bleiben erhalten.",
-    "reloadSelection": "Gewählte Vorlage neu laden"
+    "reloadSelection": "Gewählte Vorlage neu laden",
+    "title": "Vorlagen",
+    "description": "Wiederverwendbare Strukturen für neue Inventare.",
+    "editTitle": "Vorlage bearbeiten",
+    "deleteTitle": "Vorlage löschen",
+    "sections": "Vorlagenbereiche",
+    "fields": "Felder",
+    "detailFailed": "Die Vorlage konnte nicht geladen werden. Deine bisherigen Eingaben bleiben erhalten.",
+    "editConflict": "Die Vorlage wurde geändert oder gelöscht. Dein Entwurf bleibt erhalten. Lade sie ausdrücklich neu, bevor du erneut speicherst.",
+    "updateFailed": "Die Vorlage konnte nicht gespeichert werden. Dein Entwurf bleibt erhalten.",
+    "deleteConflict": "Die Vorlage wurde geändert oder gelöscht. Lade sie neu, bevor du das Löschen erneut bestätigst.",
+    "deleteFailed": "Die Vorlage konnte nicht gelöscht werden.",
+    "confirmDelete": "„{{name}}“ löschen? Bestehende Inventare bleiben erhalten.",
+    "reloadTarget": "Vorlage neu laden",
+    "managementLoadFailed": "Vorlagen konnten nicht geladen werden.",
+    "empty": "Noch keine Vorlagen.",
+    "emptyHelp": "Speichere die Struktur eines Inventars in seinen Inventareinstellungen als Vorlage.",
+    "editNamed": "Vorlage {{name}} bearbeiten",
+    "deleteNamed": "Vorlage {{name}} löschen"
   }
 }

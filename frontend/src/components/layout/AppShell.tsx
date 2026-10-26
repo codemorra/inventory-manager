@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { NavLink } from "react-router-dom";
 
 import { SettingsDialog } from "../SettingsDialog";
 import { GroupCreateDialog } from "../GroupCreateDialog";
@@ -87,6 +88,27 @@ export function AppShell({ children }: AppShellProps) {
         }}
       />
       <div className="mt-auto grid shrink-0 gap-3 border-t border-shell bg-surface-muted p-4 shadow-[0_-2px_6px_rgb(0_0_0/0.06)]">
+        <NavLink
+          to="/templates"
+          onClick={() => setIsNavigationOpen(false)}
+          className={({ isActive }) =>
+            `flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-accent ${isActive ? "border-accent/40 bg-accent-soft text-accent" : "border-shell bg-surface hover:bg-control-hover hover:border-accent/50"}`
+          }
+        >
+          <svg
+            aria-hidden="true"
+            className="size-4 text-accent"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            viewBox="0 0 24 24"
+          >
+            <path d="M8 3h12v15H8zM4 7v14h12M11 7h6m-6 4h6m-6 4h3" />
+          </svg>
+          {t("templates.title")}
+        </NavLink>
         <button
           className="flex items-center gap-2 rounded-md border border-shell bg-surface px-3 py-2 text-sm font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent"
           onClick={() => {

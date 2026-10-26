@@ -3,6 +3,9 @@ import {
   getInventoryTemplates,
   instantiateInventoryTemplate,
   saveInventoryTemplate,
+  getInventoryTemplate,
+  updateInventoryTemplate,
+  deleteInventoryTemplate,
 } from "../../src/services/inventoryTemplates";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -56,4 +59,44 @@ test("sends one template instantiation and preserves structured conflict errors"
     method: "POST",
     body: JSON.stringify(input),
   });
+});
+
+// Detail, update, and deletion preserve the public snapshot/revision contracts on the wire.
+test("reads, replaces, and deletes templates through revision-checked endpoints", async () => {
+  const result = { id: "template", revision: 9, fields: [] };
+  const fetch = vi
+    .fn()
+    .mockResolvedValue({ ok: true, status: 200, json: async () => result });
+  vi.stubGlobal("fetch", fetch);
+  await expect(getInventoryTemplate("template")).resolves.toEqual(result);
+  const input = {
+    expected_revision: 9,
+    name: "Structure",
+    description: null,
+    fields: [],
+  };
+  await expect(updateInventoryTemplate("template", input)).resolves.toEqual(
+    result,
+  );
+  expect(fetch.mock.calls[1][1]).toMatchObject({
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  fetch.mockResolvedValue({
+    ok: true,
+    status: 204,
+    json: async () => {
+      throw new Error("204 has no body");
+    },
+  });
+  await expect(deleteInventoryTemplate("template", 9)).resolves.toBeUndefined();
+  expect(fetch.mock.calls[2][1]).toMatchObject({
+    method: "DELETE",
+    body: JSON.stringify({ expected_revision: 9 }),
+  });
+  expect(
+    fetch.mock.calls.every(([url]) =>
+      /\/inventory-templates\/template$/.test(url),
+    ),
+  ).toBe(true);
 });

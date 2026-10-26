@@ -4,6 +4,7 @@ import type {
   InventoryTemplate,
   SaveInventoryTemplateInput,
   InstantiateInventoryTemplateInput,
+  UpdateInventoryTemplateInput,
 } from "../types/inventoryTemplate";
 
 /**
@@ -12,6 +13,47 @@ import type {
  */
 export function getInventoryTemplates(): Promise<InventoryTemplate[]> {
   return request("/inventory-templates");
+}
+
+/**
+ * Read a complete template baseline for an editor or explicit conflict recovery.
+ * @param id The active template identifier.
+ * @returns Its current metadata, fields, and revision.
+ */
+export function getInventoryTemplate(id: string): Promise<InventoryTemplate> {
+  return request(`/inventory-templates/${id}`);
+}
+
+/**
+ * Replace the saved template only when its captured revision still matches.
+ * @param id The template being edited.
+ * @param data The complete local draft and its original revision.
+ * @returns The updated independent blueprint.
+ */
+export function updateInventoryTemplate(
+  id: string,
+  data: UpdateInventoryTemplateInput,
+): Promise<InventoryTemplate> {
+  return request(`/inventory-templates/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Delete the template revision explicitly confirmed by the user.
+ * @param id The template being deleted.
+ * @param expectedRevision The revision displayed in the confirmation.
+ * @returns Completion of the deletion request.
+ */
+export function deleteInventoryTemplate(
+  id: string,
+  expectedRevision: number,
+): Promise<void> {
+  return request(`/inventory-templates/${id}`, {
+    method: "DELETE",
+    body: JSON.stringify({ expected_revision: expectedRevision }),
+  });
 }
 
 /**
