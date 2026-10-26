@@ -276,8 +276,7 @@
     "savedAutomatically": "Changes are saved automatically in this browser."
   },
   "table": {
-    "resetSort": "Reset sorting",
-    "sortHint": "Select a column heading to sort ascending or descending. Empty values appear last.",
+    "sortHint": "Select a sortable column heading to cycle through ascending, descending, and the original order. Empty values appear last when sorting.",
     "actions": "Actions"
   }
 }
