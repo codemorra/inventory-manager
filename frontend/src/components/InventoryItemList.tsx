@@ -8,6 +8,7 @@ import {
   useReloadInventoryItems,
 } from "../hooks/useInventoryItems";
 import { ApiError } from "../services/api";
+import { useInventoryView } from "../hooks/useInventoryView";
 import type {
   InventoryField,
   InventoryFieldOption,
@@ -18,7 +19,7 @@ import { Modal } from "./Modal";
 import { formatDuration } from "./duration";
 import { isUrlInput, isWebAddress, urlDisplayText } from "./url";
 import { InventoryTableControls } from "./InventoryTableControls";
-import { sortInventoryItems, type ItemSort } from "./inventoryItemSorting";
+import { sortInventoryItems } from "./inventoryItemSorting";
 import {
   createValueInput,
   createCheckboxReplacement,
@@ -30,6 +31,7 @@ import {
 
 // Define properties for the inventory item table.
 interface InventoryItemListProps {
+  inventoryId: string;
   fields: InventoryField[];
   items: InventoryItem[];
   actions?: ReactNode;
@@ -145,12 +147,14 @@ function getEditableValues(
 
 /**
  * Render active inventory items with editing and deletion actions.
+ * @param inventoryId The inventory whose table view is persisted.
  * @param fields The inventory fields defining the structure of the items.
  * @param items The list of inventory items to render.
  * @param actions Optional controls displayed in the table toolbar.
  * @returns The inventory item table and its management dialogs.
  */
 export function InventoryItemList({
+  inventoryId,
   fields,
   items,
   actions,
@@ -159,8 +163,14 @@ export function InventoryItemList({
     null,
   );
   const { t, i18n } = useTranslation();
-  const [sort, setSort] = useState<ItemSort | null>(null);
-  const [wrapText, setWrapText] = useState(true);
+  const { view, toggleSort, toggleField, setWrapText } = useInventoryView(
+    inventoryId,
+    fields,
+  );
+  const { sort, wrapText, hiddenFieldIds } = view;
+  const visibleFields = fields.filter(
+    (field) => !hiddenFieldIds.includes(field.id),
+  );
   const sortField = fields.find(
     (field) => field.id === sort?.fieldId && field.is_sortable,
   );
@@ -201,22 +211,6 @@ export function InventoryItemList({
   const deleteConflict = isItemConflict(deleteItem.error);
   const recoveryClass =
     "rounded-md border border-shell px-3 py-2 text-sm font-medium transition enabled:hover:bg-control-hover disabled:opacity-50";
-
-  /**
-   * Cycle a column through ascending, descending, and the original item order.
-   * @param fieldId The identifier of the selected column.
-   */
-  function toggleSort(fieldId: string) {
-    if (!fields.some((field) => field.id === fieldId && field.is_sortable))
-      return;
-    setSort((current) => {
-      if (current?.fieldId !== fieldId)
-        return { fieldId, direction: "ascending" };
-      return current.direction === "ascending"
-        ? { fieldId, direction: "descending" }
-        : null;
-    });
-  }
 
   /**
    * Start editing the specified inventory item.
@@ -374,6 +368,12 @@ export function InventoryItemList({
         </p>
       )}
       <InventoryTableControls
+        columns={fields.map((field) => ({
+          id: field.id,
+          name: field.name,
+          visible: !hiddenFieldIds.includes(field.id),
+        }))}
+        onToggleColumn={toggleField}
         itemCount={items.length}
         actions={actions}
         wrapText={wrapText}
@@ -391,7 +391,7 @@ export function InventoryItemList({
             <caption className="sr-only">{t("table.sortHint")}</caption>
             <thead className="bg-surface-muted text-xs font-semibold uppercase tracking-wider text-muted">
               <tr>
-                {fields.map((field) => (
+                {visibleFields.map((field) => (
                   <th
                     aria-sort={
                       sortField?.id === field.id ? sort?.direction : undefined
@@ -454,7 +454,7 @@ export function InventoryItemList({
 
                 return (
                   <tr className="group" key={item.id}>
-                    {fields.map((field) => (
+                    {visibleFields.map((field) => (
                       <td
                         className="max-w-80 border-r border-shell/60 px-4 py-2.5 align-top text-foreground transition-colors group-hover:bg-surface-hover"
                         key={field.id}
@@ -560,7 +560,7 @@ export function InventoryItemList({
                 <tr>
                   <td
                     className="px-6 py-12 text-center"
-                    colSpan={fields.length + 1}
+                    colSpan={visibleFields.length + 1}
                   >
                     <p className="font-semibold text-heading">
                       {t("items.empty")}

@@ -1,12 +1,7 @@
 import type { InventoryField } from "../types/inventoryField";
 import type { InventoryItem } from "../types/inventoryItem";
+import type { ItemSort } from "../types/inventoryView";
 import { isUrlInput, urlDisplayText } from "./url";
-
-// Define the active column and direction of a table sort.
-export interface ItemSort {
-  fieldId: string;
-  direction: "ascending" | "descending";
-}
 
 /**
  * Convert a stored calendar or ISO week date to a UTC timestamp.
