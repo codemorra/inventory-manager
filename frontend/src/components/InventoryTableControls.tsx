@@ -23,6 +23,7 @@ interface InventoryTableControlsProps {
   totalItemCount?: number;
   searchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
+  filterControl?: ReactNode;
   actions?: ReactNode;
   wrapText?: boolean;
   onWrapTextChange?: (wrap: boolean) => void;
@@ -43,6 +44,7 @@ export function InventoryTableControls({
   totalItemCount,
   searchQuery = "",
   onSearchQueryChange,
+  filterControl,
   actions,
   wrapText = true,
   onWrapTextChange,
@@ -291,6 +293,7 @@ export function InventoryTableControls({
             )}
           </div>
         )}
+        {filterControl}
       </div>
       <div className="ml-auto flex flex-wrap items-center gap-3">
         {itemCount !== undefined && (

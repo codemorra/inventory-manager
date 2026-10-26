@@ -148,6 +148,88 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// Test applied filters combine with search and still use hidden column values.
+test("combines applied filters with search and resets filters independently", async () => {
+  const user = userEvent.setup();
+  const otherGate = {
+    ...items[0],
+    id: "gate-2",
+    values: [{ ...items[0].values[0], value: "Another Gate" }],
+  };
+  const otherRpg = {
+    ...items[0],
+    id: "other-rpg",
+    values: items[0].values.map((value) =>
+      value.field_id === "title-field"
+        ? { ...value, value: "Other RPG" }
+        : value,
+    ),
+  };
+  renderInventoryItemList([...items, otherGate, otherRpg]);
+  fireEvent.contextMenu(screen.getByRole("columnheader", { name: "Genre" }));
+  await user.click(screen.getByRole("menuitem", { name: "Hide column" }));
+  const columns = screen.getAllByRole("table")[0].querySelectorAll("col");
+  const widths = Array.from(columns).map((column) => column.style.width);
+  await user.type(screen.getByRole("searchbox"), "gate");
+  expect(screen.getByRole("status")).toHaveTextContent("2 of 3 items");
+  await user.click(screen.getByRole("button", { name: "Filters" }));
+  await user.click(screen.getByRole("button", { name: "Add filter" }));
+  await chooseOptions(user, "Column", ["Genre"]);
+  await chooseOptions(user, "Options", ["RPG"]);
+  expect(screen.getByRole("status")).toHaveTextContent("2 of 3 items");
+  await user.click(screen.getByRole("button", { name: "Apply" }));
+  expect(screen.getByRole("status")).toHaveTextContent("1 of 3 items");
+  expect(screen.getByText("Baldur's Gate 3")).toBeVisible();
+  expect(screen.queryByText("Another Gate")).not.toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(1);
+  expect(Array.from(columns).map((column) => column.style.width)).toEqual(
+    widths,
+  );
+  await user.click(screen.getByRole("button", { name: "Filters" }));
+  await user.click(screen.getByRole("button", { name: "Reset filters" }));
+  expect(screen.getByRole("searchbox")).toHaveValue("gate");
+  expect(screen.getByRole("status")).toHaveTextContent("2 of 3 items");
+  await user.click(screen.getByRole("button", { name: "Clear search" }));
+  expect(screen.getByRole("status")).toHaveTextContent("3 items");
+  expect(mockedUpdateInventoryItem).not.toHaveBeenCalled();
+});
+
+// Test definitions removed by a background refresh cannot leave invisible stale filters active.
+test("ignores an applied condition when its column is deleted", async () => {
+  const user = userEvent.setup();
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const view = render(
+    <QueryClientProvider client={client}>
+      <InventoryItemList
+        inventoryId="inventory-1"
+        items={items}
+        fields={fields}
+      />
+    </QueryClientProvider>,
+  );
+  await user.click(screen.getByRole("button", { name: "Filters" }));
+  await user.click(screen.getByRole("button", { name: "Add filter" }));
+  await chooseOptions(user, "Column", ["Played"]);
+  await chooseOptions(user, "Condition", ["is No"]);
+  await user.click(screen.getByRole("button", { name: "Apply" }));
+  expect(screen.getByText("No matching items.")).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent("0 of 1 items");
+  view.rerender(
+    <QueryClientProvider client={client}>
+      <InventoryItemList
+        inventoryId="inventory-1"
+        items={items}
+        fields={fields.filter((field) => field.id !== "played-field")}
+      />
+    </QueryClientProvider>,
+  );
+  expect(screen.getByText("Baldur's Gate 3")).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent("1 item");
+  expect(screen.queryByLabelText("1 active filter")).not.toBeInTheDocument();
+});
+
 // Test search filters both panes before sorting without changing automatic base widths.
 test("searches before sorting, keeps widths stable, and restores all rows when cleared", async () => {
   const user = userEvent.setup();

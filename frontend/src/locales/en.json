@@ -283,7 +283,7 @@
       "clear": "Clear search",
       "count": "{{count}} of {{total}} items",
       "empty": "No matching items.",
-      "emptyDescription": "Try another search or clear it to show all items."
+      "emptyDescription": "Change the search or filters to show matching items."
     },
     "menu": {
       "label": "Inventory table controls",
@@ -304,6 +304,53 @@
       "hint": "Drag to adjust the base width. Use arrow keys for small steps or Shift for larger steps. Double-click to enable automatic width."
     },
     "sortHint": "Select a sortable column heading to cycle through ascending, descending, and the original order. Empty values appear last when sorting.",
-    "actions": "Actions"
+    "actions": "Actions",
+    "filters": {
+      "label": "Filters",
+      "activeCount_one": "{{count}} active filter",
+      "activeCount_other": "{{count}} active filters",
+      "help": "All conditions must match. Within a selection, any chosen option can match. Changes take effect when applied.",
+      "empty": "No filter conditions. Add a filter to narrow the items.",
+      "condition": "Condition {{number}}",
+      "field": "Column",
+      "operator": "Condition",
+      "value": "Value",
+      "valueTo": "Upper value",
+      "options": "Options",
+      "chooseOptions": "Choose options…",
+      "unavailableField": "Unavailable column",
+      "remove": "Remove condition {{number}}",
+      "add": "Add filter",
+      "reset": "Reset filters",
+      "apply": "Apply",
+      "operators": {
+        "contains": "contains",
+        "notContains": "does not contain",
+        "equals": "equals",
+        "notEquals": "does not equal",
+        "greaterThan": "is greater than",
+        "atLeast": "is at least",
+        "lessThan": "is less than",
+        "atMost": "is at most",
+        "between": "is between (inclusive)",
+        "before": "is before",
+        "after": "is after",
+        "date": "is on",
+        "time": "is at",
+        "datetime": "is on/at",
+        "isTrue": "is Yes",
+        "isFalse": "is No",
+        "anyOf": "includes any of",
+        "noneOf": "includes none of",
+        "isEmpty": "is empty",
+        "isNotEmpty": "is not empty"
+      },
+      "errors": {
+        "field": "Choose an available column and a compatible condition.",
+        "value": "Enter a valid value for this column type.",
+        "range": "The upper value must be greater than or equal to the first value.",
+        "options": "Choose at least one available option."
+      }
+    }
   }
 }
