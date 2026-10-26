@@ -127,6 +127,12 @@ Unrelated inventories and groups are unaffected.
 
 See `/docs` or `/openapi.json` for request schemas and validation details.
 
+### Inventory templates
+
+`/inventory-templates` supports listing and creation; `/{template_id}` supports reading, PATCH, and DELETE. Create a template with `name`, optional `description`, and either an ordered `fields` array or `source_inventory_id` plus `expected_configuration_revision`. Templates contain structure and selection options only, without items, source IDs, counters, memberships, or table preferences. PATCH and DELETE require `expected_revision`; conflicts return 409 `inventory_template_conflict`. PATCH replaces supplied properties, including the complete field array when present. Deletion clears blueprint content and retains a tombstone.
+
+`POST /inventory-templates/{template_id}/inventories` takes `expected_revision` and new inventory metadata (`name`, optional `description` and `group_id`). It atomically creates an independent empty inventory with new field/option IDs and automatic numbering starting at 1 for the first item, returning its configuration. Source, template, and generated inventories remain independent; later changes or deletions do not propagate. Template descriptions are not inherited by generated inventories. Ordered snapshots preserve existing selection configurations, including empty option lists; any validation or storage failure leaves existing data unchanged.
+
 ### Inventory groups
 
 Inventory groups have one level. `/inventory-groups` supports listing and creation;

@@ -14,10 +14,12 @@ import { openDatabase, type DatabaseConnection } from "../src/db/connection.js";
 import { createServices } from "../src/services.js";
 import {
   inventories,
+  inventoryGroups,
   inventoryFields,
   inventoryFieldOptions,
   inventoryItems,
   inventoryItemValues,
+  inventoryTemplates,
 } from "../src/db/schema.js";
 
 // Test that upgrading an existing database preserves inventories and adds nullable memberships.
@@ -65,6 +67,89 @@ test("adds groups to an existing database without losing inventory data", () => 
 
 const directories: string[] = [];
 const connections: DatabaseConnection[] = [];
+
+// Upgrade the immediately preceding schema without touching any existing content or revisions.
+test("adds independent templates to an existing database and preserves them across reopen", () => {
+  const directory = mkdtempSync(
+    join(tmpdir(), "inventory-template-migration-"),
+  );
+  directories.push(directory);
+  const legacy = join(directory, "legacy");
+  mkdirSync(join(legacy, "meta"), { recursive: true });
+  const journal = JSON.parse(
+    readFileSync(
+      new URL("../drizzle/meta/_journal.json", import.meta.url),
+      "utf8",
+    ),
+  ) as { entries: { tag: string }[] };
+  journal.entries = journal.entries.slice(0, -1);
+  for (const entry of journal.entries)
+    copyFileSync(
+      new URL(`../drizzle/${entry.tag}.sql`, import.meta.url),
+      join(legacy, `${entry.tag}.sql`),
+    );
+  writeFileSync(join(legacy, "meta", "_journal.json"), JSON.stringify(journal));
+  const path = join(directory, "existing.db");
+  const original = openDatabase(path, legacy);
+  connections.push(original);
+  const services = createServices(original.db);
+  const inventory = services.inventories.create({
+    name: "Existing",
+    description: "Untouched",
+  });
+  const field = services.fields.create(inventory.id, {
+    name: "Title",
+    field_type: "text",
+  });
+  services.items.create(inventory.id, {
+    values: [{ field_id: field.id, value: "Existing data" }],
+  });
+  const tables = [
+    inventories,
+    inventoryFields,
+    inventoryFieldOptions,
+    inventoryItems,
+    inventoryItemValues,
+    inventoryGroups,
+  ];
+  const before = tables.map((table) => original.db.select().from(table).all());
+  original.close();
+  const upgraded = openDatabase(path);
+  connections.push(upgraded);
+  assert.deepEqual(
+    tables.map((table) => upgraded.db.select().from(table).all()),
+    before,
+  );
+  assert.deepEqual(upgraded.db.select().from(inventoryTemplates).all(), []);
+  const nextServices = createServices(upgraded.db);
+  const template = nextServices.templates.create({
+    name: "Stored",
+    fields: [{ name: "Title", field_type: "text", max_length: 55 }],
+  });
+  const deleted = nextServices.templates.create({
+    name: "Deleted",
+    fields: [],
+  });
+  nextServices.templates.delete(deleted.id, { expected_revision: 1 });
+  const templateRows = upgraded.db.select().from(inventoryTemplates).all();
+  upgraded.close();
+  const reopened = openDatabase(path);
+  connections.push(reopened);
+  assert.deepEqual(
+    tables.map((table) => reopened.db.select().from(table).all()),
+    before,
+  );
+  assert.deepEqual(
+    reopened.db.select().from(inventoryTemplates).all(),
+    templateRows,
+  );
+  assert.deepEqual(createServices(reopened.db).templates.list(), [template]);
+  assert.deepEqual(reopened.sqlite.pragma("foreign_key_check"), []);
+  assert.equal(
+    reopened.sqlite.pragma("integrity_check", { simple: true }),
+    "ok",
+  );
+});
 
 // Test a real pre-feature database upgrade, including old values and deletion history.
 test("adds field settings with compatible defaults without rewriting legacy rows", () => {
@@ -188,12 +273,13 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     inventoryFieldOptions,
     inventoryItems,
     inventoryItemValues,
+    inventoryTemplates,
   ];
   for (const table of tables)
     assert.deepEqual(db.select().from(table).all(), []);
   assert.deepEqual(
     sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get(),
-    { count: 6 },
+    { count: 7 },
   );
 
   const inventory = db
@@ -254,7 +340,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     reopened.sqlite
       .prepare("SELECT count(*) AS count FROM __drizzle_migrations")
       .get(),
-    { count: 6 },
+    { count: 7 },
   );
 });
 
