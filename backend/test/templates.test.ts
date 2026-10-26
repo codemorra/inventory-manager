@@ -589,3 +589,87 @@ test("rolls back template revisions and content on update and delete storage fai
   assert.deepEqual(snapshot(f), before);
   assert.equal(f.errors.length, 2);
 });
+
+// Field selection belongs to one template revision and preserves its order, options, and independent IDs.
+test("creates only selected template fields in template order without changing the blueprint", async (context) => {
+  const f = fixture(context);
+  const template = f.services.templates.create({
+    name: "Blueprint",
+    fields: [
+      { name: "Number", field_type: "id" },
+      { name: "Omitted", field_type: "text", is_required: true },
+      {
+        name: "Choice",
+        field_type: "select",
+        options: [{ name: "One" }, { name: "Two" }],
+      },
+    ],
+  });
+  const path = `/inventory-templates/${template.id}/inventories`;
+  const response = await f.api
+    .post(path)
+    .send({ name: "Subset", expected_revision: 1, field_indexes: [2, 0] })
+    .expect(201);
+  const copy = f.services.inventoryEditor.read(response.body.inventory.id);
+  assert.deepEqual(
+    copy.fields.map((field) => [field.name, field.position]),
+    [
+      ["Number", 0],
+      ["Choice", 1],
+    ],
+  );
+  assert.deepEqual(
+    copy.fields[1]!.options.map((option) => option.name),
+    ["One", "Two"],
+  );
+  assert.equal(
+    f.services.items.create(copy.inventory.id, {}).values[0]!.value,
+    1,
+  );
+  assert.deepEqual(f.services.templates.get(template.id), template);
+  const empty = await f.api
+    .post(path)
+    .send({ name: "Empty", expected_revision: 1, field_indexes: [] })
+    .expect(201);
+  assert.deepEqual(empty.body.fields, []);
+  assert.deepEqual(f.services.templates.get(template.id), template);
+});
+
+// Invalid positions and stale revisions are rejected before any new inventory or field is written.
+test("rejects invalid template field selections atomically", async (context) => {
+  const f = fixture(context);
+  const template = f.services.templates.create({
+    name: "Blueprint",
+    fields: [{ name: "Title", field_type: "text" }],
+  });
+  const before = snapshot(f);
+  const path = `/inventory-templates/${template.id}/inventories`;
+  for (const field_indexes of [
+    [-1],
+    [0.5],
+    ["0"],
+    [true],
+    [0, 0],
+    [1],
+    [Number.MAX_SAFE_INTEGER],
+    null,
+    "0",
+  ]) {
+    await f.api
+      .post(path)
+      .send({ name: "Invalid", expected_revision: 1, field_indexes })
+      .expect(422);
+    assert.deepEqual(snapshot(f), before);
+  }
+  f.services.templates.update(template.id, {
+    expected_revision: 1,
+    fields: [],
+  });
+  const changed = snapshot(f);
+  const conflict = await f.api
+    .post(path)
+    .send({ name: "Stale", expected_revision: 1, field_indexes: [0] })
+    .expect(409);
+  assert.equal(conflict.body.detail.code, "inventory_template_conflict");
+  assert.deepEqual(snapshot(f), changed);
+});
