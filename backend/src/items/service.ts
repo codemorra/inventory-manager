@@ -3,6 +3,7 @@ import type { AppDatabase } from "../db/types.js";
 import { DomainError } from "../errors.js";
 import { createFieldRepository } from "../fields/repository.js";
 import type { InventoryService } from "../inventories/service.js";
+import { createInventoryService } from "../inventories/service.js";
 import { createOptionRepository } from "../options/repository.js";
 import { createItemRepository } from "./repository.js";
 import { assignAutomaticId } from "./automatic-ids.js";
@@ -10,8 +11,10 @@ import {
   itemInputSchema,
   itemUpdateSchema,
   itemRevisionSchema,
+  itemBatchUpdateSchema,
   validateValues,
   type ValueInput,
+  type ItemUpdateInput,
 } from "./validation.js";
 
 /**
@@ -57,6 +60,47 @@ export function createItemService(
       selectable.map((field) => field.id),
     );
     validateValues(values, fields, options);
+  }
+
+  /**
+   * Replace one item's editable values within the transaction owned by its caller.
+   * @param transaction The transaction shared by every row of a table save.
+   * @param inventoryId The already validated parent inventory.
+   * @param itemId The item whose original revision must still match.
+   * @param data The validated replacement and expected item revision.
+   * @returns The saved item with its new revision and preserved automatic IDs.
+   */
+  function replace(
+    transaction: AppDatabase,
+    inventoryId: string,
+    itemId: string,
+    data: ItemUpdateInput,
+  ) {
+    const items = createItemRepository(transaction);
+    if (!items.find(inventoryId, itemId))
+      throw new DomainError(
+        "inventory_item_not_found",
+        "Inventory item not found.",
+      );
+    const item = items.claimRevision(
+      inventoryId,
+      itemId,
+      data.expected_revision,
+    );
+    if (!item)
+      throw new DomainError(
+        "inventory_item_conflict",
+        "The inventory item has changed. Reload it before saving.",
+      );
+    validate(transaction, inventoryId, data.values);
+    // Full replacements retain server-owned assignments and tombstone omitted editable values.
+    const automaticFields = createFieldRepository(transaction)
+      .list(inventoryId)
+      .filter((field) => field.fieldType === "id")
+      .map((field) => field.id);
+    items.tombstoneValues(item.id, automaticFields);
+    items.createValues(item.id, data.values);
+    return { ...item, values: items.values(item.id) };
   }
 
   return {
@@ -131,28 +175,40 @@ export function createItemService(
     update(inventoryId: string, itemId: string, input: unknown) {
       const data = itemUpdateSchema.parse(input);
       return db.transaction((transaction) => {
-        get(inventoryId, itemId);
-        const items = createItemRepository(transaction);
-        // Compare-and-swap and value replacement share a transaction, including all rollback paths.
-        const item = items.claimRevision(
-          inventoryId,
-          itemId,
-          data.expected_revision,
-        );
-        if (!item)
+        createInventoryService(transaction).get(inventoryId);
+        return replace(transaction, inventoryId, itemId, data);
+      });
+    },
+
+    /**
+     * Save a table draft as one transaction without consuming its configuration revision.
+     * @param inventoryId The inventory containing all changed rows.
+     * @param input The captured configuration revision and complete replacements for changed items.
+     * @returns Saved items in request order, each with its incremented revision.
+     * @throws DomainError if any row is missing, stale, or invalid, or the configuration changed.
+     */
+    updateMany(inventoryId: string, input: unknown) {
+      const data = itemBatchUpdateSchema.parse(input);
+      return db.transaction((transaction) => {
+        const inventory = createInventoryService(transaction).get(inventoryId);
+        if (
+          inventory.configurationRevision !==
+          data.expected_configuration_revision
+        )
           throw new DomainError(
-            "inventory_item_conflict",
-            "The inventory item has changed. Reload it before saving.",
+            "inventory_configuration_conflict",
+            "The inventory configuration has changed. Reload it before saving.",
           );
-        validate(transaction, inventoryId, data.values);
-        // Full replacement applies to editable values, never to server-owned ID assignments.
-        const automaticFields = createFieldRepository(transaction)
-          .list(inventoryId)
-          .filter((field) => field.fieldType === "id")
-          .map((field) => field.id);
-        items.tombstoneValues(item.id, automaticFields);
-        items.createValues(item.id, data.values);
-        return { ...item, values: items.values(item.id) };
+        return data.items.map((change) => {
+          try {
+            return replace(transaction, inventoryId, change.item_id, change);
+          } catch (error) {
+            // Identify a failed row while retaining the established status codes and rollback semantics.
+            if (error instanceof DomainError)
+              throw new DomainError(error.code, error.message, change.item_id);
+            throw error;
+          }
+        });
       });
     },
 

@@ -63,6 +63,8 @@ Item PATCH replaces all editable values while preserving automatic IDs, which mu
 not be submitted. Omitted values and deleted items retain tombstones with cleared
 content. Invalid values return structured 422 errors without partial changes.
 
+`PATCH /inventories/{inventory_id}/items` saves multiple existing items atomically. Send `expected_configuration_revision` and a non-empty `items` array of `{ item_id, expected_revision, values }` replacements, with explicit values and unique item IDs. Any failed row rolls back the entire batch; row-specific domain errors include `detail.item_id`. Saved items are returned in request order with new revisions. Automatic IDs and the configuration revision remain unchanged.
+
 ### Revision checks
 
 Items expose `revision`. Item PATCH and DELETE require `expected_revision` in the

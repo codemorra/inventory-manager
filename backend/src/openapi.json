@@ -312,6 +312,85 @@
             }
           }
         }
+      },
+      "patch": {
+        "tags": ["inventory items"],
+        "summary": "Update Multiple Items Atomically",
+        "description": "Replace all editable values of the submitted existing items in one transaction. Send only changed rows, each once, with its original expected_revision and an explicit values array. The expected_configuration_revision must match the field configuration used for the draft. Configuration, missing-item, ownership, value-validation, revision, or storage failures roll back the complete batch, including revisions, timestamps and value tombstones. Automatic IDs remain unchanged and omitted editable values are tombstoned. Successful replacements advance each submitted item revision once, including no-op replacements, without changing the inventory configuration revision. The response contains saved items in request order. Preserve failed drafts and explicitly discard/reload after conflicts; never automatically retry stale revisions.",
+        "operationId": "update_items_inventories__inventory_id__items_patch",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Inventory Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryItemBatchUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Every submitted replacement committed successfully, returned in request order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryItemRead"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Inventory or submitted item is missing, deleted, or belongs to another inventory. No changes were saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An item revision is stale/exhausted or the inventory configuration changed. No changes were saved. Row conflicts include detail.item_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Malformed or duplicate rows, invalid revisions, or invalid field values. No changes were saved. Domain value errors include detail.item_id; schema errors include the items array index in loc.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DomainErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/inventories/{inventory_id}/items/{item_id}": {
@@ -1222,6 +1301,10 @@
           "message": {
             "type": "string",
             "title": "Message"
+          },
+          "item_id": {
+            "type": "string",
+            "description": "Failed item in a batch replacement, when the domain error concerns one row. Omitted for configuration and parent-inventory errors."
           }
         },
         "type": "object",
@@ -2182,6 +2265,57 @@
         },
         "required": ["expected_revision"],
         "description": "Require the saved revision before deleting an item."
+      },
+      "InventoryItemBatchUpdateRow": {
+        "type": "object",
+        "title": "InventoryItemBatchUpdateRow",
+        "description": "One complete editable-value replacement. Each item_id must occur once per batch. Automatic ID values must not be submitted. An explicitly empty values array clears optional editable values; values must never be omitted.",
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "Revision of the item snapshot being edited. Must match the current stored revision."
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/InventoryItemValueInput"
+                }
+              ],
+              "unevaluatedProperties": false
+            }
+          }
+        },
+        "required": ["item_id", "expected_revision", "values"],
+        "additionalProperties": false
+      },
+      "InventoryItemBatchUpdate": {
+        "type": "object",
+        "title": "InventoryItemBatchUpdate",
+        "properties": {
+          "expected_configuration_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "Configuration revision captured with the field definitions used for the table draft. Must match; item saves do not increment it."
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/InventoryItemBatchUpdateRow"
+            }
+          }
+        },
+        "required": ["expected_configuration_revision", "items"],
+        "additionalProperties": false
       }
     }
   }

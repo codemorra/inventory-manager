@@ -29,9 +29,13 @@ export function errorHandler(
               error.code === "invalid_inventory_item_value"
             ? 422
             : 404;
-      response
-        .status(status)
-        .json({ detail: { code: error.code, message: error.message } });
+      response.status(status).json({
+        detail: {
+          code: error.code,
+          message: error.message,
+          ...(error.itemId === undefined ? {} : { item_id: error.itemId }),
+        },
+      });
       return;
     }
 

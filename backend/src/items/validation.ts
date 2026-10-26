@@ -29,6 +29,34 @@ export const itemRevisionSchema = z.object({
 export const itemUpdateSchema = itemInputSchema.extend(
   itemRevisionSchema.shape,
 );
+export type ItemUpdateInput = z.infer<typeof itemUpdateSchema>;
+
+// Require explicit replacements and unambiguous row IDs before entering a transaction.
+export const itemBatchUpdateSchema = z
+  .strictObject({
+    expected_configuration_revision: itemRevisionSchema.shape.expected_revision,
+    items: z
+      .array(
+        z.strictObject({
+          item_id: z.string().min(1),
+          expected_revision: itemRevisionSchema.shape.expected_revision,
+          values: z.array(valueInputSchema.strict()),
+        }),
+      )
+      .min(1),
+  })
+  .superRefine((data, context) => {
+    const seen = new Set<string>();
+    for (const [index, item] of data.items.entries()) {
+      if (seen.has(item.item_id))
+        context.addIssue({
+          code: "custom",
+          path: ["items", index, "item_id"],
+          message: "An item can only be replaced once per save.",
+        });
+      seen.add(item.item_id);
+    }
+  });
 export type ValueInput = z.infer<typeof valueInputSchema>;
 type Field = typeof inventoryFields.$inferSelect;
 type Option = typeof inventoryFieldOptions.$inferSelect;
