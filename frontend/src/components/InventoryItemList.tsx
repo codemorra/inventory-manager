@@ -34,6 +34,9 @@ import { ColumnResizeHandle } from "./ColumnResizeHandle";
 import { ContextMenu } from "./ContextMenu";
 import { sortInventoryItems } from "./inventoryItemSorting";
 import { searchInventoryItems } from "./inventoryItemSearch";
+import { filterInventoryItems, itemFilterError } from "./inventoryItemFilters";
+import { InventoryItemFilters } from "./InventoryItemFilters";
+import type { ItemFilter } from "../types/itemFilter";
 import {
   createValueInput,
   createCheckboxReplacement,
@@ -217,16 +220,26 @@ export function InventoryItemList({
   const tableId = useId();
   const locale = i18n.resolvedLanguage ?? "en";
   const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<ItemFilter[]>([]);
+  const activeFilters = useMemo(
+    () => filters.filter((filter) => !itemFilterError(filter, fields)),
+    [filters, fields],
+  );
   const matchingItems = useMemo(
     () =>
-      searchInventoryItems(
-        items,
+      filterInventoryItems(
+        searchInventoryItems(
+          items,
+          fields,
+          searchQuery,
+          { no: t("common.values.no"), yes: t("common.values.yes") },
+          locale,
+        ),
         fields,
-        searchQuery,
-        { no: t("common.values.no"), yes: t("common.values.yes") },
+        activeFilters,
         locale,
       ),
-    [items, fields, searchQuery, locale, t],
+    [items, fields, searchQuery, activeFilters, locale, t],
   );
   // Measure every loaded value so filtering never makes automatic columns jump.
   const columnContents = useMemo(
@@ -317,6 +330,11 @@ export function InventoryItemList({
     deleteItem.isPending ||
     checkboxUpdate.isPending ||
     reloadItems.isPending;
+  const controlsDisabled =
+    isMutating ||
+    editingItem !== null ||
+    deletingTarget !== null ||
+    resizing !== null;
   const menuField = columnMenu
     ? visibleFields.find((field) => field.id === columnMenu.fieldId)
     : undefined;
@@ -533,18 +551,23 @@ export function InventoryItemList({
         onAutomaticWidths={() => setAutomaticColumnWidth()}
         allColumnsAutomatic={allVisibleColumnsAutomatic}
         itemCount={matchingItems.length}
-        totalItemCount={searchQuery.trim() ? items.length : undefined}
+        totalItemCount={
+          searchQuery.trim() || activeFilters.length ? items.length : undefined
+        }
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
+        filterControl={
+          <InventoryItemFilters
+            fields={fields}
+            filters={activeFilters}
+            onApply={setFilters}
+            disabled={controlsDisabled}
+          />
+        }
         actions={actions}
         wrapText={wrapText}
         onWrapTextChange={setWrapText}
-        disabled={
-          isMutating ||
-          editingItem !== null ||
-          deletingTarget !== null ||
-          resizing !== null
-        }
+        disabled={controlsDisabled}
       />
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start overflow-hidden rounded-b-md border border-shell bg-surface">
         <div

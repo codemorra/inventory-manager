@@ -283,7 +283,7 @@
       "clear": "Suche zurücksetzen",
       "count": "{{count}} von {{total}} Einträgen",
       "empty": "Keine passenden Einträge.",
-      "emptyDescription": "Ändere die Suche oder setze sie zurück, um alle Einträge anzuzeigen."
+      "emptyDescription": "Ändere die Suche oder die Filter, um passende Einträge anzuzeigen."
     },
     "menu": {
       "label": "Steuerung der Inventartabelle",
@@ -304,6 +304,53 @@
       "hint": "Ziehen, um die Grundbreite anzupassen. Mit den Pfeiltasten in kleinen Schritten, mit Umschalt in größeren Schritten. Doppelklick aktiviert die automatische Breite."
     },
     "sortHint": "Wähle eine sortierbare Spaltenüberschrift, um zwischen aufsteigender, absteigender und ursprünglicher Reihenfolge zu wechseln. Beim Sortieren stehen leere Werte am Ende.",
-    "actions": "Aktionen"
+    "actions": "Aktionen",
+    "filters": {
+      "label": "Filter",
+      "activeCount_one": "{{count}} aktiver Filter",
+      "activeCount_other": "{{count}} aktive Filter",
+      "help": "Alle Bedingungen müssen zutreffen. Bei einer Auswahl genügt eine der gewählten Optionen. Änderungen werden erst mit „Anwenden“ aktiv.",
+      "empty": "Keine Filterbedingungen. Füge einen Filter hinzu, um die Einträge einzugrenzen.",
+      "condition": "Bedingung {{number}}",
+      "field": "Spalte",
+      "operator": "Bedingung",
+      "value": "Wert",
+      "valueTo": "Oberer Wert",
+      "options": "Optionen",
+      "chooseOptions": "Optionen auswählen…",
+      "unavailableField": "Nicht verfügbare Spalte",
+      "remove": "Bedingung {{number}} entfernen",
+      "add": "Filter hinzufügen",
+      "reset": "Filter zurücksetzen",
+      "apply": "Anwenden",
+      "operators": {
+        "contains": "enthält",
+        "notContains": "enthält nicht",
+        "equals": "ist gleich",
+        "notEquals": "ist nicht gleich",
+        "greaterThan": "ist größer als",
+        "atLeast": "ist mindestens",
+        "lessThan": "ist kleiner als",
+        "atMost": "ist höchstens",
+        "between": "liegt zwischen (einschließlich)",
+        "before": "liegt vor",
+        "after": "liegt nach",
+        "date": "ist am",
+        "time": "ist um",
+        "datetime": "ist am/um",
+        "isTrue": "ist Ja",
+        "isFalse": "ist Nein",
+        "anyOf": "enthält eine der Optionen",
+        "noneOf": "enthält keine der Optionen",
+        "isEmpty": "ist leer",
+        "isNotEmpty": "ist nicht leer"
+      },
+      "errors": {
+        "field": "Wähle eine verfügbare Spalte und eine passende Bedingung.",
+        "value": "Gib einen gültigen Wert für diesen Spaltentyp ein.",
+        "range": "Der obere Wert muss größer oder gleich dem ersten Wert sein.",
+        "options": "Wähle mindestens eine verfügbare Option."
+      }
+    }
   }
 }
