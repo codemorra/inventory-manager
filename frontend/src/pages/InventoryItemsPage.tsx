@@ -120,6 +120,7 @@ export function InventoryItemsPage() {
         {hasTable && fieldQuery.data && (
           <InventoryItemList
             key={inventoryId}
+            inventoryId={inventoryId}
             fields={fieldQuery.data}
             items={itemQuery.data ?? []}
             actions={

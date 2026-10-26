@@ -54,8 +54,16 @@ at creation.
 The inventory page shows its title and optional description above the item table.
 The compact table action row places **View** on the left and the item count and
 **New item** on the right. **View → Wrap text** switches
-between wrapped values (up to three lines) and a single truncated line. This view
-option applies to the current inventory page visit.
+between wrapped values (up to three lines) and a single truncated line. The
+**View → Columns** submenu shows or hides individual columns, keeping at least
+one visible. Menus stay within the viewport and scroll when their contents exceed
+the available height. Hiding the sorted column restores the original item order. Hidden
+fields remain available in item forms and retain their saved values.
+
+Sorting, visible columns, and text wrapping are saved separately for each inventory
+in this browser and restored when switching inventories or reopening the application.
+New fields appear automatically; deleted fields and fields that no longer support
+sorting are ignored when restoring a view.
 
 Select a column heading to sort ascending, select it again to sort descending,
 and a third time to restore the original order. Only the sorted column shows a

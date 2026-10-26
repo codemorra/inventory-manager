@@ -280,6 +280,8 @@
     "menu": {
       "label": "Steuerung der Inventartabelle",
       "view": "Ansicht",
+      "columns": "Spalten",
+      "keepColumn": "Mindestens eine Spalte muss sichtbar bleiben.",
       "wrapText": "Zeilenumbruch"
     },
     "sortHint": "Wähle eine sortierbare Spaltenüberschrift, um zwischen aufsteigender, absteigender und ursprünglicher Reihenfolge zu wechseln. Beim Sortieren stehen leere Werte am Ende.",

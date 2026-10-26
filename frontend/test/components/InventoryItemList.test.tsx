@@ -119,14 +119,22 @@ const items: InventoryItem[] = [
 ];
 
 /** Render the item table with an isolated query client. */
-function renderInventoryItemList(testItems = items, testFields = fields) {
+function renderInventoryItemList(
+  testItems = items,
+  testFields = fields,
+  inventoryId = "inventory-1",
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <InventoryItemList fields={testFields} items={testItems} />
+      <InventoryItemList
+        inventoryId={inventoryId}
+        fields={testFields}
+        items={testItems}
+      />
     </QueryClientProvider>,
   );
 }
@@ -151,7 +159,11 @@ test("preserves a stale edit until the user explicitly discards inputs and reloa
   });
   const view = render(
     <QueryClientProvider client={client}>
-      <InventoryItemList fields={[fields[0]]} items={[item]} />
+      <InventoryItemList
+        inventoryId="inventory-1"
+        fields={[fields[0]]}
+        items={[item]}
+      />
     </QueryClientProvider>,
   );
   mockedUpdateInventoryItem.mockRejectedValueOnce(
@@ -163,7 +175,11 @@ test("preserves a stale edit until the user explicitly discards inputs and reloa
   await user.type(input, "Local draft");
   view.rerender(
     <QueryClientProvider client={client}>
-      <InventoryItemList fields={[fields[0]]} items={[remote]} />
+      <InventoryItemList
+        inventoryId="inventory-1"
+        fields={[fields[0]]}
+        items={[remote]}
+      />
     </QueryClientProvider>,
   );
   await user.click(screen.getByRole("button", { name: "Save changes" }));
@@ -249,6 +265,7 @@ test("requires reloading after a checkbox conflict before another toggle", async
     const query = useInventoryItems("inventory-1");
     return (
       <InventoryItemList
+        inventoryId="inventory-1"
         fields={[{ ...fields[2], name: "Checked", field_type: "checkbox" }]}
         items={query.data ?? []}
       />
@@ -726,7 +743,11 @@ test("removes sorting controls and active sorting when a field becomes unsortabl
   const testItems = [...items, second];
   const view = render(
     <QueryClientProvider client={client}>
-      <InventoryItemList fields={fields} items={testItems} />
+      <InventoryItemList
+        inventoryId="inventory-1"
+        fields={fields}
+        items={testItems}
+      />
     </QueryClientProvider>,
   );
   await user.click(screen.getByRole("button", { name: "Title" }));
@@ -736,6 +757,7 @@ test("removes sorting controls and active sorting when a field becomes unsortabl
   view.rerender(
     <QueryClientProvider client={client}>
       <InventoryItemList
+        inventoryId="inventory-1"
         fields={fields.map((field) => ({ ...field, is_sortable: false }))}
         items={testItems}
       />
@@ -788,6 +810,118 @@ test("requires missing values only when editing an existing item and preserves e
 });
 
 describe("InventoryItemList", () => {
+  // Test that hiding columns affects table presentation while edits still submit every field.
+  test("hides columns, retains one visible column, and preserves hidden values when editing", async () => {
+    const user = userEvent.setup();
+    mockedUpdateInventoryItem.mockResolvedValue(items[0]);
+    renderInventoryItemList();
+    await user.click(screen.getByRole("button", { name: "View" }));
+    await user.click(screen.getByRole("menuitem", { name: "Columns" }));
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Title" }));
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Played" }));
+    expect(
+      screen.queryByRole("columnheader", { name: "Title" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: "Played" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Genre" }),
+    ).toBeDisabled();
+    expect(
+      within(screen.getAllByRole("row")[1]).getAllByRole("cell"),
+    ).toHaveLength(2);
+    expect(screen.queryByText("Baldur's Gate 3")).not.toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.getByRole("textbox", { name: "Title" })).toHaveValue(
+      "Baldur's Gate 3",
+    );
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() =>
+      expect(mockedUpdateInventoryItem).toHaveBeenCalledWith(
+        "inventory-1",
+        "item-1",
+        {
+          expected_revision: 1,
+          values: [
+            { field_id: "title-field", value: "Baldur's Gate 3" },
+            { field_id: "genre-field", value: ["genre-rpg"] },
+            { field_id: "played-field", value: true },
+          ],
+        },
+      ),
+    );
+  });
+
+  // Test reopening an inventory restores its saved view and keeps other inventories independent.
+  test("restores sorting, hidden columns, and wrapping separately for each inventory", async () => {
+    const user = userEvent.setup();
+    const another: InventoryItem = {
+      ...items[0],
+      id: "second",
+      values: [{ ...items[0].values[0], value: "Animal Crossing" }],
+    };
+    const first = renderInventoryItemList([...items, another]);
+    await user.click(screen.getByRole("button", { name: "Title" }));
+    await user.click(screen.getByRole("button", { name: "View" }));
+    await user.click(screen.getByRole("menuitem", { name: "Columns" }));
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Genre" }));
+    await user.click(
+      screen.getByRole("menuitemcheckbox", { name: "Wrap text" }),
+    );
+    first.unmount();
+
+    const second = renderInventoryItemList([], fields, "inventory-2");
+    expect(screen.getByRole("columnheader", { name: "Genre" })).toBeVisible();
+    expect(
+      screen.getByRole("columnheader", { name: "Title" }),
+    ).not.toHaveAttribute("aria-sort");
+    await user.click(screen.getByRole("button", { name: "View" }));
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Wrap text" }),
+    ).toBeChecked();
+    await user.click(screen.getByRole("menuitem", { name: "Columns" }));
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Played" }));
+    second.unmount();
+
+    renderInventoryItemList([...items, another]);
+    expect(
+      screen.queryByRole("columnheader", { name: "Genre" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Played" })).toBeVisible();
+    expect(screen.getByRole("columnheader", { name: "Title" })).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+    expect(
+      within(screen.getAllByRole("row")[1]).getByText("Animal Crossing"),
+    ).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "View" }));
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Wrap text" }),
+    ).not.toBeChecked();
+    expect(mockedUpdateInventoryItem).not.toHaveBeenCalled();
+  });
+
+  // Test that removing the active sort column restores API order and keeps the empty row aligned.
+  test("clears sorting when its column is hidden and adjusts the empty table span", async () => {
+    const user = userEvent.setup();
+    const first = renderInventoryItemList();
+    await user.click(screen.getByRole("button", { name: "Title" }));
+    await user.click(screen.getByRole("button", { name: "View" }));
+    await user.click(screen.getByRole("menuitem", { name: "Columns" }));
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Title" }));
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Title" }));
+    expect(
+      screen.getByRole("columnheader", { name: "Title" }),
+    ).not.toHaveAttribute("aria-sort");
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Genre" }));
+    first.unmount();
+    renderInventoryItemList([]);
+    expect(screen.getByRole("cell")).toHaveAttribute("colspan", "3");
+  });
+
   // Test that changing the table view keeps the active sort and never writes item values.
   test("changes text wrapping through the view menu without modifying items or sorting", async () => {
     const user = userEvent.setup();

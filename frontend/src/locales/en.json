@@ -280,6 +280,8 @@
     "menu": {
       "label": "Inventory table controls",
       "view": "View",
+      "columns": "Columns",
+      "keepColumn": "At least one column must remain visible.",
       "wrapText": "Wrap text"
     },
     "sortHint": "Select a sortable column heading to cycle through ascending, descending, and the original order. Empty values appear last when sorting.",
