@@ -71,5 +71,13 @@ export const templateRevisionSchema = z.strictObject({
 export const templateInstantiateSchema = inventoryCreateSchema
   .extend({
     expected_revision: revisionSchema,
+    // Positions belong to the captured template revision, not to persisted field identities.
+    field_indexes: z
+      .array(z.number().int().min(0).max(Number.MAX_SAFE_INTEGER))
+      .refine(
+        (indexes) => new Set(indexes).size === indexes.length,
+        "Field indexes must be unique.",
+      )
+      .optional(),
   })
   .strict();

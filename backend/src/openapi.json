@@ -2823,6 +2823,16 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 9007199254740991
+          },
+          "field_indexes": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "uniqueItems": true,
+            "description": "Optional zero-based field positions in the selected template revision. Omit to include all fields; [] creates an inventory without fields. Selected fields retain template order, with normalized destination positions. Invalid or repeated positions return 422 before any writes."
           }
         },
         "required": ["name", "expected_revision"],

@@ -1,4 +1,5 @@
 import type { AppDatabase } from "../db/types.js";
+import { ZodError } from "zod";
 import { DomainError } from "../errors.js";
 import { createFieldRepository } from "../fields/repository.js";
 import { createInventoryEditorService } from "../inventories/editor-service.js";
@@ -159,10 +160,27 @@ export function createTemplateService(db: AppDatabase) {
             "inventory_template_conflict",
             "The template has changed. Reload it before creating an inventory.",
           );
+        if (
+          data.field_indexes?.some((index) => index >= template.fields.length)
+        )
+          throw new ZodError([
+            {
+              code: "custom",
+              path: ["field_indexes"],
+              message:
+                "Selected fields must belong to the requested template revision.",
+            },
+          ]);
+        const selected =
+          data.field_indexes === undefined ? null : new Set(data.field_indexes);
+        // Keep the template's field order and normalize positions after omitted fields.
+        const definitions = template.fields.filter(
+          (_, index) => selected === null || selected.has(index),
+        );
         const inventory = createInventoryService(transaction).create(data);
         const fields = createFieldRepository(transaction);
         const options = createOptionRepository(transaction);
-        for (const [position, definition] of template.fields.entries()) {
+        for (const [position, definition] of definitions.entries()) {
           const field = templateFieldSchema.parse(definition);
           // The destination is empty: preserve even empty option lists, with no ID backfill.
           const created = fields.create({
