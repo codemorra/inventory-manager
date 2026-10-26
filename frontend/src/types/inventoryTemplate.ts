@@ -34,3 +34,11 @@ export interface InstantiateInventoryTemplateInput extends CreateInventoryInput 
   expected_revision: number;
   field_indexes?: number[];
 }
+
+// Replace one saved blueprint atomically without retaining local draft identifiers.
+export interface UpdateInventoryTemplateInput {
+  expected_revision: number;
+  name: string;
+  description: string | null;
+  fields: InventoryTemplateField[];
+}

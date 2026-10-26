@@ -212,3 +212,29 @@ describe("AppShell", () => {
     );
   });
 });
+
+// The separate management entry sits above Settings and closes mobile navigation when followed.
+test.each([false, true])(
+  "opens templates from the sidebar footer (mobile: %s)",
+  async (mobile) => {
+    const user = userEvent.setup();
+    mockedGetInventories.mockResolvedValue([]);
+    renderAppShell();
+    if (mobile)
+      await user.click(screen.getByRole("button", { name: "Open menu" }));
+    const area = mobile
+      ? within(screen.getByRole("dialog", { name: "Mobile navigation" }))
+      : screen;
+    const link = area.getByRole("link", { name: "Templates" });
+    expect(link).toHaveAttribute("href", "/templates");
+    expect(link.nextElementSibling).toHaveTextContent("Settings");
+    await user.click(link);
+    expect(
+      screen.queryByRole("dialog", { name: "Mobile navigation" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Templates" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  },
+);
