@@ -354,6 +354,7 @@
     },
     "edit": {
       "start": "Edit table",
+      "stableView": "Rows stay in place while editing. Sorting and filtering resume after saving or canceling.",
       "loading": "Loading table editor…",
       "changedCount_one": "{{count}} changed row",
       "changedCount_other": "{{count}} changed rows",

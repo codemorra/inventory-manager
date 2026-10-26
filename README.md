@@ -30,7 +30,7 @@ The screenshot uses synthetic demo data.
 
 Create an inventory from the sidebar, then use the **Inventory settings** gear beside its title to define fields and selection options. Save the configuration and add items with **New item**. Drag inventories onto sidebar groups to organize them.
 
-Click a column heading to cycle through ascending, descending, and original order. Use **View** to show or hide columns, wrap text, or restore automatic widths. Drag a heading's right edge to resize a column; right-click the heading to restore its automatic width or hide it. Table preferences are saved per inventory in this browser. Use the search field and filter icon to narrow items.
+Click a column heading to cycle through ascending, descending, and original order. Use **View** to show or hide columns, wrap text, or restore automatic widths. Drag a heading's right edge to resize a column; right-click the heading to restore its automatic width or hide it. Table preferences are saved per inventory in this browser. Use search and filters to narrow items, or the pencil to edit cells and save or discard changes together.
 
 Open **Settings** at the bottom of the sidebar to change language, appearance, and accent color.
 
