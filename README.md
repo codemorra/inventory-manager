@@ -18,73 +18,19 @@ The screenshot uses synthetic demo data.
 - Single-level groups with drag-and-drop organization
 - Sidebar filtering by inventory title
 - Sortable item tables
+- Per-inventory table views with column visibility, automatic/manual widths, and text wrapping
 - Required fields, per-column sorting controls, and drag-and-drop field ordering
 - Configurable text limits, selection options, web links, and automatic numbering
 - English and German interface
 - Light, dark, and system appearance modes with accent colors
 
-## Using the interface
+## Getting started
 
-Create inventories and groups from the sidebar. Drag an inventory directly onto a
-group to assign it, or onto **Without a group** to remove its assignment. Groups
-can be collapsed, and inventories remain alphabetically ordered. The sidebar search
-filters inventory titles and reveals matching inventories inside collapsed groups.
+Create an inventory from the sidebar, then use the **Inventory settings** gear beside its title to define fields and selection options. Save the configuration and add items with **New item**. Drag inventories onto sidebar groups to organize them.
 
-Creating an inventory opens its item page. Use the **Inventory settings** gear
-beside the title, or right-click an inventory in the sidebar and select **Edit**,
-to open its settings. The **General** section contains its name and description;
-**Fields** manages its
-field definitions and selection options. All changes remain local drafts until
-**Save changes** commits them together. **Cancel**, closing the editor, or Escape
-discards the draft. A failed save keeps the draft available for correction or retry.
-Complete or cancel open field and option forms before saving the full inventory.
-Long field lists scroll independently of the dialog actions.
+Click a column heading to cycle through ascending, descending, and original order. Use **View** to show or hide columns, wrap text, or restore automatic widths. Drag a heading's right edge to resize a column; right-click the heading to restore its automatic width or hide it. Table preferences are saved per inventory in this browser.
 
-If an inventory or item changes in another window, outdated edits are rejected
-instead of overwriting newer data. The editor keeps your inputs until you explicitly
-discard them and reload the current version. A conflicting checkbox change requires
-reloading the list; a conflicting item deletion requires loading the current item
-and confirming again.
-
-Drag fields by their handles to change their order. **Save changes** applies the
-order to the table and item forms. Field names, requirements, sorting preferences,
-and selection options can be edited later. A field's type and text limit are fixed
-at creation.
-
-The inventory page shows its title and optional description above the item table.
-The compact table action row places **View** on the left and the item count and
-**New item** on the right. **View → Wrap text** switches
-between wrapped values (up to three lines) and a single truncated line. The
-**View → Columns** submenu shows or hides individual columns, keeping at least
-one visible. Menus stay within the viewport and scroll when their contents exceed
-the available height. Hiding the sorted column restores the original item order. Hidden
-fields remain available in item forms and retain their saved values.
-
-Sorting, visible columns, and text wrapping are saved separately for each inventory
-in this browser and restored when switching inventories or reopening the application.
-New fields appear automatically; deleted fields and fields that no longer support
-sorting are ignored when restoring a view.
-
-Select a column heading to sort ascending, select it again to sort descending,
-and a third time to restore the original order. Only the sorted column shows a
-direction chevron. Sorting can be disabled separately for each field. Comparisons
-follow the field type; selections use option names and links use their displayed
-text. Empty values appear last.
-Sorting changes the current view without changing stored data.
-
-Right-click a sidebar group to rename or delete it. Deleting a group preserves its
-inventories and moves them to **Without a group**. Deleting an inventory, item,
-field, option, or group requires confirmation in an application dialog. Field and
-option deletions remain part of the local editor draft until saved. Inventory,
-item, and group deletions are applied after confirmation; failures leave the
-confirmation open with an error and allow another attempt.
-
-Deleting a field also clears its stored item values and selection options. Deleting
-an inventory clears its fields, options, items, and values. Identifiers and deletion
-markers remain in the database; unrelated inventories and groups are preserved.
-
-The **Settings** button at the bottom of the sidebar opens language, appearance, and
-accent color preferences. Changes take effect immediately.
+Open **Settings** at the bottom of the sidebar to change language, appearance, and accent color.
 
 ## Fields and item values
 
@@ -103,26 +49,15 @@ accent color preferences. Changes take effect immediately.
 | URL             | An HTTP or HTTPS address with optional link text           |
 | Automatic ID    | A read-only number assigned automatically to each item     |
 
-Selection options belong to their field within one inventory. Item dialogs use
-themed dropdowns for single and multiple choices. Web links open in a new tab;
-without link text, the address is displayed.
+Selection options belong to their field within one inventory. Item dialogs use themed dropdowns for single and multiple choices. Web links open in a new tab; without link text, the address is displayed.
 
-Required fields must be completed for new items and when saving existing items.
-Adding a required field leaves existing entries unchanged until their next edit.
-If a table checkbox cannot be saved because required or other input is incomplete,
-the edit dialog opens with the checkbox change still unsaved. Canceling discards it.
+Required fields must be completed for new items and when saving existing items. Adding a required field leaves existing entries unchanged until their next edit. If a table checkbox cannot be saved because required or other input is incomplete, the edit dialog opens with the checkbox change still unsaved. Canceling discards it.
 
-Automatic IDs have independent counters per field and inventory, starting at 1.
-Adding an ID field numbers existing active items by creation time, with technical
-IDs breaking ties. Numbers are assigned only when a save succeeds and remain
-unchanged during item edits. Deleted numbers are not reused unless explicitly
-enabled in the field settings; that option selects the smallest free number.
+Automatic IDs have independent counters per field and inventory, starting at 1. Adding an ID field numbers existing active items by creation time, with technical IDs breaking ties. Numbers are assigned only when a save succeeds and remain unchanged during item edits. Deleted numbers are not reused unless explicitly enabled in the field settings; that option selects the smallest free number.
 
 ## Technology
 
-The frontend uses React, TypeScript, Vite, and Tailwind CSS. The Express/TypeScript
-backend stores data locally in SQLite through Drizzle, with database migrations
-and rotating log files.
+The frontend uses React, TypeScript, Vite, and Tailwind CSS. The Express/TypeScript backend stores data locally in SQLite through Drizzle, with database migrations and rotating log files.
 
 ## Development
 
@@ -134,9 +69,7 @@ npm --prefix backend ci
 npm --prefix frontend ci
 ```
 
-The packages retain independent lockfiles. `better-sqlite3` is a native dependency;
-its installation must complete successfully before running the backend. See
-[backend documentation](backend/README.md).
+The packages retain independent lockfiles. `better-sqlite3` is a native dependency; its installation must complete successfully before running the backend. See [backend documentation](backend/README.md).
 
 Start the backend and frontend in separate terminals:
 
@@ -148,9 +81,7 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
-The backend defaults to `http://127.0.0.1:8000`; the Vite frontend usually runs at
-`http://localhost:5173`. Verify backend readiness at `/health`. The backend applies
-Drizzle migrations before listening, creating an empty database on first startup.
+The backend defaults to `http://127.0.0.1:8000`; the Vite frontend usually runs at `http://localhost:5173`. Verify backend readiness at `/health`. The backend applies Drizzle migrations before listening, creating an empty database on first startup.
 
 For a compiled backend:
 
@@ -159,14 +90,11 @@ npm --prefix backend run build
 npm --prefix backend start
 ```
 
-API documentation remains available at `http://127.0.0.1:8000/docs`, with the API
-contract at `/openapi.json` and an alternative view at `/redoc`.
+API documentation remains available at `http://127.0.0.1:8000/docs`, with the API contract at `/openapi.json` and an alternative view at `/redoc`.
 
 ## Configuration and local data
 
-Copy `backend/.env.example` to `backend/.env` to customize the backend. The development,
-start, and migration commands load that optional file using Node's built-in environment
-support. Existing process environment variables take precedence.
+Copy `backend/.env.example` to `backend/.env` to customize the backend. The development, start, and migration commands load that optional file using Node's built-in environment support. Existing process environment variables take precedence.
 
 | Variable              | Purpose                                                                    |
 | --------------------- | -------------------------------------------------------------------------- |
@@ -177,15 +105,9 @@ support. Existing process environment variables take precedence.
 | `INVENTORY_LOG_LEVEL` | Application log level, default `INFO`                                      |
 | `VITE_API_BASE_URL`   | Frontend backend URL, default `http://127.0.0.1:8000`                      |
 
-Configure the frontend through `frontend/.env`, based on `frontend/.env.example`.
-Backend storage paths support `~/` and are independent of the current working directory.
-The backend permits requests from `http://localhost:5173` and `http://127.0.0.1:5173`.
+Configure the frontend through `frontend/.env`, based on `frontend/.env.example`. Backend storage paths support `~/` and are independent of the current working directory. The backend permits requests from `http://localhost:5173` and `http://127.0.0.1:5173`.
 
-The frontend initially selects German for a `de` system locale and English for all
-other locales. Language, appearance, and accent color are stored locally in the
-browser and restored on the next visit. The system appearance option follows the
-operating system's light or dark preference, including changes while the application
-is open. Inventory groups and memberships are stored in SQLite.
+The frontend initially selects German for a `de` system locale and English for all other locales. Language, appearance, and accent color are stored locally in the browser and restored on the next visit. The system appearance option follows the operating system's light or dark preference, including changes while the application is open. Inventory groups and memberships are stored in SQLite.
 
 ```text
 InventoryData/node/
@@ -195,8 +117,7 @@ InventoryData/node/
     └── inventory-manager.log
 ```
 
-This data directory is excluded from version control. Its location is retained
-across application updates so existing inventories remain available.
+This data directory is excluded from version control. Its location is retained across application updates so existing inventories remain available.
 
 See [backend documentation](backend/README.md) for migration commands and API behavior.
 
@@ -208,13 +129,9 @@ Run the complete quality check from the repository root:
 npm run check
 ```
 
-It executes typecheck, lint, tests, build, and finally `prettier --check .`.
-The format check only reads files. The other checks delegate to the frontend and
-backend packages; backend tests use `node:test`, frontend tests use Vitest.
+It executes typecheck, lint, tests, build, and finally `prettier --check .`. The format check only reads files. The other checks delegate to the frontend and backend packages; backend tests use `node:test`, frontend tests use Vitest.
 
-Tests use synthetic data. The frontend client integration test starts Express with
-a temporary database and local port. HTTP tests require an environment permitting
-local socket communication.
+Tests use synthetic data. The frontend client integration test starts Express with a temporary database and local port. HTTP tests require an environment permitting local socket communication.
 
 Individual checks remain available in each package, for example:
 

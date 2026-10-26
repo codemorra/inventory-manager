@@ -1,5 +1,13 @@
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
-import { type ReactNode, type SyntheticEvent, useRef, useState } from "react";
+import {
+  type ReactNode,
+  type SyntheticEvent,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -9,6 +17,9 @@ import {
 } from "../hooks/useInventoryItems";
 import { ApiError } from "../services/api";
 import { useInventoryView } from "../hooks/useInventoryView";
+import { useAutomaticColumnWidths } from "../hooks/useAutomaticColumnWidths";
+import { useTableRowHeights } from "../hooks/useTableRowHeights";
+import { distributeColumnWidths } from "../appearance/inventoryColumns";
 import type {
   InventoryField,
   InventoryFieldOption,
@@ -19,6 +30,8 @@ import { Modal } from "./Modal";
 import { formatDuration } from "./duration";
 import { isUrlInput, isWebAddress, urlDisplayText } from "./url";
 import { InventoryTableControls } from "./InventoryTableControls";
+import { ColumnResizeHandle } from "./ColumnResizeHandle";
+import { ContextMenu } from "./ContextMenu";
 import { sortInventoryItems } from "./inventoryItemSorting";
 import {
   createValueInput,
@@ -35,6 +48,14 @@ interface InventoryItemListProps {
   fields: InventoryField[];
   items: InventoryItem[];
   actions?: ReactNode;
+}
+
+// Keep the column menu anchored to the cursor and restore focus to its source.
+interface ColumnMenuTarget {
+  fieldId: string;
+  x: number;
+  y: number;
+  source: HTMLElement;
 }
 
 /**
@@ -163,13 +184,91 @@ export function InventoryItemList({
     null,
   );
   const { t, i18n } = useTranslation();
-  const { view, toggleSort, toggleField, setWrapText } = useInventoryView(
-    inventoryId,
-    fields,
-  );
+  const {
+    view,
+    toggleSort,
+    toggleField,
+    setWrapText,
+    setColumnWidth,
+    setAutomaticColumnWidth,
+  } = useInventoryView(inventoryId, fields);
   const { sort, wrapText, hiddenFieldIds } = view;
   const visibleFields = fields.filter(
     (field) => !hiddenFieldIds.includes(field.id),
+  );
+  const [resizing, setResizing] = useState<{
+    fieldId: string;
+    width: number;
+  } | null>(null);
+  const [columnMenu, setColumnMenu] = useState<ColumnMenuTarget | null>(null);
+  const dataTable = useRef<HTMLTableElement>(null);
+  const dataViewport = useRef<HTMLDivElement>(null);
+  const [availableWidth, setAvailableWidth] = useState(0);
+  useLayoutEffect(() => {
+    const element = dataViewport.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setAvailableWidth(entry.contentRect.width);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const tableId = useId();
+  const locale = i18n.resolvedLanguage ?? "en";
+  const columnContents = useMemo(
+    () =>
+      fields.map((field) => ({
+        field,
+        values: items.map((item) => {
+          const stored = item.values.find(
+            (value) => value.field_id === field.id,
+          );
+          const value = stored?.value;
+          const content = formatValue(
+            field,
+            stored,
+            { no: t("common.values.no"), yes: t("common.values.yes") },
+            locale,
+          );
+          return typeof content === "string"
+            ? content
+            : isUrlInput(value)
+              ? urlDisplayText(value)
+              : "";
+        }),
+      })),
+    [fields, items, locale, t],
+  );
+  const automaticWidths = useAutomaticColumnWidths(
+    columnContents,
+    dataTable,
+    visibleFields.map((field) => field.id).join(","),
+  );
+  const rowHeights = useTableRowHeights(dataTable, items);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  // The preview is a draft manual override; neither Auto flags nor surplus are persisted.
+  const manualWidths = resizing
+    ? { ...view.columnWidths, [resizing.fieldId]: resizing.width }
+    : view.columnWidths;
+  const baseColumns = visibleFields.map((field) => ({
+    field,
+    width: manualWidths[field.id] ?? automaticWidths[field.id],
+  }));
+  const displayWidths = distributeColumnWidths(
+    baseColumns.map((column) => column.width),
+    availableWidth,
+    baseColumns.map(({ field }) => manualWidths[field.id] === undefined),
+  );
+  const visibleColumns = baseColumns.map(
+    ({ field, width: baseWidth }, index) => ({
+      field,
+      baseWidth,
+      width: displayWidths[index],
+    }),
+  );
+  const tableWidth = displayWidths.reduce((total, width) => total + width, 0);
+  const allVisibleColumnsAutomatic = visibleFields.every(
+    (field) => view.columnWidths[field.id] === undefined,
   );
   const sortField = fields.find(
     (field) => field.id === sort?.fieldId && field.is_sortable,
@@ -206,6 +305,51 @@ export function InventoryItemList({
     deleteItem.isPending ||
     checkboxUpdate.isPending ||
     reloadItems.isPending;
+  const menuField = columnMenu
+    ? visibleFields.find((field) => field.id === columnMenu.fieldId)
+    : undefined;
+  if (columnMenu && !menuField) setColumnMenu(null);
+
+  /**
+   * Open the column settings at the pointer, or below the header for keyboard access.
+   * @param fieldId The column whose settings are requested.
+   * @param header The header element anchoring keyboard invocation.
+   * @param x The pointer's horizontal viewport position.
+   * @param y The pointer's vertical viewport position.
+   * @param source The focused keyboard control, if the menu was keyboard-invoked.
+   */
+  function openColumnMenu(
+    fieldId: string,
+    header: HTMLTableCellElement,
+    x: number,
+    y: number,
+    source?: HTMLElement,
+  ) {
+    if (
+      isMutating ||
+      editingItem !== null ||
+      deletingTarget !== null ||
+      resizing !== null
+    )
+      return;
+    const bounds = header.getBoundingClientRect();
+    setColumnMenu({
+      fieldId,
+      x: x === 0 && y === 0 ? bounds.left : x,
+      y: x === 0 && y === 0 ? bounds.bottom : y,
+      source:
+        source ??
+        header.querySelector<HTMLElement>('button, [tabindex="0"]') ??
+        header,
+    });
+  }
+
+  // Restore focus when closing settings without hiding their source column.
+  function closeColumnMenu() {
+    setColumnMenu(null);
+    if (columnMenu?.source.isConnected) columnMenu.source.focus();
+    else dataViewport.current?.focus();
+  }
   const editConflict = isItemConflict(updateItem.error);
   const checkboxConflict = isItemConflict(checkboxUpdate.error);
   const deleteConflict = isItemConflict(deleteItem.error);
@@ -374,47 +518,100 @@ export function InventoryItemList({
           visible: !hiddenFieldIds.includes(field.id),
         }))}
         onToggleColumn={toggleField}
+        onAutomaticWidths={() => setAutomaticColumnWidth()}
+        allColumnsAutomatic={allVisibleColumnsAutomatic}
         itemCount={items.length}
         actions={actions}
         wrapText={wrapText}
         onWrapTextChange={setWrapText}
-        disabled={isMutating || editingItem !== null || deletingTarget !== null}
+        disabled={
+          isMutating ||
+          editingItem !== null ||
+          deletingTarget !== null ||
+          resizing !== null
+        }
       />
-      <div className="overflow-hidden rounded-b-md border border-shell bg-surface">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start overflow-hidden rounded-b-md border border-shell bg-surface">
         <div
-          className="overflow-x-auto"
+          ref={dataViewport}
+          className="min-w-0 overflow-x-auto"
           role="region"
           aria-label={t("items.title")}
           tabIndex={0}
         >
-          <table className="min-w-full border-collapse text-left text-sm">
+          <table
+            ref={dataTable}
+            className={`table-fixed border-collapse text-left text-sm ${resizing ? "select-none" : ""}`}
+            style={{ width: tableWidth }}
+          >
             <caption className="sr-only">{t("table.sortHint")}</caption>
+            <colgroup>
+              {visibleColumns.map(({ field, width }) => (
+                <col key={field.id} style={{ width }} />
+              ))}
+            </colgroup>
             <thead className="bg-surface-muted text-xs font-semibold uppercase tracking-wider text-muted">
               <tr>
-                {visibleFields.map((field) => (
+                {visibleColumns.map(({ field, baseWidth }) => (
                   <th
+                    data-field-id={field.id}
+                    aria-label={field.name}
                     aria-sort={
                       sortField?.id === field.id ? sort?.direction : undefined
                     }
-                    className="whitespace-nowrap border-b border-shell p-0"
+                    className="relative border-b border-shell p-0"
                     key={field.id}
                     scope="col"
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openColumnMenu(
+                        field.id,
+                        event.currentTarget,
+                        event.clientX,
+                        event.clientY,
+                      );
+                    }}
+                    onKeyDown={(event) => {
+                      if (
+                        event.key === "ContextMenu" ||
+                        (event.shiftKey && event.key === "F10")
+                      ) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        openColumnMenu(
+                          field.id,
+                          event.currentTarget,
+                          0,
+                          0,
+                          event.target instanceof HTMLElement
+                            ? event.target
+                            : undefined,
+                        );
+                      }
+                    }}
                   >
                     {field.is_sortable ? (
                       <button
-                        className={`flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left font-semibold transition-colors enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sortField?.id === field.id ? "bg-accent-soft text-accent" : ""}`}
+                        className={`relative block w-full cursor-pointer py-3 pr-7 pl-3 text-left font-semibold transition-colors enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sortField?.id === field.id ? "bg-accent-soft text-accent" : ""}`}
                         onClick={() => toggleSort(field.id)}
                         type="button"
                       >
-                        <span>{field.name}</span>
+                        <span
+                          data-column-heading=""
+                          className="block truncate"
+                          title={field.name}
+                        >
+                          {field.name}
+                        </span>
                         {/* Reserve the indicator space so sorting never shifts the heading. */}
                         <span
                           aria-hidden="true"
-                          className="ml-auto flex size-3.5 shrink-0 items-center justify-center"
+                          className="absolute top-1/2 right-2.5 flex size-3 -translate-y-1/2 items-center justify-center"
                         >
                           {sortField?.id === field.id && sort && (
                             <svg
-                              className="size-3.5"
+                              className="size-3"
                               fill="none"
                               stroke="currentColor"
                               strokeLinecap="round"
@@ -434,16 +631,37 @@ export function InventoryItemList({
                         </span>
                       </button>
                     ) : (
-                      <span className="block px-4 py-3">{field.name}</span>
+                      <span
+                        data-column-heading=""
+                        className="block truncate px-3 py-3"
+                        title={field.name}
+                      >
+                        {field.name}
+                      </span>
                     )}
+                    <ColumnResizeHandle
+                      fieldName={field.name}
+                      width={baseWidth}
+                      disabled={
+                        isMutating ||
+                        editingItem !== null ||
+                        deletingTarget !== null ||
+                        (resizing !== null && resizing.fieldId !== field.id)
+                      }
+                      onPreview={(nextWidth) =>
+                        setResizing(
+                          nextWidth === null
+                            ? null
+                            : { fieldId: field.id, width: nextWidth },
+                        )
+                      }
+                      onCommit={(nextWidth) =>
+                        setColumnWidth(field.id, nextWidth)
+                      }
+                      onReset={() => setAutomaticColumnWidth(field.id)}
+                    />
                   </th>
                 ))}
-                <th
-                  className="sticky right-0 w-px whitespace-nowrap border-b border-l border-shell bg-surface-muted px-4 py-3 text-right"
-                  scope="col"
-                >
-                  {t("table.actions")}
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-shell">
@@ -453,106 +671,100 @@ export function InventoryItemList({
                 );
 
                 return (
-                  <tr className="group" key={item.id}>
-                    {visibleFields.map((field) => (
-                      <td
-                        className="max-w-80 border-r border-shell/60 px-4 py-2.5 align-top text-foreground transition-colors group-hover:bg-surface-hover"
-                        key={field.id}
-                      >
-                        {field.field_type === "checkbox" ? (
-                          <div className="min-h-6">
-                            <input
-                              type="checkbox"
-                              className="size-4 cursor-pointer accent-accent transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
-                              aria-label={t("items.checkbox.toggle", {
-                                field: field.name,
-                              })}
-                              aria-busy={
-                                (checkboxUpdate.isPending &&
+                  <tr
+                    className="group"
+                    key={item.id}
+                    id={`${tableId}-${item.id}`}
+                    data-item-id={item.id}
+                    onPointerEnter={() => setHoveredItem(item.id)}
+                    onPointerLeave={() => setHoveredItem(null)}
+                  >
+                    {visibleFields.map((field) => {
+                      const content = formatValue(
+                        field,
+                        valuesByField.get(field.id),
+                        {
+                          no: t("common.values.no"),
+                          yes: t("common.values.yes"),
+                        },
+                        i18n.resolvedLanguage ?? "en",
+                      );
+                      return (
+                        <td
+                          className={`h-13 border-r border-shell/60 px-3 py-2.5 align-top text-foreground transition-colors group-hover:bg-surface-hover ${hoveredItem === item.id ? "bg-surface-hover" : ""}`}
+                          key={field.id}
+                        >
+                          {field.field_type === "checkbox" ? (
+                            <div className="min-h-6">
+                              <input
+                                type="checkbox"
+                                className="size-4 cursor-pointer accent-accent transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+                                aria-label={t("items.checkbox.toggle", {
+                                  field: field.name,
+                                })}
+                                aria-busy={
+                                  (checkboxUpdate.isPending &&
+                                    checkboxTarget?.itemId === item.id &&
+                                    checkboxTarget.fieldId === field.id) ||
+                                  undefined
+                                }
+                                checked={
+                                  checkboxUpdate.isPending &&
                                   checkboxTarget?.itemId === item.id &&
-                                  checkboxTarget.fieldId === field.id) ||
-                                undefined
-                              }
-                              checked={
-                                checkboxUpdate.isPending &&
+                                  checkboxTarget.fieldId === field.id
+                                    ? checkboxUpdate.variables?.data.values.find(
+                                        (value) => value.field_id === field.id,
+                                      )?.value === true
+                                    : valuesByField.get(field.id)?.value ===
+                                      true
+                                }
+                                disabled={
+                                  isMutating ||
+                                  checkboxConflict ||
+                                  editingItemId !== null ||
+                                  deletingTarget !== null
+                                }
+                                onChange={(event) =>
+                                  toggleCheckbox(
+                                    item,
+                                    field,
+                                    event.target.checked,
+                                  )
+                                }
+                              />
+                              {checkboxUpdate.error &&
+                                !checkboxConflict &&
                                 checkboxTarget?.itemId === item.id &&
-                                checkboxTarget.fieldId === field.id
-                                  ? checkboxUpdate.variables?.data.values.find(
-                                      (value) => value.field_id === field.id,
-                                    )?.value === true
-                                  : valuesByField.get(field.id)?.value === true
+                                checkboxTarget.fieldId === field.id && (
+                                  <p
+                                    className="mt-1 text-xs text-danger"
+                                    role="alert"
+                                  >
+                                    {checkboxUpdate.error instanceof ApiError
+                                      ? checkboxUpdate.error.message
+                                      : t("items.errors.update")}
+                                  </p>
+                                )}
+                            </div>
+                          ) : (
+                            <span
+                              title={
+                                !wrapText && typeof content === "string"
+                                  ? content
+                                  : undefined
                               }
-                              disabled={
-                                isMutating ||
-                                checkboxConflict ||
-                                editingItemId !== null ||
-                                deletingTarget !== null
+                              className={
+                                wrapText
+                                  ? "block whitespace-pre-wrap wrap-anywhere"
+                                  : "block truncate"
                               }
-                              onChange={(event) =>
-                                toggleCheckbox(
-                                  item,
-                                  field,
-                                  event.target.checked,
-                                )
-                              }
-                            />
-                            {checkboxUpdate.error &&
-                              !checkboxConflict &&
-                              checkboxTarget?.itemId === item.id &&
-                              checkboxTarget.fieldId === field.id && (
-                                <p
-                                  className="mt-1 text-xs text-danger"
-                                  role="alert"
-                                >
-                                  {checkboxUpdate.error instanceof ApiError
-                                    ? checkboxUpdate.error.message
-                                    : t("items.errors.update")}
-                                </p>
-                              )}
-                          </div>
-                        ) : (
-                          <span
-                            className={
-                              wrapText
-                                ? "line-clamp-3 max-w-80 whitespace-pre-wrap wrap-break-word"
-                                : "block max-w-80 truncate"
-                            }
-                          >
-                            {formatValue(
-                              field,
-                              valuesByField.get(field.id),
-                              {
-                                no: t("common.values.no"),
-                                yes: t("common.values.yes"),
-                              },
-                              i18n.resolvedLanguage ?? "en",
-                            )}
-                          </span>
-                        )}
-                      </td>
-                    ))}
-                    <td className="sticky right-0 whitespace-nowrap border-l border-shell bg-surface px-4 py-2.5 text-right align-top transition-colors group-hover:bg-surface-hover">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          className="rounded-md border border-shell px-2.5 py-1 font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
-                          disabled={isMutating}
-                          onClick={() => startEditing(item)}
-                          type="button"
-                        >
-                          {t("common.actions.edit")}
-                        </button>
-                        <button
-                          className="rounded-md bg-danger-soft px-2.5 py-1 font-medium text-danger transition enabled:hover:bg-danger/25 disabled:cursor-not-allowed disabled:opacity-50"
-                          disabled={isMutating}
-                          onClick={() => handleDelete(item)}
-                          type="button"
-                        >
-                          {deleteItem.isPending
-                            ? t("common.actions.deleting")
-                            : t("common.actions.delete")}
-                        </button>
-                      </div>
-                    </td>
+                            >
+                              {content}
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}
@@ -560,7 +772,7 @@ export function InventoryItemList({
                 <tr>
                   <td
                     className="px-6 py-12 text-center"
-                    colSpan={visibleFields.length + 1}
+                    colSpan={visibleFields.length}
                   >
                     <p className="font-semibold text-heading">
                       {t("items.empty")}
@@ -574,7 +786,89 @@ export function InventoryItemList({
             </tbody>
           </table>
         </div>
+        <div className="self-stretch border-l border-shell bg-surface">
+          <table
+            aria-label={t("table.actions")}
+            className="border-collapse text-sm"
+          >
+            <thead className="bg-surface-muted text-xs font-semibold uppercase tracking-wider text-muted">
+              <tr style={{ height: rowHeights.header }}>
+                <th
+                  className="border-b border-shell px-4 py-3 text-right"
+                  scope="col"
+                >
+                  {t("table.actions")}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-shell">
+              {displayedItems.map((item) => (
+                <tr
+                  key={item.id}
+                  style={{ height: rowHeights.rows[item.id] }}
+                  onPointerEnter={() => setHoveredItem(item.id)}
+                  onPointerLeave={() => setHoveredItem(null)}
+                >
+                  <td
+                    className={`h-13 px-4 py-2.5 align-top transition-colors ${hoveredItem === item.id ? "bg-surface-hover" : ""}`}
+                  >
+                    <div className="flex justify-end gap-2 whitespace-nowrap">
+                      <button
+                        className="rounded-md border border-shell px-2.5 py-1 font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-describedby={`${tableId}-${item.id}`}
+                        disabled={isMutating}
+                        onClick={() => startEditing(item)}
+                        type="button"
+                      >
+                        {t("common.actions.edit")}
+                      </button>
+                      <button
+                        className="rounded-md bg-danger-soft px-2.5 py-1 font-medium text-danger transition enabled:hover:bg-danger/25 disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-describedby={`${tableId}-${item.id}`}
+                        disabled={isMutating}
+                        onClick={() => handleDelete(item)}
+                        type="button"
+                      >
+                        {deleteItem.isPending
+                          ? t("common.actions.deleting")
+                          : t("common.actions.delete")}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {columnMenu && menuField && (
+        <ContextMenu
+          x={columnMenu.x}
+          y={columnMenu.y}
+          label={t("table.columnMenu.label", { field: menuField.name })}
+          onClose={closeColumnMenu}
+          actions={[
+            {
+              label: t("table.columnMenu.automatic"),
+              checked: view.columnWidths[menuField.id] === undefined,
+              onSelect: () => {
+                setAutomaticColumnWidth(menuField.id);
+                closeColumnMenu();
+              },
+            },
+            {
+              label: t("table.columnMenu.hide"),
+              disabled: visibleFields.length <= 1,
+              onSelect: () => {
+                toggleField(menuField.id);
+                setColumnMenu(null);
+                dataViewport.current?.focus();
+              },
+            },
+          ]}
+        />
+      )}
 
       {editingItem && (
         <Modal

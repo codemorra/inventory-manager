@@ -10,4 +10,6 @@ export interface InventoryViewPreferences {
   sort: ItemSort | null;
   hiddenFieldIds: string[];
   wrapText: boolean;
+  // Only manual base widths; a missing field ID is the sole definition of Auto.
+  columnWidths: Record<string, number>;
 }

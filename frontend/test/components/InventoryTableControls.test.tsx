@@ -15,6 +15,40 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// Test the inventory-wide Auto action reflects derived state but always remains usable.
+test("keeps Automatic widths actionable in both checked and unchecked states", async () => {
+  const user = userEvent.setup();
+  const automatic = vi.fn();
+  const { rerender } = render(
+    <InventoryTableControls
+      onAutomaticWidths={automatic}
+      allColumnsAutomatic
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "View" }));
+  const checked = screen.getByRole("menuitemcheckbox", {
+    name: "Automatic widths",
+  });
+  expect(checked).toBeChecked();
+  expect(checked).toBeEnabled();
+  await user.click(checked);
+  expect(automatic).toHaveBeenCalledOnce();
+  rerender(
+    <InventoryTableControls
+      onAutomaticWidths={automatic}
+      allColumnsAutomatic={false}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "View" }));
+  const unchecked = screen.getByRole("menuitemcheckbox", {
+    name: "Automatic widths",
+  });
+  expect(unchecked).not.toBeChecked();
+  expect(unchecked).toBeEnabled();
+  await user.click(unchecked);
+  expect(automatic).toHaveBeenCalledTimes(2);
+});
+
 // Test keyboard access to View and the direct item action without an inventory menu.
 test("restores focus when View is dismissed and lets Tab reach the item action", async () => {
   const user = userEvent.setup();

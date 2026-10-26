@@ -26,6 +26,8 @@ interface InventoryTableControlsProps {
   disabled?: boolean;
   columns?: TableColumn[];
   onToggleColumn?: (fieldId: string) => void;
+  onAutomaticWidths?: () => void;
+  allColumnsAutomatic?: boolean;
 }
 
 /**
@@ -41,6 +43,8 @@ export function InventoryTableControls({
   disabled = false,
   columns = [],
   onToggleColumn,
+  onAutomaticWidths,
+  allColumnsAutomatic = true,
 }: InventoryTableControlsProps) {
   const { t } = useTranslation();
   const id = useId();
@@ -54,7 +58,9 @@ export function InventoryTableControls({
   const focusLast = useRef(false);
   const available =
     !disabled &&
-    (!!onWrapTextChange || (!!onToggleColumn && columns.length > 0));
+    (!!onWrapTextChange ||
+      !!onAutomaticWidths ||
+      (!!onToggleColumn && columns.length > 0));
   const expanded = open && available;
   const hasColumns = !!onToggleColumn && columns.length > 0;
   const columnsExpanded = expanded && columnsOpen && hasColumns;
@@ -317,6 +323,27 @@ export function InventoryTableControls({
                     </svg>
                   </button>
                 </>
+              )}
+              {onAutomaticWidths && (
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={allColumnsAutomatic}
+                  tabIndex={-1}
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-left outline-none enabled:hover:bg-control-hover focus:bg-control-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  onPointerEnter={(event) => {
+                    if (event.pointerType === "mouse") setColumnsOpen(false);
+                  }}
+                  onClick={() => {
+                    onAutomaticWidths();
+                    close();
+                  }}
+                >
+                  <span aria-hidden="true" className="w-4 shrink-0 text-accent">
+                    {allColumnsAutomatic ? "✓" : ""}
+                  </span>
+                  {t("table.menu.automaticWidths")}
+                </button>
               )}
             </div>
             {columnsExpanded && (

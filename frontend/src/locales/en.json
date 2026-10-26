@@ -281,8 +281,19 @@
       "label": "Inventory table controls",
       "view": "View",
       "columns": "Columns",
+      "automaticWidths": "Automatic widths",
       "keepColumn": "At least one column must remain visible.",
       "wrapText": "Wrap text"
+    },
+    "columnMenu": {
+      "label": "Column {{field}}",
+      "automatic": "Automatic width",
+      "hide": "Hide column"
+    },
+    "resize": {
+      "label": "Resize {{field}}",
+      "value": "{{width}} pixels",
+      "hint": "Drag to adjust the base width. Use arrow keys for small steps or Shift for larger steps. Double-click to enable automatic width."
     },
     "sortHint": "Select a sortable column heading to cycle through ascending, descending, and the original order. Empty values appear last when sorting.",
     "actions": "Actions"
