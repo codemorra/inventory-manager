@@ -61,7 +61,11 @@ function Location() {
  * @param kind The selected sidebar object type.
  * @returns The callback used to observe completed or canceled actions.
  */
-function renderActions(kind: "inventory" | "group", tableEditing = false) {
+function renderActions(
+  kind: "inventory" | "group",
+  tableEditing = false,
+  configurationEditing = false,
+) {
   const target: SidebarContextTarget = {
     x: 10,
     y: 20,
@@ -81,6 +85,7 @@ function renderActions(kind: "inventory" | "group", tableEditing = false) {
         <TableEditSessionContext.Provider
           value={{
             inventoryId: tableEditing ? "games" : null,
+            configurationInventoryId: configurationEditing ? "games" : null,
             setInventoryId: vi.fn(),
           }}
         >
@@ -201,4 +206,33 @@ test("reports a failed group rename without losing the entered name", async () =
   expect(await screen.findByRole("alert")).toBeInTheDocument();
   expect(screen.getByLabelText("Group name")).toHaveValue("Hobbies");
   expect(close).not.toHaveBeenCalled();
+});
+
+// Export is an inventory context action, never a group or settings action.
+test("offers export for inventories only and locks it during table drafts", () => {
+  renderActions("inventory");
+  expect(
+    screen.getByRole("menuitem", { name: "Export inventory" }),
+  ).toBeEnabled();
+  cleanup();
+  renderActions("inventory", true);
+  expect(
+    screen.getByRole("menuitem", { name: "Export inventory" }),
+  ).toBeDisabled();
+  expect(
+    screen.getByRole("menuitem", { name: "Export inventory" }),
+  ).toHaveAttribute("title", expect.stringContaining("Save or discard"));
+  cleanup();
+  renderActions("group");
+  expect(
+    screen.queryByRole("menuitem", { name: "Export inventory" }),
+  ).not.toBeInTheDocument();
+});
+
+// A sibling dirty settings session must not export a partial draft as if it were saved data.
+test("locks sidebar export while inventory settings are dirty", () => {
+  renderActions("inventory", false, true);
+  expect(
+    screen.getByRole("menuitem", { name: "Export inventory" }),
+  ).toBeDisabled();
 });

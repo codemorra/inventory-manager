@@ -14,6 +14,7 @@ import type { SidebarContextTarget } from "../SidebarContextActions";
 interface NavigationProps {
   onNavigate?: () => void;
   onCreateGroup?: () => void;
+  onImport?: () => void;
   onContext?: ((target: SidebarContextTarget) => void) | undefined;
 }
 
@@ -27,12 +28,12 @@ interface NavigationProps {
 export function Navigation({
   onNavigate,
   onCreateGroup,
+  onImport,
   onContext,
 }: NavigationProps) {
   const { t, i18n } = useTranslation();
-  const { inventoryId: editingInventoryId } = useContext(
-    TableEditSessionContext,
-  );
+  const { inventoryId: editingInventoryId, configurationInventoryId } =
+    useContext(TableEditSessionContext);
   const [search, setSearch] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
   const groupQuery = useInventoryGroups();
@@ -65,10 +66,37 @@ export function Navigation({
       aria-label={t("navigation.label")}
       className="flex min-h-0 flex-1 flex-col px-3 pb-4 pt-5"
     >
-      <InventoryCreateForm
-        onCreated={onNavigate}
-        triggerClassName="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover"
-      />
+      <div className="flex shrink-0 items-stretch gap-2">
+        <InventoryCreateForm
+          onCreated={onNavigate}
+          triggerClassName="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover"
+        />
+        <button
+          type="button"
+          aria-label={t("archives.import")}
+          title={
+            editingInventoryId || configurationInventoryId
+              ? t("archives.saveFirst")
+              : t("archives.import")
+          }
+          disabled={Boolean(editingInventoryId || configurationInventoryId)}
+          onClick={onImport}
+          className="flex w-10 shrink-0 items-center justify-center rounded-lg border border-shell text-heading enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:opacity-50"
+        >
+          <svg
+            aria-hidden="true"
+            className="size-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 3v12m-4-4 4 4 4-4M4 15v5h16v-5" />
+          </svg>
+        </button>
+      </div>
       <button
         className="mt-2 rounded-md border border-shell px-3 py-2 text-sm font-medium text-heading enabled:hover:bg-control-hover enabled:hover:border-accent/50"
         onClick={onCreateGroup}

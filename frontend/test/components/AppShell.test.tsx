@@ -1,3 +1,15 @@
+import {
+  prepareInventoryExport,
+  discardInventoryExport,
+  downloadInventoryExport,
+} from "../../src/services/inventoryArchives";
+import { archiveExport } from "../helpers/inventoryArchives";
+vi.mock("../../src/services/inventoryArchives", async (actual) => ({
+  ...(await actual<object>()),
+  prepareInventoryExport: vi.fn(),
+  discardInventoryExport: vi.fn(),
+  downloadInventoryExport: vi.fn(),
+}));
 vi.mock("../../src/services/inventoryFields", () => ({
   getInventoryFields: vi.fn().mockResolvedValue([]),
 }));
@@ -238,3 +250,83 @@ test.each([false, true])(
     );
   },
 );
+
+// Import is shell-owned so dismissing mobile navigation does not unmount the import dialog.
+test("opens import beside inventory creation and replaces mobile navigation", async () => {
+  const user = userEvent.setup();
+  mockedGetInventories.mockResolvedValue([]);
+  renderAppShell();
+  await user.click(screen.getByRole("button", { name: "Open menu" }));
+  const mobile = screen.getByRole("dialog", { name: "Mobile navigation" });
+  await user.click(
+    within(mobile).getByRole("button", { name: "Import inventory" }),
+  );
+  expect(
+    screen.queryByRole("dialog", { name: "Mobile navigation" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("dialog", { name: "Import inventory" }),
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText("Archive file (.zip)")).toHaveFocus();
+});
+
+// Dirty inventory settings propagate a lock to sibling sidebar actions until dismissal.
+test("disables archive actions while inventory settings have unsaved changes", async () => {
+  const user = userEvent.setup();
+  mockedGetInventories.mockResolvedValue([
+    {
+      configuration_revision: 1,
+      id: "games",
+      name: "Games",
+      description: null,
+      created_at: "",
+      updated_at: "",
+    },
+  ]);
+  renderAppShell();
+  const link = await screen.findByRole("link", { name: "Games" });
+  fireEvent.contextMenu(link, { clientX: 100, clientY: 200 });
+  await user.click(screen.getByRole("menuitem", { name: "Edit" }));
+  await user.type(await screen.findByLabelText("Name"), " changed");
+  expect(
+    screen.getByRole("button", { name: "Import inventory" }),
+  ).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(
+    screen.getByRole("button", { name: "Import inventory" }),
+  ).toBeEnabled();
+});
+
+// The actual sidebar context action opens preparation and hands only its completed artifact to native download.
+test("exports the right-clicked inventory through the actual sidebar action flow", async () => {
+  const user = userEvent.setup();
+  mockedGetInventories.mockResolvedValue([
+    {
+      configuration_revision: 1,
+      id: "games",
+      name: "Games",
+      description: null,
+      created_at: "",
+      updated_at: "",
+    },
+  ]);
+  vi.mocked(prepareInventoryExport).mockResolvedValue({
+    ...archiveExport,
+    filename: "Games.zip",
+  });
+  vi.mocked(discardInventoryExport).mockResolvedValue(undefined);
+  renderAppShell();
+  const source = await screen.findByRole("link", { name: "Games" });
+  fireEvent.contextMenu(source, { clientX: 100, clientY: 200 });
+  await user.click(screen.getByRole("menuitem", { name: "Export inventory" }));
+  expect(
+    screen.getByRole("dialog", { name: "Export inventory" }),
+  ).toBeInTheDocument();
+  await user.click(await screen.findByRole("button", { name: "Download ZIP" }));
+  expect(downloadInventoryExport).toHaveBeenCalledWith("games", {
+    ...archiveExport,
+    filename: "Games.zip",
+  });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(source).toHaveFocus();
+});

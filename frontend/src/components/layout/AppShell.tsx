@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
+import { InventoryImportDialog } from "../InventoryImportDialog";
 import { SettingsDialog } from "../SettingsDialog";
 import { GroupCreateDialog } from "../GroupCreateDialog";
 import { useTheme } from "../../hooks/useTheme";
@@ -27,6 +28,10 @@ export function AppShell({ children }: AppShellProps) {
   const [editingInventoryId, setEditingInventoryId] = useState<string | null>(
     null,
   );
+  const [configurationInventoryId, setConfigurationInventoryId] = useState<
+    string | null
+  >(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   // Follow system appearance changes even while settings are closed.
   useTheme();
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
@@ -82,6 +87,10 @@ export function AppShell({ children }: AppShellProps) {
       <Navigation
         onContext={setContextTarget}
         onNavigate={() => setIsNavigationOpen(false)}
+        onImport={() => {
+          setIsNavigationOpen(false);
+          setIsImportOpen(true);
+        }}
         onCreateGroup={() => {
           setIsNavigationOpen(false);
           setIsGroupCreateOpen(true);
@@ -138,10 +147,16 @@ export function AppShell({ children }: AppShellProps) {
     <TableEditSessionContext.Provider
       value={{
         inventoryId: editingInventoryId,
+        configurationInventoryId,
+        setConfigurationInventoryId,
         setInventoryId: setEditingInventoryId,
       }}
     >
       <div className="min-h-dvh bg-canvas text-foreground">
+        <InventoryImportDialog
+          open={isImportOpen}
+          onClose={() => setIsImportOpen(false)}
+        />
         {contextTarget && (
           <SidebarContextActions
             key={`${contextTarget.kind}-${contextTarget.entry.id}-${contextTarget.x}-${contextTarget.y}`}

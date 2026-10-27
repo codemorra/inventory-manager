@@ -8,6 +8,7 @@ export interface ContextMenuAction {
   danger?: boolean;
   checked?: boolean;
   disabled?: boolean;
+  title?: string | undefined;
 }
 
 // Define the position, accessible name, and actions of a context menu.
@@ -119,6 +120,7 @@ export function ContextMenu({
           role={action.checked === undefined ? "menuitem" : "menuitemcheckbox"}
           aria-checked={action.checked}
           disabled={action.disabled}
+          title={action.title}
           tabIndex={-1}
           type="button"
           className={`flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none disabled:cursor-not-allowed disabled:opacity-50 ${action.danger ? "text-danger enabled:hover:bg-danger/25 focus:bg-danger-soft" : "enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover"}`}

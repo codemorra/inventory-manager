@@ -1,4 +1,6 @@
 /// <reference types="node" />
+import type { InventoryField } from "../src/types/inventoryField";
+import type { InventoryItem } from "../src/types/inventoryItem";
 // @vitest-environment node
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -675,6 +677,212 @@ test("frontend clients complete configuration and item CRUD against Express", as
     expect(
       (await fetch(attachments.attachmentDownloadUrl(unused))).status,
     ).toBe(404);
+    // Real ZIP transfer exercises the same clients used by the sidebar and import dialog.
+    const archives = await import("../src/services/inventoryArchives");
+    const definitions = [
+      ["ID", "id", undefined],
+      ["Text", "text", "Synthetic"],
+      ["Number", "number", 0],
+      ["Boolean", "boolean", false],
+      ["Checkbox", "checkbox", true],
+      ["Date", "date", "2026-10-27"],
+      ["Time", "time", "12:34"],
+      ["Datetime", "datetime", "2026-10-27T12:34"],
+      ["Duration", "duration", 61],
+      ["Link", "url", { url: "https://example.com", label: "Example" }],
+      ["Select", "select", undefined],
+      ["Multiselect", "multiselect", undefined],
+    ] as const;
+    const matrixFields: InventoryField[] = [];
+    for (const [name, field_type] of definitions)
+      matrixFields.push(
+        await fields.createInventoryField(fileInventory.id, {
+          name,
+          field_type,
+          ...(["select", "multiselect"].includes(field_type)
+            ? { options: [{ name: "One" }, { name: "Two" }] }
+            : {}),
+        }),
+      );
+    const extraFiles = [];
+    for (const text of ["Second", ""])
+      extraFiles.push(
+        await attachments.uploadAttachment(
+          fileInventory.id,
+          fileField.id,
+          new File([text], "Prüfung.txt", { type: "text/plain" }),
+        ),
+      );
+    await items.createInventoryItem(fileInventory.id, {
+      values: [
+        { field_id: fileField.id, value: extraFiles.map((file) => file.id) },
+        ...matrixFields.flatMap((field, index) =>
+          field.field_type === "id"
+            ? []
+            : [
+                {
+                  field_id: field.id,
+                  value:
+                    field.field_type === "select"
+                      ? field.options[0]!.id
+                      : field.field_type === "multiselect"
+                        ? field.options.map((option) => option.id)
+                        : definitions[index]![2],
+                },
+              ],
+        ),
+      ],
+    });
+    const removedNumber = await items.createInventoryItem(fileInventory.id, {
+      values: [],
+    });
+    await items.deleteInventoryItem(
+      fileInventory.id,
+      removedNumber.id,
+      removedNumber.revision,
+    );
+    const originalFields = await fields.getInventoryFields(fileInventory.id);
+    const originalItems = await items.getInventoryItems(fileInventory.id);
+    const exported = await archives.prepareInventoryExport(fileInventory.id);
+    const zipDownload = await fetch(
+      archives.inventoryExportDownloadUrl(fileInventory.id, exported.id),
+    );
+    expect(zipDownload.headers.get("Content-Type")).toBe("application/zip");
+    expect(zipDownload.headers.get("Content-Disposition")).toMatch(
+      /^attachment;/,
+    );
+    // Only this tiny test fixture buffers the archive to emulate a locally chosen File.
+    const chosenArchive = new File(
+      [await zipDownload.arrayBuffer()],
+      exported.filename,
+      { type: "application/zip" },
+    );
+    const importPreview = await archives.prepareInventoryImport(chosenArchive);
+    expect(importPreview).toMatchObject({
+      field_count: 13,
+      item_count: 2,
+      attachment_count: 3,
+      status: "ready",
+    });
+    expect(
+      (await inventories.getInventories()).map((entry) => entry.id),
+    ).toEqual([fileInventory.id]);
+    const imported = await archives.confirmInventoryImport(importPreview.id, {
+      name: "ZIP copy",
+    });
+    expect(
+      (
+        await archives.confirmInventoryImport(importPreview.id, {
+          name: "ZIP copy",
+        })
+      ).id,
+    ).toBe(imported.id);
+    expect(
+      (await archives.readInventoryImport(importPreview.id)).inventory_id,
+    ).toBe(imported.id);
+    const importedFields = await fields.getInventoryFields(imported.id);
+    const importedItems = await items.getInventoryItems(imported.id);
+    function semanticRows(defs: InventoryField[], rows: InventoryItem[]) {
+      return rows.map((row) =>
+        Object.fromEntries(
+          row.values.map((cell) => {
+            const field = defs.find((field) => field.id === cell.field_id)!;
+            const label = (id: string) =>
+              field.options.find((option) => option.id === id)!.name;
+            const value =
+              field.field_type === "select"
+                ? label(cell.value as string)
+                : field.field_type === "multiselect"
+                  ? (cell.value as string[]).map(label)
+                  : field.field_type === "attachment"
+                    ? (cell.value as string[]).map((id) => {
+                        const file = row.attachments!.find(
+                          (file) => file.id === id,
+                        )!;
+                        return [file.filename, file.byte_size, file.media_type];
+                      })
+                    : cell.value;
+            return [field.name, value];
+          }),
+        ),
+      );
+    }
+    expect(semanticRows(importedFields, importedItems)).toEqual(
+      semanticRows(originalFields, originalItems),
+    );
+    expect(importedFields.map((field) => field.id)).not.toEqual(
+      originalFields.map((field) => field.id),
+    );
+    for (const [index, row] of importedItems.entries()) {
+      const sourceFiles = originalItems[index]!.attachments ?? [];
+      for (const [fileIndex, file] of (row.attachments ?? []).entries()) {
+        expect(file.id).not.toBe(sourceFiles[fileIndex]!.id);
+        const originalBody = await (
+          await fetch(
+            attachments.attachmentDownloadUrl(sourceFiles[fileIndex]!),
+          )
+        ).text();
+        expect(
+          await (await fetch(attachments.attachmentDownloadUrl(file))).text(),
+        ).toBe(originalBody);
+      }
+    }
+    const nextItem = await items.createInventoryItem(imported.id, {
+      values: [],
+    });
+    expect(
+      nextItem.values.find(
+        (value) =>
+          value.field_id ===
+          importedFields.find((field) => field.field_type === "id")!.id,
+      )!.value,
+    ).toBe(4);
+    await archives.discardInventoryImport(importPreview.id);
+    const canceledPreview =
+      await archives.prepareInventoryImport(chosenArchive);
+    await archives.discardInventoryImport(canceledPreview.id);
+    await expect(
+      archives.confirmInventoryImport(canceledPreview.id, {}),
+    ).rejects.toMatchObject({
+      status: 404,
+      code: "inventory_import_not_found",
+    });
+    const canceledExport = await archives.prepareInventoryExport(imported.id);
+    await archives.discardInventoryExport(imported.id, canceledExport.id);
+    expect(
+      (
+        await fetch(
+          archives.inventoryExportDownloadUrl(imported.id, canceledExport.id),
+        )
+      ).status,
+    ).toBe(404);
+    const emptySource = await inventories.createInventory({
+      name: "Empty ZIP",
+    });
+    const emptyExport = await archives.prepareInventoryExport(emptySource.id);
+    const emptyFile = new File(
+      [
+        await (
+          await fetch(
+            archives.inventoryExportDownloadUrl(emptySource.id, emptyExport.id),
+          )
+        ).arrayBuffer(),
+      ],
+      "empty.zip",
+    );
+    const emptyPreview = await archives.prepareInventoryImport(emptyFile);
+    expect(emptyPreview).toMatchObject({
+      field_count: 0,
+      item_count: 0,
+      attachment_count: 0,
+    });
+    const emptyCopy = await archives.confirmInventoryImport(
+      emptyPreview.id,
+      {},
+    );
+    await inventories.deleteInventory(emptyCopy.id);
+    await inventories.deleteInventory(emptySource.id);
+    await inventories.deleteInventory(imported.id);
     await inventories.deleteInventory(fileInventory.id);
     expect(await inventories.getInventories()).toEqual([]);
   } finally {

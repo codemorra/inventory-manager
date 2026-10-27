@@ -16,6 +16,7 @@ The screenshot uses synthetic demo data.
 
 - Inventory lists with custom fields and typed items
 - Managed file attachments with download links and optional image previews
+- ZIP inventory import/export including attached files
 - Reusable inventory structure templates
 - Single-level groups with drag-and-drop organization
 - Sidebar filtering by inventory title
@@ -30,7 +31,7 @@ The screenshot uses synthetic demo data.
 
 ## Getting started
 
-Create an inventory from the sidebar, optionally choosing a template, its included fields, and a group. Use the **Inventory settings** gear beside its title to define fields and selection options or save its structure as a template. Save the configuration and add items with **New item**. Drag inventories onto sidebar groups to organize them.
+Create an inventory from the sidebar, optionally choosing a template, its included fields, and a group. Use the **Inventory settings** gear beside its title to define fields and selection options or save its structure as a template. Save the configuration and add items with **New item**. Drag inventories onto sidebar groups to organize them. Right-click an inventory to export a ZIP with its saved entries and files; use the import icon beside **New inventory** to check an archive and create an independent copy.
 
 Click a column heading to cycle through ascending, descending, and original order. Use **View** to show or hide columns, wrap text, toggle image previews for file columns, or restore automatic widths. Drag a heading's right edge to resize a column; right-click the heading to restore its automatic width or hide it. Table preferences are saved per inventory in this browser. Use search and filters to narrow items, or the pencil to edit cells and save or discard changes together.
 

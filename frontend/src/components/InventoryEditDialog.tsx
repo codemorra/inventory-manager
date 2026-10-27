@@ -1,4 +1,12 @@
-import { type SyntheticEvent, useCallback, useId, useState } from "react";
+import { TableEditSessionContext } from "./tableEditSession";
+import {
+  type SyntheticEvent,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   useInventoryEditor,
@@ -138,6 +146,12 @@ function InventoryEditorSession({
     editorInput.fields.length > 0 ||
     editorInput.options.length > 0 ||
     editorInput.field_order !== undefined;
+  const { setConfigurationInventoryId } = useContext(TableEditSessionContext);
+  const configurationLocked = dirty || busy || pendingEditors.length > 0;
+  useEffect(() => {
+    setConfigurationInventoryId?.(configurationLocked ? inventory.id : null);
+    return () => setConfigurationInventoryId?.(null);
+  }, [configurationLocked, inventory.id, setConfigurationInventoryId]);
   const setPendingEditor = useCallback((id: string, active: boolean) => {
     setPendingEditors((current) =>
       active
