@@ -38,8 +38,7 @@ load it automatically; process environment variables take precedence.
 | `INVENTORY_PORT`      | `8000`                                    |
 | `INVENTORY_LOG_LEVEL` | `INFO`                                    |
 
-Storage overrides must be absolute paths; `~/` is supported. Logs and the prepared
-attachment directory are stored under the data directory.
+Storage overrides must be absolute paths; `~/` is supported. Logs and managed attachment copies are stored under the data directory.
 
 ## Migrations and checks
 
@@ -92,7 +91,7 @@ reload; item deletion conflicts require loading the current item and confirming 
 ### Field configuration
 
 Supported field types are `text`, `number`, `boolean`, `checkbox`, `date`, `time`,
-`datetime`, `duration`, `select`, `multiselect`, `url`, and `id`.
+`datetime`, `duration`, `select`, `multiselect`, `url`, `attachment`, and `id`.
 
 `is_required` defaults to `false`; `is_sortable` defaults to `true`. Required values
 are checked on item creation and replacement, leaving old items unchanged until
@@ -145,3 +144,11 @@ Deleting a group clears its name and records a deletion tombstone. All inventory
 memberships are removed in the same transaction, preserving the inventories,
 fields, and items. The group migration also supports existing databases, leaving
 their inventories initially ungrouped.
+
+### Managed attachments
+
+An `attachment` field holds an ordered, non-empty array of unique file IDs. Upload a managed copy with `POST /inventories/{inventory_id}/fields/{field_id}/attachments`, a binary `application/octet-stream` body, required URI-encoded UTF-8 `X-File-Name`, and optional `X-File-Type`. Original filenames are display metadata, never filesystem paths. Uploads stream into private opaque files under the configured attachments directory; the application imposes no per-file size limit. A completed upload returns metadata and an unclaimed ID without changing item or configuration revisions. Save that ID in the cell through ordinary item creation/replacement or atomic batch replacement; claims and removals commit in that same transaction. A file cannot be shared across fields, inventories, or items. Omitting an optional attachment field removes its saved files; an empty array is invalid. Item responses include an optional `attachments` metadata list when files are present.
+
+`GET /inventories/{inventory_id}/fields/{field_id}/attachments/{attachment_id}` reads metadata; append `/download` to retrieve bytes. Downloads always use `Content-Disposition: attachment`, the original filename, `application/octet-stream`, `nosniff`, and `no-store`, including images. Opening a system application is deferred until a feature release after the initial release. `DELETE` on the metadata endpoint discards only unclaimed stages; canceling a saved file returns 409 `attachment_already_attached`, so a failed or lost save response cannot accidentally delete a committed file. Permanent removal uses revision-checked item editing instead.
+
+SQLite transactions clear metadata and retain deletion identities before files are physically removed. Successful mutation responses schedule file cleanup; startup, one-minute maintenance, and shutdown also reconcile storage. Failed unlinks keep a retryable purge marker. Abandoned unclaimed stages expire after 24 hours; old interrupted/unreferenced opaque files are swept after the same grace period, while active uploads and unrelated filenames are preserved. Item, field, and inventory deletion clear dependent file metadata in their existing transactions, so failed saves/cascades never delete still-referenced bytes. Filesystem and database commits are separate: physical removal is eventual and retried, and expired drafts must upload their files again. Generated previews are not implemented by these endpoints. Backups must eventually include both SQLite and managed files.

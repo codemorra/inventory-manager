@@ -11,6 +11,7 @@ import {
   inventoryFieldOptions,
   inventoryItems,
   inventoryItemValues,
+  inventoryAttachments,
 } from "../src/db/schema.js";
 import { createServices } from "../src/services.js";
 
@@ -177,6 +178,18 @@ test("field deletion removes content for every field type", (context) => {
         : {}),
     }),
   );
+  const attachment = f.db
+    .insert(inventoryAttachments)
+    .values({
+      inventoryId: inventory.id,
+      fieldId: definitions.find((field) => field.fieldType === "attachment")!
+        .id,
+      filename: "Synthetic.txt",
+      mediaType: "text/plain",
+      byteSize: 0,
+    })
+    .returning()
+    .get();
   const values = definitions
     .filter((field) => field.fieldType !== "id")
     .map((field) => {
@@ -192,6 +205,7 @@ test("field deletion removes content for every field type", (context) => {
         url: { url: "https://example.com", label: "Link" },
         select: field.options[0]?.id,
         multiselect: field.options.map((option) => option.id),
+        attachment: [attachment.id],
       }[field.fieldType as Exclude<typeof field.fieldType, "id">];
       return { field_id: field.id, value };
     });

@@ -16,11 +16,27 @@ export async function startServer(config: AppConfig) {
   const logger = await createLogger(config);
   let connection: ReturnType<typeof openDatabase> | undefined;
   const server = createServer();
+  let maintenance: ReturnType<typeof setInterval> | undefined;
+  let attachmentService: ReturnType<typeof createServices>["attachments"] =
+    null;
 
   try {
     // Open the database connection before starting the server.
     connection = openDatabase(config.databasePath);
-    server.on("request", createApp(logger, createServices(connection.db)));
+    const services = createServices(connection.db, {
+      directory: config.attachmentsDirectory,
+    });
+    attachmentService = services.attachments;
+    const cleanup = () =>
+      attachmentService!
+        .cleanup()
+        .catch((error: unknown) =>
+          logger.error("Attachment cleanup will be retried", error),
+        );
+    await cleanup();
+    maintenance = setInterval(() => void cleanup(), 60_000);
+    maintenance.unref();
+    server.on("request", createApp(logger, services));
     await new Promise<void>((resolve, reject) => {
       server.once("error", reject);
       server.listen(config.port, config.host, () => {
@@ -31,6 +47,7 @@ export async function startServer(config: AppConfig) {
     logger.info("Application started");
   } catch (error) {
     logger.error("Application startup failed", error);
+    clearInterval(maintenance);
     connection?.close();
     await logger.close();
     throw error;
@@ -43,6 +60,7 @@ export async function startServer(config: AppConfig) {
     database,
     stop() {
       stopping ??= (async () => {
+        clearInterval(maintenance);
         try {
           // Attempt to gracefully shut down the server.
           await new Promise<void>((resolve, reject) => {
@@ -50,6 +68,14 @@ export async function startServer(config: AppConfig) {
             server.closeIdleConnections();
           });
         } finally {
+          try {
+            await attachmentService?.cleanup();
+          } catch (error) {
+            logger.error(
+              "Attachment cleanup will be retried on startup",
+              error,
+            );
+          }
           database.close();
           logger.info("Application stopped");
           await logger.close();

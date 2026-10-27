@@ -1,4 +1,11 @@
 import type { inventoryItemValues } from "../db/schema.js";
+import { inventoryAttachments } from "../db/schema.js";
+import { eq } from "drizzle-orm";
+import {
+  attachmentsForItems,
+  replaceItemAttachments,
+  tombstoneAttachments,
+} from "../attachments/metadata.js";
 import type { AppDatabase } from "../db/types.js";
 import { DomainError } from "../errors.js";
 import { createFieldRepository } from "../fields/repository.js";
@@ -93,6 +100,7 @@ export function createItemService(
         "The inventory item has changed. Reload it before saving.",
       );
     validate(transaction, inventoryId, data.values);
+    replaceItemAttachments(transaction, inventoryId, itemId, data.values);
     // Full replacements retain server-owned assignments and tombstone omitted editable values.
     const automaticFields = createFieldRepository(transaction)
       .list(inventoryId)
@@ -100,7 +108,14 @@ export function createItemService(
       .map((field) => field.id);
     items.tombstoneValues(item.id, automaticFields);
     items.createValues(item.id, data.values);
-    return { ...item, values: items.values(item.id) };
+    const attachments = attachmentsForItems(transaction, [item.id]).get(
+      item.id,
+    );
+    return {
+      ...item,
+      values: items.values(item.id),
+      ...(attachments?.length ? { attachments } : {}),
+    };
   }
 
   return {
@@ -113,7 +128,12 @@ export function createItemService(
      * @returns The inventory item.
      */
     read(inventoryId: string, itemId: string) {
-      return { ...get(inventoryId, itemId), values: repository.values(itemId) };
+      const attachments = attachmentsForItems(db, [itemId]).get(itemId);
+      return {
+        ...get(inventoryId, itemId),
+        values: repository.values(itemId),
+        ...(attachments?.length ? { attachments } : {}),
+      };
     },
 
     /**
@@ -124,6 +144,10 @@ export function createItemService(
     list(inventoryId: string) {
       inventories.get(inventoryId);
       const items = repository.list(inventoryId);
+      const attachments = attachmentsForItems(
+        db,
+        items.map((item) => item.id),
+      );
       const grouped = new Map<
         string,
         (typeof inventoryItemValues.$inferSelect)[]
@@ -138,6 +162,9 @@ export function createItemService(
       return items.map((item) => ({
         ...item,
         values: grouped.get(item.id) ?? [],
+        ...(attachments.get(item.id)?.length
+          ? { attachments: attachments.get(item.id)! }
+          : {}),
       }));
     },
 
@@ -154,13 +181,21 @@ export function createItemService(
         validate(transaction, inventoryId, data.values);
         const items = createItemRepository(transaction);
         const item = items.create(inventoryId);
+        replaceItemAttachments(transaction, inventoryId, item.id, data.values);
         items.createValues(item.id, data.values);
         for (const field of createFieldRepository(transaction).list(
           inventoryId,
         ))
           if (field.fieldType === "id")
             assignAutomaticId(transaction, field.id, item.id);
-        return { ...item, values: items.values(item.id) };
+        const attachments = attachmentsForItems(transaction, [item.id]).get(
+          item.id,
+        );
+        return {
+          ...item,
+          values: items.values(item.id),
+          ...(attachments?.length ? { attachments } : {}),
+        };
       });
     },
 
@@ -232,6 +267,11 @@ export function createItemService(
         const deletedAt = new Date().toISOString();
         items.tombstone(inventoryId, itemId, deletedAt);
         items.tombstoneValues(itemId, [], deletedAt);
+        tombstoneAttachments(
+          transaction,
+          eq(inventoryAttachments.itemId, itemId),
+          deletedAt,
+        );
       });
     },
   };

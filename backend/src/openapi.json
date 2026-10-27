@@ -1614,6 +1614,292 @@
           }
         }
       }
+    },
+    "/inventories/{inventory_id}/fields/{field_id}/attachments": {
+      "post": {
+        "tags": ["attachments"],
+        "summary": "Stage a managed file for an attachment field",
+        "operationId": "stage_inventory_attachment",
+        "description": "Stream a binary file as application/octet-stream. X-File-Name is required and must contain encodeURIComponent-style URI-encoded UTF-8. Optional X-File-Type stores the declared MIME type; it is not trusted for inline rendering. The application imposes no per-file size limit; uploads are streamed to disk. Uploads do not change item/configuration revisions. Save the returned ID through the ordinary item create/PATCH or atomic batch endpoint to claim it; unclaimed uploads expire after 24 hours through maintenance.",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-File-Name",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "URI-encoded original filename, excluding paths and control characters."
+          },
+          {
+            "name": "X-File-Type",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "application/octet-stream"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryAttachmentRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Active inventory, field, attachment, or file content not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid upload metadata or unsupported field.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Storage error. Failed uploads leave no active record; reconciliation retries orphan cleanup if physical removal fails."
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}/fields/{field_id}/attachments/{attachment_id}": {
+      "get": {
+        "tags": ["attachments"],
+        "summary": "Read staged or saved attachment metadata",
+        "operationId": "get_inventory_attachment",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryAttachmentRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Active inventory, field, attachment, or file content not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["attachments"],
+        "summary": "Discard an unclaimed staged upload",
+        "operationId": "discard_inventory_attachment",
+        "description": "Only staged uploads can be canceled directly. A bound attachment returns 409 attachment_already_attached and must instead be removed through revision-checked item editing. Clearing metadata commits before retryable physical file removal. No request body is required.",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Stage canceled; metadata cleared, physical deletion scheduled."
+          },
+          "404": {
+            "description": "Active inventory, field, attachment, or file content not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "File is already bound to an item.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}/fields/{field_id}/attachments/{attachment_id}/download": {
+      "get": {
+        "tags": ["attachments"],
+        "summary": "Download a managed file",
+        "operationId": "download_inventory_attachment",
+        "description": "Always forces a download, including for images. Returns Content-Disposition: attachment with the original filename, application/octet-stream, X-Content-Type-Options: nosniff, Content-Length, and Cache-Control: no-store. No inline renderer or system application launching is provided.",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Managed file bytes.",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string",
+                  "const": "nosniff"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Active inventory, field, attachment, or file content not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Storage error. Failed uploads leave no active record; reconciliation retries orphan cleanup if physical removal fails."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1917,10 +2203,11 @@
           "multiselect",
           "url",
           "id",
-          "checkbox"
+          "checkbox",
+          "attachment"
         ],
         "title": "InventoryFieldType",
-        "description": "Supported inventory field types; URL values use an address with optional display text. ID fields assign immutable, inventory-local numbers starting at 1; each ID field has its own sequence. Checkbox fields store booleans and can be toggled directly in the item table; unchecked is a valid value, including for required fields."
+        "description": "Supported inventory field types; URL values use an address with optional display text. ID fields assign immutable, inventory-local numbers starting at 1; each ID field has its own sequence. Checkbox fields store booleans and can be toggled directly in the item table; unchecked is a valid value, including for required fields. Attachment fields contain ordered arrays of unique managed-file IDs; no file contents or filesystem paths are stored in item values."
       },
       "InventoryFieldUpdate": {
         "properties": {
@@ -2012,6 +2299,13 @@
             "minimum": 1,
             "maximum": 9007199254740991,
             "description": "Monotonically increasing item revision. New and migrated items start at 1."
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryAttachmentRead"
+            },
+            "description": "Metadata for active managed files referenced by this item. Omitted when the item has no attachments. Item values retain ordered file IDs."
           }
         },
         "type": "object",
@@ -2054,7 +2348,7 @@
           },
           "value": {
             "title": "Value",
-            "description": "Value matching the field type. URL fields use InventoryUrlValue. Duration uses non-negative integer seconds up to 9007199254740991. Required fields must be supplied when creating or replacing an item. Never submit ID field values; the server generates them and preserves them during complete replacement. Checkbox values must be true or false, never strings or numbers. Table toggles submit a complete replacement of editable values and must satisfy all current required fields.",
+            "description": "Value matching the field type. URL fields use InventoryUrlValue. Duration uses non-negative integer seconds up to 9007199254740991. Required fields must be supplied when creating or replacing an item. Never submit ID field values; the server generates them and preserves them during complete replacement. Checkbox values must be true or false, never strings or numbers. Table toggles submit a complete replacement of editable values and must satisfy all current required fields. Attachment values are non-empty arrays of unique staged or same-item attachment IDs scoped to this inventory and field. Omit an optional attachment field to remove all its files; an empty array is invalid. IDs owned by other items or fields are rejected. Claims and removals participate in the same item/batch transaction.",
             "examples": [
               {
                 "url": "https://example.com",
@@ -2881,6 +3175,56 @@
           "created_at",
           "updated_at"
         ]
+      },
+      "InventoryAttachmentRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "inventory_id": {
+            "type": "string"
+          },
+          "field_id": {
+            "type": "string"
+          },
+          "item_id": {
+            "type": ["string", "null"]
+          },
+          "filename": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "byte_size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "inventory_id",
+          "field_id",
+          "item_id",
+          "filename",
+          "media_type",
+          "byte_size",
+          "created_at",
+          "updated_at"
+        ],
+        "description": "Managed-file metadata only. item_id is null until a successful item save claims the staged upload. No server paths, storage names, content hashes, or purge flags are exposed."
       }
     }
   }

@@ -6,13 +6,21 @@ import { createItemService } from "./items/service.js";
 import { createGroupService } from "./groups/service.js";
 import { createInventoryEditorService } from "./inventories/editor-service.js";
 import { createTemplateService } from "./templates/service.js";
+import {
+  createAttachmentService,
+  type AttachmentStorageOptions,
+} from "./attachments/service.js";
 
 /**
  * Compose the domain services once; they have no dependency on Express or HTTP.
  * @param db - The application database instance.
+ * @param attachmentStorage Explicit managed storage; omitted for database-only callers and tests.
  * @returns An object containing the composed domain services.
  */
-export function createServices(db: AppDatabase) {
+export function createServices(
+  db: AppDatabase,
+  attachmentStorage?: AttachmentStorageOptions,
+) {
   const groups = createGroupService(db);
   const inventories = createInventoryService(db, groups);
   const fields = createFieldService(db, inventories);
@@ -28,6 +36,9 @@ export function createServices(db: AppDatabase) {
     groups,
     inventoryEditor,
     templates,
+    attachments: attachmentStorage
+      ? createAttachmentService(db, attachmentStorage)
+      : null,
   };
 }
 

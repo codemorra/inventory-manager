@@ -168,6 +168,15 @@ export function validateValues(
         )
           invalidValue();
         break;
+      case "attachment":
+        if (
+          !Array.isArray(value) ||
+          !value.length ||
+          !value.every((id) => typeof id === "string" && id.length > 0) ||
+          new Set(value).size !== value.length
+        )
+          invalidValue();
+        break;
     }
   }
 }
