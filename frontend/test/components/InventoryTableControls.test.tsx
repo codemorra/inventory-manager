@@ -281,3 +281,33 @@ test("translates the menus and disables actions when busy", async () => {
   rerender(<InventoryTableControls {...props} />);
   expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 });
+
+// The View action exposes a normal marked toggle without changing other column settings.
+test("toggles optional image previews and keeps the active state accessible", async () => {
+  const user = userEvent.setup();
+  const change = vi.fn();
+  const { rerender } = render(
+    <InventoryTableControls
+      attachmentPreviews={false}
+      onAttachmentPreviewsChange={change}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "View" }));
+  const action = screen.getByRole("menuitemcheckbox", {
+    name: "Image previews",
+  });
+  expect(action).toHaveAttribute("aria-checked", "false");
+  await user.click(action);
+  expect(change).toHaveBeenCalledExactlyOnceWith(true);
+  expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  rerender(
+    <InventoryTableControls
+      attachmentPreviews
+      onAttachmentPreviewsChange={change}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "View" }));
+  expect(
+    screen.getByRole("menuitemcheckbox", { name: "Image previews" }),
+  ).toHaveAttribute("aria-checked", "true");
+});

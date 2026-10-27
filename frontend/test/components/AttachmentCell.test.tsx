@@ -1,5 +1,6 @@
 import {
   cleanup,
+  act,
   fireEvent,
   render,
   screen,
@@ -18,6 +19,104 @@ vi.mock("../../src/services/attachments", async (original) => ({
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
+});
+
+// Previews fetch only generated thumbnails, retain the download target, and degrade to an icon on errors.
+test("lazy-loads supported thumbnails and keeps image clicks on the download action", () => {
+  const file = attachment("photo", {
+    filename: "photo.jpg",
+    media_type: "image/jpeg",
+  });
+  const { rerender, container } = render(
+    <AttachmentCell ids={[file.id]} files={[file]} />,
+  );
+  expect(container.querySelector("img")).toBeNull();
+  rerender(<AttachmentCell ids={[file.id]} files={[file]} previews />);
+  const image = container.querySelector("img")!;
+  expect(image).toHaveAttribute(
+    "src",
+    expect.stringMatching(/\/attachments\/photo\/preview$/),
+  );
+  expect(image).toHaveAttribute("loading", "lazy");
+  expect(screen.getByRole("link", { name: "photo.jpg" })).toHaveAttribute(
+    "href",
+    expect.stringMatching(/\/download$/),
+  );
+  fireEvent.click(image);
+  expect(downloadAttachment).toHaveBeenCalledExactlyOnceWith(file);
+  fireEvent.error(image);
+  expect(container.querySelector("img")).toBeNull();
+  expect(screen.getByRole("link", { name: "photo.jpg" })).toBeInTheDocument();
+});
+
+// Ordinary documents and SVG remain filename/icon tiles instead of being embedded in the application.
+test("does not request previews for unsupported documents or active vector formats", () => {
+  const files = [
+    attachment("pdf", { filename: "file.pdf", media_type: "application/pdf" }),
+    attachment("svg", { filename: "image.svg", media_type: "image/svg+xml" }),
+  ];
+  const { container } = render(
+    <AttachmentCell
+      ids={files.map((file) => file.id)}
+      files={files}
+      previews
+    />,
+  );
+  expect(container.querySelector("img")).toBeNull();
+  expect(screen.getAllByRole("link")).toHaveLength(2);
+});
+
+// Responsive limits are derived from available width, so narrow columns never grow to many tile rows.
+test("adapts the two-row tile limit to column width while the complete list remains scrollable", async () => {
+  const user = userEvent.setup();
+  let resize!: ResizeObserverCallback;
+  let target!: Element;
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      constructor(callback: ResizeObserverCallback) {
+        resize = callback;
+      }
+      observe(element: Element) {
+        target = element;
+      }
+      disconnect() {}
+    },
+  );
+  const files = ["one", "two", "three", "four", "five"].map((id) =>
+    attachment(id),
+  );
+  render(
+    <AttachmentCell
+      ids={files.map((file) => file.id)}
+      files={files}
+      previews
+    />,
+  );
+  expect(screen.getAllByRole("link")).toHaveLength(2);
+  act(() =>
+    resize(
+      [{ target, contentRect: { width: 236 } } as ResizeObserverEntry],
+      {} as ResizeObserver,
+    ),
+  );
+  expect(screen.getAllByRole("link")).toHaveLength(4);
+  expect(screen.getByRole("button", { name: "+ 1 more" })).toBeInTheDocument();
+  act(() =>
+    resize(
+      [{ target, contentRect: { width: 112 } } as ResizeObserverEntry],
+      {} as ResizeObserver,
+    ),
+  );
+  expect(screen.getAllByRole("link")).toHaveLength(2);
+  const more = screen.getByRole("button", { name: "+ 3 more" });
+  await user.click(more);
+  expect(
+    within(screen.getByRole("dialog", { name: "Files" })).getAllByRole("link"),
+  ).toHaveLength(5);
+  await user.click(screen.getByRole("button", { name: "Close dialog" }));
+  expect(more).toHaveFocus();
 });
 
 // Compact display keeps every file reachable while limiting the initial cell to three entries.

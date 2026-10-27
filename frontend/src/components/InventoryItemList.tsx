@@ -216,6 +216,7 @@ export function InventoryItemList({
     toggleSort,
     toggleField,
     setWrapText,
+    setAttachmentPreviews,
     setColumnWidth,
     setAutomaticColumnWidth,
   } = useInventoryView(inventoryId, fields);
@@ -789,6 +790,12 @@ export function InventoryItemList({
         }
         wrapText={wrapText}
         onWrapTextChange={setWrapText}
+        attachmentPreviews={view.attachmentPreviews}
+        onAttachmentPreviewsChange={
+          fields.some((field) => field.field_type === "attachment")
+            ? setAttachmentPreviews
+            : undefined
+        }
         disabled={controlsDisabled}
       />
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start overflow-hidden rounded-b-md border border-shell bg-surface">
@@ -991,6 +998,7 @@ export function InventoryItemList({
                             />
                           ) : field.field_type === "attachment" ? (
                             <AttachmentCell
+                              previews={view.attachmentPreviews}
                               ids={valuesByField.get(field.id)?.value}
                               files={item.attachments ?? []}
                             />

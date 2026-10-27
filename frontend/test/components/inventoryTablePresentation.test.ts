@@ -16,6 +16,7 @@ test("captures a private view and repairs references against freshly loaded fiel
       hiddenFieldIds: [text.id, number.id],
       columnWidths: { [number.id]: 180 },
       wrapText: true,
+      attachmentPreviews: false,
     },
     searchQuery: "yes",
     filters: [

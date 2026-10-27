@@ -434,6 +434,7 @@
     "restoreWarnings": "Show file warnings again",
     "more_one": "+ {{count}} more",
     "more_other": "+ {{count}} more",
-    "saveAs": "Save as…"
+    "saveAs": "Save as…",
+    "showPreviews": "Image previews"
   }
 }

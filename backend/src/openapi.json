@@ -1900,6 +1900,95 @@
           }
         }
       }
+    },
+    "/inventories/{inventory_id}/fields/{field_id}/attachments/{attachment_id}/preview": {
+      "get": {
+        "tags": ["attachments"],
+        "summary": "Render a transient image preview",
+        "operationId": "preview_inventory_attachment",
+        "description": "Validates PNG, JPEG, GIF, or WebP bytes and returns a static, proportionally fitted WebP no larger than 320 by 240 pixels. Original files remain download-only. Native decoding is serialized, bounded to 100 million source pixels and five seconds; these preview limits do not limit file copying. Unsupported, corrupt, or impractical images return attachment_preview_unavailable. Derivatives strip metadata and are not stored.",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transient metadata-free thumbnail.",
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string",
+                  "const": "nosniff"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Active inventory, field, attachment, or file content not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "attachment_preview_unavailable: unsupported, corrupt, or impractical image.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected storage error."
+          }
+        }
+      }
     }
   },
   "components": {

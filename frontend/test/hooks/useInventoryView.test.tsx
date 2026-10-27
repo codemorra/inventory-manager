@@ -40,6 +40,7 @@ test.each([
     sort: null,
     hiddenFieldIds: [],
     wrapText: true,
+    attachmentPreviews: false,
     columnWidths: {},
   });
 });
@@ -201,5 +202,37 @@ test("keeps a session view when browser storage is unavailable", () => {
   act(() => result.current.toggleField("second"));
   act(() => result.current.setWrapText(false));
   expect(result.current.view.hiddenFieldIds).toEqual(["second"]);
+  expect(result.current.view.wrapText).toBe(false);
+});
+
+// Existing preferences default to filenames only, and preview choices remain isolated per inventory.
+test("persists image previews independently per inventory and validates old or malformed flags", () => {
+  const { result, rerender } = renderHook(
+    ({ id }) => useInventoryView(id, fields),
+    { initialProps: { id: "first-inventory" } },
+  );
+  expect(result.current.view.attachmentPreviews).toBe(false);
+  act(() => result.current.setAttachmentPreviews(true));
+  expect(
+    JSON.parse(
+      localStorage.getItem(inventoryViewStorageKey("first-inventory"))!,
+    ).attachmentPreviews,
+  ).toBe(true);
+  rerender({ id: "second-inventory" });
+  expect(result.current.view.attachmentPreviews).toBe(false);
+  rerender({ id: "first-inventory" });
+  expect(result.current.view.attachmentPreviews).toBe(true);
+  act(() => {
+    localStorage.setItem(
+      inventoryViewStorageKey("first-inventory"),
+      JSON.stringify({
+        version: 1,
+        attachmentPreviews: "yes",
+        wrapText: false,
+      }),
+    );
+    window.dispatchEvent(new StorageEvent("storage"));
+  });
+  expect(result.current.view.attachmentPreviews).toBe(false);
   expect(result.current.view.wrapText).toBe(false);
 });

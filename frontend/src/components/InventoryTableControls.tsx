@@ -27,6 +27,8 @@ interface InventoryTableControlsProps {
   actions?: ReactNode;
   wrapText?: boolean;
   onWrapTextChange?: (wrap: boolean) => void;
+  attachmentPreviews?: boolean;
+  onAttachmentPreviewsChange?: ((previews: boolean) => void) | undefined;
   disabled?: boolean;
   columns?: TableColumn[];
   onToggleColumn?: (fieldId: string) => void;
@@ -48,6 +50,8 @@ export function InventoryTableControls({
   actions,
   wrapText = true,
   onWrapTextChange,
+  attachmentPreviews = false,
+  onAttachmentPreviewsChange,
   disabled = false,
   columns = [],
   onToggleColumn,
@@ -67,6 +71,7 @@ export function InventoryTableControls({
   const available =
     !disabled &&
     (!!onWrapTextChange ||
+      !!onAttachmentPreviewsChange ||
       !!onAutomaticWidths ||
       (!!onToggleColumn && columns.length > 0));
   const expanded = open && available;
@@ -343,6 +348,27 @@ export function InventoryTableControls({
                     {wrapText ? "✓" : ""}
                   </span>
                   {t("table.menu.wrapText")}
+                </button>
+              )}
+              {onAttachmentPreviewsChange && (
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={attachmentPreviews}
+                  tabIndex={-1}
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-left outline-none hover:bg-control-hover focus:bg-control-hover"
+                  onPointerEnter={(event) => {
+                    if (event.pointerType === "mouse") setColumnsOpen(false);
+                  }}
+                  onClick={() => {
+                    onAttachmentPreviewsChange(!attachmentPreviews);
+                    close();
+                  }}
+                >
+                  <span aria-hidden="true" className="w-4 text-accent">
+                    {attachmentPreviews ? "✓" : ""}
+                  </span>
+                  {t("attachments.showPreviews")}
                 </button>
               )}
               {hasColumns && (

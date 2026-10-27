@@ -20,17 +20,19 @@ export function errorHandler(
     // Handle domain-specific errors first
     if (error instanceof DomainError) {
       const status =
-        error.code === "attachment_already_attached" ||
-        error.code === "inventory_item_conflict" ||
-        error.code === "inventory_template_conflict" ||
-        error.code === "inventory_configuration_conflict"
-          ? 409
-          : error.code === "inventory_field_options_not_supported" ||
-              error.code === "automatic_id_exhausted" ||
-              error.code === "invalid_inventory_field_configuration" ||
-              error.code === "invalid_inventory_item_value"
-            ? 422
-            : 404;
+        error.code === "attachment_preview_unavailable"
+          ? 415
+          : error.code === "attachment_already_attached" ||
+              error.code === "inventory_item_conflict" ||
+              error.code === "inventory_template_conflict" ||
+              error.code === "inventory_configuration_conflict"
+            ? 409
+            : error.code === "inventory_field_options_not_supported" ||
+                error.code === "automatic_id_exhausted" ||
+                error.code === "invalid_inventory_field_configuration" ||
+                error.code === "invalid_inventory_item_value"
+              ? 422
+              : 404;
       response.status(status).json({
         detail: {
           code: error.code,
