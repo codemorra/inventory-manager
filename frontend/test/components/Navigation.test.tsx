@@ -135,3 +135,11 @@ describe("Navigation inventory search", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+// Importing would navigate away from a live table draft; keep that action explicitly locked.
+test("locks the import control during table editing", () => {
+  renderNavigation(true);
+  expect(
+    screen.getByRole("button", { name: "Import inventory" }),
+  ).toBeDisabled();
+});

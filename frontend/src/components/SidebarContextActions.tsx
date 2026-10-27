@@ -1,3 +1,4 @@
+import { InventoryExportDialog } from "./InventoryExportDialog";
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 import { type SyntheticEvent, useContext, useState } from "react";
 import { TableEditSessionContext } from "./tableEditSession";
@@ -41,12 +42,13 @@ export function SidebarContextActions({
   onOpenDialog,
 }: SidebarContextActionsProps) {
   const { t } = useTranslation();
-  const { inventoryId: editingInventoryId } = useContext(
-    TableEditSessionContext,
-  );
+  const { inventoryId: editingInventoryId, configurationInventoryId } =
+    useContext(TableEditSessionContext);
   const navigate = useNavigate();
   const location = useLocation();
-  const [stage, setStage] = useState<"menu" | "edit" | "delete">("menu");
+  const [stage, setStage] = useState<"menu" | "edit" | "delete" | "export">(
+    "menu",
+  );
   const [name, setName] = useState(target.entry.name);
   const deleteInventory = useDeleteInventory();
   const groups = useGroupMutations();
@@ -71,7 +73,7 @@ export function SidebarContextActions({
    * Transition from the menu into a dialog outside mobile navigation.
    * @param nextStage The action selected in the menu.
    */
-  function openDialog(nextStage: "edit" | "delete") {
+  function openDialog(nextStage: "edit" | "delete" | "export") {
     onOpenDialog();
     setStage(nextStage);
   }
@@ -115,6 +117,21 @@ export function SidebarContextActions({
             disabled: Boolean(editingInventoryId),
             onSelect: () => openDialog("edit"),
           },
+          ...(group
+            ? []
+            : [
+                {
+                  label: t("archives.export"),
+                  disabled: Boolean(
+                    editingInventoryId || configurationInventoryId,
+                  ),
+                  title:
+                    editingInventoryId || configurationInventoryId
+                      ? t("archives.saveFirst")
+                      : undefined,
+                  onSelect: () => openDialog("export"),
+                },
+              ]),
           {
             label: t("common.actions.delete"),
             disabled: Boolean(editingInventoryId),
@@ -124,6 +141,9 @@ export function SidebarContextActions({
         ]}
       />
     );
+
+  if (stage === "export" && target.kind === "inventory")
+    return <InventoryExportDialog inventory={target.entry} onClose={close} />;
 
   if (stage === "edit" && target.kind === "inventory") {
     return <InventoryEditDialog inventory={target.entry} onClose={close} />;
