@@ -1,10 +1,12 @@
 import { and, eq, inArray, isNull, sql, type SQLWrapper } from "drizzle-orm";
 import { advanceItemRevisions } from "./item-revisions.js";
+import { tombstoneAttachments } from "../attachments/metadata.js";
 import {
   inventoryFieldOptions,
   inventoryFields,
   inventoryItems,
   inventoryItemValues,
+  inventoryAttachments,
 } from "./schema.js";
 import type { AppDatabase } from "./types.js";
 
@@ -21,6 +23,11 @@ function tombstoneFieldDependents(
   deletedAt: string,
   advanceRevisions = true,
 ) {
+  tombstoneAttachments(
+    db,
+    inArray(inventoryAttachments.fieldId, fieldIds),
+    deletedAt,
+  );
   if (advanceRevisions) {
     const itemIds = db
       .select({ id: inventoryItemValues.itemId })

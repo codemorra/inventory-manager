@@ -9,6 +9,7 @@ import { errorHandler } from "./routes/error-handler.js";
 import { docsRoutes } from "./routes/docs.js";
 import { groupRoutes } from "./routes/groups.js";
 import { templateRoutes } from "./routes/templates.js";
+import { attachmentRoutes } from "./routes/attachments.js";
 
 /**
  * Create and configure an Express application instance.
@@ -29,6 +30,18 @@ export function createApp(logger: Pick<Logger, "error">, services: Services) {
   );
   // JSON body parser middleware
   app.use(express.json({ limit: "1mb" }));
+  // Physical file removal must follow committed mutations, including field/inventory cascades.
+  app.use((request, response, next) => {
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method))
+      response.once("finish", () => {
+        void services.attachments
+          ?.cleanup(false)
+          .catch((error: unknown) =>
+            logger.error("Attachment cleanup will be retried", error),
+          );
+      });
+    next();
+  });
 
   // Health check endpoint
   app.get("/health", (_request, response) => {
@@ -44,6 +57,7 @@ export function createApp(logger: Pick<Logger, "error">, services: Services) {
     inventoryRoutes(services),
     fieldRoutes(services),
     itemRoutes(services),
+    attachmentRoutes(services),
   );
 
   // 404 handler for unknown routes

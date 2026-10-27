@@ -82,7 +82,7 @@ test("adds independent templates to an existing database and preserves them acro
       "utf8",
     ),
   ) as { entries: { tag: string }[] };
-  journal.entries = journal.entries.slice(0, -1);
+  journal.entries = journal.entries.slice(0, 6);
   for (const entry of journal.entries)
     copyFileSync(
       new URL(`../drizzle/${entry.tag}.sql`, import.meta.url),
@@ -101,9 +101,20 @@ test("adds independent templates to an existing database and preserves them acro
     name: "Title",
     field_type: "text",
   });
-  services.items.create(inventory.id, {
-    values: [{ field_id: field.id, value: "Existing data" }],
-  });
+  // Legacy setup predates attachment tables; create its item through that schema's raw records.
+  const legacyItem = original.db
+    .insert(inventoryItems)
+    .values({ inventoryId: inventory.id })
+    .returning()
+    .get();
+  original.db
+    .insert(inventoryItemValues)
+    .values({
+      itemId: legacyItem.id,
+      fieldId: field.id,
+      value: "Existing data",
+    })
+    .run();
   const tables = [
     inventories,
     inventoryFields,
@@ -279,7 +290,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     assert.deepEqual(db.select().from(table).all(), []);
   assert.deepEqual(
     sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get(),
-    { count: 7 },
+    { count: 8 },
   );
 
   const inventory = db
@@ -340,7 +351,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     reopened.sqlite
       .prepare("SELECT count(*) AS count FROM __drizzle_migrations")
       .get(),
-    { count: 7 },
+    { count: 8 },
   );
 });
 

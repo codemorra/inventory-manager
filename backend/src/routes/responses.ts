@@ -5,6 +5,7 @@ import type {
   inventoryFieldOptions,
   inventoryItems,
   inventoryItemValues,
+  inventoryAttachments,
 } from "../db/schema.js";
 
 type Inventory = typeof inventories.$inferSelect;
@@ -31,7 +32,29 @@ type Option = typeof inventoryFieldOptions.$inferSelect;
 type Field = typeof inventoryFields.$inferSelect & { options: Option[] };
 type Item = typeof inventoryItems.$inferSelect & {
   values: (typeof inventoryItemValues.$inferSelect)[];
+  attachments?: (typeof inventoryAttachments.$inferSelect)[];
 };
+
+/**
+ * Serialize safe attachment metadata without filesystem names, hashes, or purge flags.
+ * @param file The staged or bound managed file record.
+ * @returns Client-visible metadata used to display and download a file.
+ */
+export function attachmentResponse(
+  file: typeof inventoryAttachments.$inferSelect,
+) {
+  return {
+    id: file.id,
+    inventory_id: file.inventoryId,
+    field_id: file.fieldId,
+    item_id: file.itemId,
+    filename: file.filename,
+    media_type: file.mediaType,
+    byte_size: file.byteSize,
+    created_at: file.createdAt,
+    updated_at: file.updatedAt,
+  };
+}
 
 /**
  * Transforms a database inventory item record into a frontend-friendly response object.
@@ -43,6 +66,9 @@ export function itemResponse(item: Item) {
     id: item.id,
     inventory_id: item.inventoryId,
     revision: item.revision,
+    ...(item.attachments?.length
+      ? { attachments: item.attachments.map(attachmentResponse) }
+      : {}),
     values: item.values.map((value) => ({
       id: value.id,
       field_id: value.fieldId,

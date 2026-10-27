@@ -20,6 +20,7 @@ export function errorHandler(
     // Handle domain-specific errors first
     if (error instanceof DomainError) {
       const status =
+        error.code === "attachment_already_attached" ||
         error.code === "inventory_item_conflict" ||
         error.code === "inventory_template_conflict" ||
         error.code === "inventory_configuration_conflict"

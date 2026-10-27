@@ -27,6 +27,7 @@ export const fieldTypes = [
   "select",
   "multiselect",
   "url",
+  "attachment",
   "id",
 ] as const;
 
@@ -161,5 +162,41 @@ export const inventoryItemValues = sqliteTable(
       table.deletedAt,
     ),
     index("inventory_item_values_field_idx").on(table.fieldId),
+  ],
+);
+
+// Managed files are staged for a field, then bound to an item inside its save transaction.
+export const inventoryAttachments = sqliteTable(
+  "inventory_attachments",
+  {
+    ...lifecycleColumns(),
+    inventoryId: text("inventory_id")
+      .notNull()
+      .references(() => inventories.id),
+    fieldId: text("field_id")
+      .notNull()
+      .references(() => inventoryFields.id),
+    itemId: text("item_id").references(() => inventoryItems.id),
+    filename: text("filename").notNull(),
+    mediaType: text("media_type").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    sha256: text("sha256"),
+    storagePurged: integer("storage_purged", { mode: "boolean" })
+      .notNull()
+      .default(false),
+  },
+  (table) => [
+    index("inventory_attachments_item_active_idx").on(
+      table.itemId,
+      table.deletedAt,
+    ),
+    index("inventory_attachments_field_active_idx").on(
+      table.fieldId,
+      table.deletedAt,
+    ),
+    index("inventory_attachments_cleanup_idx").on(
+      table.deletedAt,
+      table.storagePurged,
+    ),
   ],
 );
