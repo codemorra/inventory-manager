@@ -434,6 +434,7 @@
     "restoreWarnings": "Datei-Warnungen wieder anzeigen",
     "more_one": "+ {{count}} weitere",
     "more_other": "+ {{count}} weitere",
-    "saveAs": "Speichern unter …"
+    "saveAs": "Speichern unter …",
+    "showPreviews": "Bildvorschauen"
   }
 }

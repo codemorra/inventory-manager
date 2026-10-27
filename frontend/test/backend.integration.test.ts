@@ -635,10 +635,16 @@ test("frontend clients complete configuration and item CRUD against Express", as
     const download = await fetch(attachments.attachmentDownloadUrl(staged));
     expect(download.headers.get("Content-Disposition")).toMatch(/^attachment;/);
     expect(await download.text()).toBe("Managed file content");
+    const imageBytes = Uint8Array.from(
+      Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAE0lEQVQImWP4z8DwnwGM/zMwAAAf7gP9qS/A4gAAAABJRU5ErkJggg==",
+        "base64",
+      ),
+    );
     const image = await attachments.uploadAttachment(
       fileInventory.id,
       fileField.id,
-      new File(["Image test bytes"], "photo.png", { type: "image/png" }),
+      new File([imageBytes], "photo.png", { type: "image/png" }),
     );
     const imageDownload = await fetch(attachments.attachmentDownloadUrl(image));
     expect(imageDownload.headers.get("Content-Disposition")).toMatch(
@@ -647,7 +653,15 @@ test("frontend clients complete configuration and item CRUD against Express", as
     expect(imageDownload.headers.get("Content-Type")).toBe(
       "application/octet-stream",
     );
-    expect(await imageDownload.text()).toBe("Image test bytes");
+    expect(new Uint8Array(await imageDownload.arrayBuffer())).toEqual(
+      imageBytes,
+    );
+    const preview = await fetch(attachments.attachmentPreviewUrl(image));
+    expect(preview.status).toBe(200);
+    expect(preview.headers.get("Content-Type")).toBe("image/webp");
+    const previewBytes = Buffer.from(await preview.arrayBuffer());
+    expect(previewBytes.toString("ascii", 0, 4)).toBe("RIFF");
+    expect(previewBytes.toString("ascii", 8, 12)).toBe("WEBP");
     await attachments.discardAttachment(image);
     await expect(attachments.discardAttachment(staged)).rejects.toMatchObject({
       status: 409,

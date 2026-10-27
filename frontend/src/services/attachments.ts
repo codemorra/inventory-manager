@@ -56,6 +56,30 @@ export function attachmentDownloadUrl(file: InventoryAttachment): string {
 }
 
 /**
+ * Request a generated raster thumbnail without changing the original file's download behavior.
+ * @param file The file's public metadata.
+ * @returns Its preview endpoint, which returns only a small re-encoded image.
+ */
+export function attachmentPreviewUrl(file: InventoryAttachment): string {
+  return `${apiBaseUrl}${attachmentPath(file.inventory_id, file.field_id)}/${encodeURIComponent(file.id)}/preview`;
+}
+
+/**
+ * Avoid preview requests for ordinary documents and known unsupported formats.
+ * @param file Metadata used only as a hint; the backend verifies actual raster bytes.
+ * @returns Whether this file might be a supported JPEG, PNG, GIF, or WebP image.
+ */
+export function canPreviewAttachment(file: InventoryAttachment): boolean {
+  return (
+    file.byte_size > 0 &&
+    (["image/jpeg", "image/png", "image/gif", "image/webp"].includes(
+      file.media_type.toLowerCase(),
+    ) ||
+      /\.(?:jpe?g|png|gif|webp)$/i.test(file.filename))
+  );
+}
+
+/**
  * Start a streamed download explicitly in this browsing context, never a new tab.
  * @param file The file selected by the user.
  */

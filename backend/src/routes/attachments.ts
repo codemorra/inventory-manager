@@ -90,6 +90,22 @@ export function attachmentRoutes({ attachments }: Services) {
     });
     await pipeline(file.stream, response);
   });
+  // Only re-encoded raster thumbnails are displayed inline; originals always remain downloads.
+  router.get(`${path}/:attachment_id/preview`, async (request, response) => {
+    const image = await attachments.preview(
+      request.params.inventory_id,
+      request.params.field_id,
+      request.params.attachment_id,
+    );
+    response.set({
+      "Content-Type": "image/webp",
+      "Content-Disposition": 'inline; filename="preview.webp"',
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "default-src 'none'; sandbox",
+    });
+    response.send(image);
+  });
   router.delete(`${path}/:attachment_id`, (request, response) => {
     attachments.discard(
       request.params.inventory_id,

@@ -406,3 +406,36 @@ test("cleans a staged upload that finishes after its parent form unmounts", asyn
   );
   expect(api.createInventoryItem).not.toHaveBeenCalled();
 });
+
+// The real table wires View to the persisted preference and keeps thumbnail loading opt-in.
+test("toggles image previews from View and restores the choice when the inventory remounts", async () => {
+  const user = userEvent.setup();
+  window.localStorage.clear();
+  rows[0]!.attachments = [
+    { ...savedAttachment, filename: "photo.png", media_type: "image/png" },
+  ];
+  show();
+  await screen.findByRole("link", { name: "photo.png" });
+  expect(document.querySelector("img")).toBeNull();
+  await user.click(screen.getByRole("button", { name: "View" }));
+  await user.click(
+    screen.getByRole("menuitemcheckbox", { name: "Image previews" }),
+  );
+  expect(document.querySelector("img")).toHaveAttribute(
+    "src",
+    expect.stringContaining("/preview"),
+  );
+  cleanup();
+  show();
+  await screen.findByRole("link", { name: "photo.png" });
+  expect(document.querySelector("img")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "View" }));
+  expect(
+    screen.getByRole("menuitemcheckbox", { name: "Image previews" }),
+  ).toHaveAttribute("aria-checked", "true");
+  await user.click(
+    screen.getByRole("menuitemcheckbox", { name: "Image previews" }),
+  );
+  expect(document.querySelector("img")).toBeNull();
+  window.localStorage.clear();
+});

@@ -4,6 +4,7 @@ export class DomainError extends Error {
     public readonly code:
       | "inventory_not_found"
       | "inventory_attachment_not_found"
+      | "attachment_preview_unavailable"
       | "attachment_already_attached"
       | "inventory_template_not_found"
       | "inventory_template_conflict"
