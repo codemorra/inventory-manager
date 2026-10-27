@@ -78,8 +78,8 @@ function invalidValue(): never {
  */
 export function validateValues(
   values: ValueInput[],
-  fields: Field[],
-  options: Option[],
+  fields: Pick<Field, "id" | "fieldType" | "maxLength" | "isRequired">[],
+  options: Pick<Option, "id" | "fieldId">[],
 ): void {
   const definitions = new Map(fields.map((field) => [field.id, field]));
   const optionIds = new Map<string, Set<string>>();

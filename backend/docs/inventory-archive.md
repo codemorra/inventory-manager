@@ -1,0 +1,85 @@
+# Inventory archive format
+
+Format version 1 is a ZIP containing one UTF-8 `inventory.json` at the root and zero or more regular file entries named `attachments/<key>`. ZIP64 is used automatically when needed. Attachment bodies are original managed copies, not previews or base64 strings. The current backend provides export preparation and download; import and the user interface follow in the next implementation sections.
+
+## Manifest
+
+```json
+{
+  "format": "inventory-manager",
+  "version": 1,
+  "inventory": {
+    "name": "Cables",
+    "description": null
+  },
+  "fields": [
+    {
+      "key": "f1",
+      "name": "Cable",
+      "field_type": "text",
+      "max_length": 255,
+      "is_required": false,
+      "is_sortable": true,
+      "reuse_deleted_ids": false,
+      "last_assigned_id": 0,
+      "options": []
+    }
+  ],
+  "items": [
+    {
+      "key": "i1",
+      "values": [{ "field": "f1", "value": "USB-C cable" }]
+    }
+  ],
+  "attachments": []
+}
+```
+
+`format` identifies this application format; `version` describes the archive schema independently of the application version. Unknown versions must not be interpreted as version 1. Objects reject unknown properties. Keys contain 1–128 ASCII letters, digits, underscores or hyphens; they are archive-local references, never source database identities or local paths. Field, item and attachment keys are unique in their respective lists; option keys are unique across all fields. Export currently generates `f1`, `i1`, `o1` and `a1` style keys, but consumers must not derive relationships from their spelling.
+
+Array order preserves field order, per-field option order, saved item order and attachment order within a cell. Each item contains at most one value per field. Omitted values represent absent saved values. Names, descriptions, field types/settings and present values follow the application's data rules. Source groups, templates, table preferences, search/filter state, revisions, timestamps, deletion history and unclaimed attachment stages are excluded.
+
+## Typed values and references
+
+| Field type                 | JSON value                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| `text`                     | String within the field's character limit.                                         |
+| `number`                   | Finite number; zero is valid.                                                      |
+| `boolean`, `checkbox`      | Boolean; false is valid.                                                           |
+| `date`, `time`, `datetime` | String accepted by the application's temporal validation.                          |
+| `duration`                 | Non-negative safe integer seconds.                                                 |
+| `url`                      | Object with an HTTP(S) `url` and optional `label`.                                 |
+| `select`                   | One option key belonging to this field.                                            |
+| `multiselect`              | Non-empty ordered array of option keys belonging to this field.                    |
+| `attachment`               | Non-empty ordered array of unique attachment keys belonging to this cell.          |
+| `id`                       | Positive safe integer, unique within its field and at most its `last_assigned_id`. |
+
+Each field declares `max_length`, `is_required`, `is_sortable`, `reuse_deleted_ids`, `last_assigned_id` and `options`. Only text fields use `max_length`; other types use null. Only ID fields can enable number reuse or have nonzero `last_assigned_id`. Every saved item has a value for each ID field. ID numbers and high-water marks are transfer data; an importer must allocate fresh technical identities without renumbering visible IDs or accidentally reusing numbers deleted in the source.
+
+Select/multiselect options have `{ "key": "o1", "available": true, "name": "USB" }`. Existing inventories may have empty option lists or repeated names after ordinary editing. A previously deleted option that is still referenced by an item is represented as `{ "key": "o2", "available": false, "name": null }`. Such records are included only when referenced. They preserve the unavailable-reference state without recovering deleted names or offering the option as a new selectable choice.
+
+Existing entries can lack values for fields made required later. Inventory exchange preserves that saved history; later ordinary item saves still enforce required fields. This exception does not permit incorrectly typed present values, unknown references, duplicate value fields or invalid file ownership. Import must use dedicated snapshot validation/materialization rather than replaying ordinary item creation, which assigns automatic IDs and applies new-entry requirements.
+
+## Attachment metadata
+
+```json
+{
+  "key": "a1",
+  "field": "f3",
+  "item": "i1",
+  "filename": "photo.png",
+  "media_type": "image/png",
+  "byte_size": 12345,
+  "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+}
+```
+
+The referenced file entry is exactly `attachments/a1`. `filename` is display metadata and follows managed attachment filename validation; it must not become an extraction path. Duplicate display filenames are allowed because archive keys are distinct. `media_type` is metadata, not permission to execute or embed a file. `byte_size` is a non-negative safe integer, including zero; `sha256` is a lowercase 64-digit hexadecimal checksum of the uncompressed original bytes. Each file belongs to exactly one item/field cell and must be referenced there. Extra, missing or multiply claimed files are invalid. Downloading an original retains its existing download-only behavior.
+
+## Export lifecycle
+
+`POST /inventories/{inventory_id}/exports` builds a complete private archive before returning its opaque ID, safe filename, compressed byte count and expiry time. Managed files are streamed sequentially and their actual bytes checked against saved sizes and checksums. Relevant inventory changes during construction reject the export rather than producing a mixed snapshot. An inventory containing inconsistent saved data or missing/corrupt files cannot be silently exported without that content.
+
+`GET /inventories/{inventory_id}/exports/{export_id}/download` claims that prepared archive for one native download. It serves `application/zip`, attachment disposition, exact content length, `nosniff` and `no-store`. A HEAD probe returns 405 without claiming the archive. `DELETE /inventories/{inventory_id}/exports/{export_id}` cancels it. Tokens are inventory-scoped and expire after 15 minutes; expiry, cancellation and download completion dispose the temporary artifact. A process restart invalidates prepared tokens; interrupted export directories older than 24 hours are reconciled by startup/periodic maintenance. Active artifacts are protected from sweeping. The backend creates scratch data only beneath its explicitly configured managed directory (`.exchange/`). These temporary archives are not part of application backup data.
+
+Export preparation supports cancellation when its HTTP client disconnects. Failures remove partial archives without changing inventory/item revisions, attachment ownership or original bytes. Large managed files and ZIP64 archives do not acquire an application-imposed attachment-size cap; exports require temporary disk space in addition to originals. A completed archive is a saved snapshot, independent of later ordinary edits; deletion of the source inventory prevents claiming its prepared exports.
