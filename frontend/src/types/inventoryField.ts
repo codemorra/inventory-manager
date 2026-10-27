@@ -1,5 +1,6 @@
 // Define supported inventory field types.
 export type InventoryFieldType =
+  | "attachment"
   | "text"
   | "number"
   | "id"

@@ -27,6 +27,7 @@ export function sortInventoryItems(
       field,
       item.values.find((value) => value.field_id === field.id)?.value,
       collator,
+      item.attachments,
     ),
   }));
   return keyedItems

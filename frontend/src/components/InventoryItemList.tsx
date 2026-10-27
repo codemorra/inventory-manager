@@ -29,6 +29,8 @@ import type {
 import type { InventoryItem, InventoryItemValue } from "../types/inventoryItem";
 import { InventoryItemFieldInput } from "./InventoryItemCreateForm";
 import { Modal } from "./Modal";
+import { AttachmentCell } from "./AttachmentCell";
+import { useAttachmentDraft } from "../hooks/useAttachmentDraft";
 import { formatDuration } from "./duration";
 import { isUrlInput, isWebAddress, urlDisplayText } from "./url";
 import { InventoryTableControls } from "./InventoryTableControls";
@@ -287,6 +289,16 @@ export function InventoryItemList({
             (value) => value.field_id === field.id,
           );
           const value = stored?.value;
+          if (field.field_type === "attachment")
+            return (item.attachments ?? [])
+              .filter(
+                (file) =>
+                  file.field_id === field.id &&
+                  Array.isArray(value) &&
+                  value.includes(file.id),
+              )
+              .map((file) => file.filename)
+              .join("\n");
           const content = formatValue(
             field,
             stored,
@@ -365,6 +377,8 @@ export function InventoryItemList({
   const rowHeights = useTableRowHeights(dataTable, displayedItems);
   // Retain the original item revision even when background refreshes replace the table data.
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const editAttachments = useAttachmentDraft();
+  const editSubmitting = useRef(false);
   const editingItemId = editingItem?.id ?? null;
   const [reloadMissing, setReloadMissing] = useState(false);
   const [editValues, setEditValues] = useState<
@@ -451,6 +465,7 @@ export function InventoryItemList({
    * @param item The inventory item to edit.
    */
   function startEditing(item: InventoryItem) {
+    editAttachments.controller.begin(item.attachments ?? []);
     updateItem.reset();
     reloadItems.reset();
     setReloadMissing(false);
@@ -462,6 +477,8 @@ export function InventoryItemList({
 
   // Cancel editing the current inventory item.
   function cancelEditing() {
+    if (editSubmitting.current) return;
+    editAttachments.controller.discard();
     setCheckboxEditHint(false);
     setEditingItem(null);
     setEditValues({});
@@ -524,6 +541,8 @@ export function InventoryItemList({
 
     if (
       !editingItem ||
+      editSubmitting.current ||
+      editAttachments.controller.getSnapshot().busy ||
       isMutating ||
       editConflict ||
       reloadMissing ||
@@ -540,14 +559,23 @@ export function InventoryItemList({
 
       return input ? [input] : [];
     });
-
+    editSubmitting.current = true;
     updateItem.mutate(
       {
         inventoryId: editingItem.inventory_id,
         itemId: editingItem.id,
         data: { values, expected_revision: editingItem.revision },
       },
-      { onSuccess: cancelEditing },
+      {
+        onSuccess: (item) => {
+          editAttachments.controller.finish([item]);
+          editSubmitting.current = false;
+          cancelEditing();
+        },
+        onSettled: () => {
+          editSubmitting.current = false;
+        },
+      },
     );
   }
 
@@ -707,6 +735,7 @@ export function InventoryItemList({
                   disabled={
                     tableEdit.loading ||
                     tableEdit.saving ||
+                    tableEdit.uploading ||
                     tableEdit.conflict ||
                     !tableEdit.dirty ||
                     tableEdit.errors.length > 0
@@ -929,6 +958,7 @@ export function InventoryItemList({
                         >
                           {tableEdit.draft && field.field_type !== "id" ? (
                             <InventoryTableCellInput
+                              attachments={tableEdit.attachments}
                               key={`${item.id}-${field.id}`}
                               id={`${tableId}-${item.id}-${field.id}-input`}
                               field={field}
@@ -958,6 +988,11 @@ export function InventoryItemList({
                               onChange={(value) =>
                                 tableEdit.change(item.id, field.id, value)
                               }
+                            />
+                          ) : field.field_type === "attachment" ? (
+                            <AttachmentCell
+                              ids={valuesByField.get(field.id)?.value}
+                              files={item.attachments ?? []}
                             />
                           ) : field.field_type === "checkbox" ? (
                             <div className="min-h-6">
@@ -1194,6 +1229,7 @@ export function InventoryItemList({
             <div className="grid gap-4 md:grid-cols-2">
               {fields.map((field) => (
                 <InventoryItemFieldInput
+                  attachments={editAttachments.controller}
                   disabled={isMutating}
                   field={field}
                   idPrefix={`edit-inventory-item-${editingItem.id}`}
@@ -1247,6 +1283,7 @@ export function InventoryItemList({
                 className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={
                   isMutating ||
+                  editAttachments.busy ||
                   editConflict ||
                   reloadMissing ||
                   !hasValidItemValues(fields, editValues)

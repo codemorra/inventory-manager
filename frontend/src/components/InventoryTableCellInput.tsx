@@ -8,8 +8,11 @@ import { ChoiceSelect } from "./ChoiceSelect";
 import { DurationFieldInput } from "./DurationFieldInput";
 import { emptyDuration, isDurationInput } from "./duration";
 import { isUrlInput } from "./url";
+import { AttachmentFieldInput } from "./AttachmentFieldInput";
+import type { AttachmentDraft } from "./attachmentDraft";
 
 interface InventoryTableCellInputProps {
+  attachments?: AttachmentDraft | undefined;
   id: string;
   field: InventoryField;
   value: InventoryItemFormValue;
@@ -30,6 +33,7 @@ export function InventoryTableCellInput({
   disabled,
   error,
   onChange,
+  attachments,
 }: InventoryTableCellInputProps) {
   const { t } = useTranslation();
   // Native controls must not erase legacy ISO forms they cannot display.
@@ -49,7 +53,18 @@ export function InventoryTableCellInput({
   const inputClass =
     "w-full min-w-0 rounded-sm border border-shell bg-surface px-2 py-1.5 text-sm text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-60";
   let control;
-  if (field.field_type === "checkbox")
+  if (field.field_type === "attachment")
+    control = (
+      <AttachmentFieldInput
+        id={id}
+        field={field}
+        value={Array.isArray(value) ? value : []}
+        disabled={disabled}
+        draft={attachments}
+        onChange={onChange}
+      />
+    );
+  else if (field.field_type === "checkbox")
     control = (
       <input
         id={id}

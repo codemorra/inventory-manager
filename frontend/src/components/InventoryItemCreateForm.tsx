@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useState } from "react";
+import { type SyntheticEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useCreateInventoryItem } from "../hooks/useInventoryItems";
@@ -8,6 +8,9 @@ import { ChoiceSelect } from "./ChoiceSelect";
 import { DurationFieldInput } from "./DurationFieldInput";
 import { UrlFieldInput } from "./UrlFieldInput";
 import { isUrlInput } from "./url";
+import { AttachmentFieldInput } from "./AttachmentFieldInput";
+import type { AttachmentDraft } from "./attachmentDraft";
+import { useAttachmentDraft } from "../hooks/useAttachmentDraft";
 import { emptyDuration, isDurationInput } from "./duration";
 import type { InventoryField } from "../types/inventoryField";
 import {
@@ -26,6 +29,7 @@ interface InventoryItemCreateFormProps {
 
 // Define properties for a field-specific form control.
 interface InventoryItemFieldInputProps {
+  attachments?: AttachmentDraft | undefined;
   idPrefix: string;
   disabled: boolean;
   field: InventoryField;
@@ -48,9 +52,21 @@ export function InventoryItemFieldInput({
   field,
   onChange,
   value,
+  attachments,
 }: InventoryItemFieldInputProps) {
   const { t } = useTranslation();
   const inputId = `${idPrefix}-${field.id}`;
+  if (field.field_type === "attachment")
+    return (
+      <AttachmentFieldInput
+        id={inputId}
+        field={field}
+        value={Array.isArray(value) ? value : []}
+        disabled={disabled}
+        draft={attachments}
+        onChange={onChange}
+      />
+    );
   if (field.field_type === "url")
     return (
       <UrlFieldInput
@@ -235,10 +251,14 @@ export function InventoryItemCreateForm({
     {},
   );
   const createItem = useCreateInventoryItem();
+  const attachments = useAttachmentDraft();
+  const submitting = useRef(false);
 
   // Close the creation modal while no request is pending.
   function closeModal() {
-    if (!createItem.isPending) {
+    if (!submitting.current) {
+      attachments.controller.discard();
+      setValues({});
       setIsOpen(false);
     }
   }
@@ -250,7 +270,13 @@ export function InventoryItemCreateForm({
   function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (createItem.isPending || !hasValidItemValues(fields, values)) return;
+    if (
+      submitting.current ||
+      attachments.controller.getSnapshot().busy ||
+      !hasValidItemValues(fields, values)
+    )
+      return;
+    submitting.current = true;
 
     const itemValues = fields.flatMap((field) => {
       const value = values[field.id] ?? getInitialValue(field);
@@ -265,9 +291,13 @@ export function InventoryItemCreateForm({
         data: { values: itemValues },
       },
       {
-        onSuccess: () => {
+        onSuccess: (item) => {
+          attachments.controller.finish([item]);
           setValues({});
           setIsOpen(false);
+        },
+        onSettled: () => {
+          submitting.current = false;
         },
       },
     );
@@ -278,7 +308,10 @@ export function InventoryItemCreateForm({
       <button
         className={`inline-flex cursor-pointer items-center justify-center gap-2 bg-accent text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50 ${compact ? "rounded-sm px-2.5 py-1.5" : "rounded-lg px-4 py-2.5"}`}
         disabled={disabled || fields.length === 0}
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          attachments.controller.begin();
+          setIsOpen(true);
+        }}
         type="button"
       >
         <span aria-hidden="true" className="text-lg leading-none">
@@ -305,6 +338,7 @@ export function InventoryItemCreateForm({
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               {fields.map((field) => (
                 <InventoryItemFieldInput
+                  attachments={attachments.controller}
                   disabled={createItem.isPending}
                   field={field}
                   idPrefix="create-inventory-item"
@@ -335,7 +369,9 @@ export function InventoryItemCreateForm({
               <button
                 className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={
-                  createItem.isPending || !hasValidItemValues(fields, values)
+                  createItem.isPending ||
+                  !hasValidItemValues(fields, values) ||
+                  attachments.busy
                 }
                 type="submit"
               >

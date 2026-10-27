@@ -13,6 +13,20 @@ export interface InventoryItem {
   inventory_id: string;
   revision: number;
   values: InventoryItemValue[];
+  attachments?: InventoryAttachment[];
+  created_at: string;
+  updated_at: string;
+}
+
+// Metadata accompanies opaque file IDs; paths and binary content stay outside item values.
+export interface InventoryAttachment {
+  id: string;
+  inventory_id: string;
+  field_id: string;
+  item_id: string | null;
+  filename: string;
+  media_type: string;
+  byte_size: number;
   created_at: string;
   updated_at: string;
 }

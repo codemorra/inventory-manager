@@ -158,7 +158,8 @@
       "time": "Time",
       "id": "Automatic ID",
       "url": "URL",
-      "checkbox": "Checkbox"
+      "checkbox": "Checkbox",
+      "attachment": "Files"
     },
     "typeHelp": {
       "text": "Text with a configurable character limit, for example a title or notes.",
@@ -172,7 +173,8 @@
       "multiselect": "Multiple options can be selected for each item.",
       "id": "An automatically assigned, read-only number for each item.",
       "url": "A web address with optional link text.",
-      "checkbox": "A checkbox that can be toggled directly in the table."
+      "checkbox": "A checkbox that can be toggled directly in the table.",
+      "attachment": "Attach files to this item."
     },
     "settings": {
       "title": "Field settings",
@@ -375,7 +377,8 @@
         "options": "Choose available options.",
         "url": "Enter a valid HTTP or HTTPS address.",
         "duration": "Enter a valid duration.",
-        "temporal": "Enter a valid calendar date or time."
+        "temporal": "Enter a valid calendar date or time.",
+        "attachment": "Invalid file selection."
       }
     }
   },
@@ -417,5 +420,20 @@
     "emptyHelp": "Save an inventory structure as a template in its inventory settings.",
     "editNamed": "Edit template {{name}}",
     "deleteNamed": "Delete template {{name}}"
+  },
+  "attachments": {
+    "title": "Files",
+    "unavailable": "File unavailable",
+    "remove": "Remove {{name}}",
+    "uploading": "Copying files…",
+    "uploadFailed": "A file could not be copied. Files already copied remain in your draft.",
+    "largeTitle": "Add large files?",
+    "largeDescription": "At least one selected file is 100 MiB or larger. The application keeps its own copy, which uses additional disk space.",
+    "dontWarnAgain": "Do not show this warning again",
+    "continue": "Add files",
+    "restoreWarnings": "Show file warnings again",
+    "more_one": "+ {{count}} more",
+    "more_other": "+ {{count}} more",
+    "saveAs": "Save as…"
   }
 }

@@ -158,7 +158,8 @@
       "time": "Uhrzeit",
       "id": "Laufende Nummer",
       "url": "URL",
-      "checkbox": "Checkbox"
+      "checkbox": "Checkbox",
+      "attachment": "Dateien"
     },
     "typeHelp": {
       "text": "Text mit einstellbarer Zeichenbegrenzung, zum Beispiel ein Titel oder Notizen.",
@@ -172,7 +173,8 @@
       "multiselect": "Für jeden Eintrag können mehrere Optionen ausgewählt werden.",
       "id": "Eine automatisch vergebene, unveränderliche Nummer für jeden Eintrag.",
       "url": "Eine Webadresse mit optionalem Linktext.",
-      "checkbox": "Ein direkt in der Tabelle umschaltbares Kontrollkästchen."
+      "checkbox": "Ein direkt in der Tabelle umschaltbares Kontrollkästchen.",
+      "attachment": "Dateien an diesen Eintrag anhängen."
     },
     "settings": {
       "title": "Feldeinstellungen",
@@ -375,7 +377,8 @@
         "options": "Wähle verfügbare Optionen.",
         "url": "Gib eine gültige HTTP- oder HTTPS-Adresse ein.",
         "duration": "Gib eine gültige Dauer ein.",
-        "temporal": "Gib ein gültiges Datum oder eine gültige Uhrzeit ein."
+        "temporal": "Gib ein gültiges Datum oder eine gültige Uhrzeit ein.",
+        "attachment": "Ungültige Dateiauswahl."
       }
     }
   },
@@ -417,5 +420,20 @@
     "emptyHelp": "Speichere die Struktur eines Inventars in seinen Inventareinstellungen als Vorlage.",
     "editNamed": "Vorlage {{name}} bearbeiten",
     "deleteNamed": "Vorlage {{name}} löschen"
+  },
+  "attachments": {
+    "title": "Dateien",
+    "unavailable": "Datei nicht verfügbar",
+    "remove": "{{name}} entfernen",
+    "uploading": "Dateien werden kopiert…",
+    "uploadFailed": "Eine Datei konnte nicht kopiert werden. Bereits kopierte Dateien bleiben in deinem Entwurf.",
+    "largeTitle": "Große Dateien hinzufügen?",
+    "largeDescription": "Mindestens eine gewählte Datei ist 100 MiB oder größer. Die Anwendung legt eine eigene Kopie an, die zusätzlichen Speicherplatz benötigt.",
+    "dontWarnAgain": "Diese Warnung künftig nicht mehr anzeigen",
+    "continue": "Dateien hinzufügen",
+    "restoreWarnings": "Datei-Warnungen wieder anzeigen",
+    "more_one": "+ {{count}} weitere",
+    "more_other": "+ {{count}} weitere",
+    "saveAs": "Speichern unter …"
   }
 }

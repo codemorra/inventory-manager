@@ -1,4 +1,5 @@
 import type { InventoryField } from "../types/inventoryField";
+import type { InventoryAttachment } from "../types/inventoryItem";
 import { isUrlInput, urlDisplayText } from "./url";
 
 /**
@@ -66,9 +67,22 @@ export function comparableItemValue(
   field: InventoryField,
   value: unknown,
   collator: Intl.Collator,
+  attachments: InventoryAttachment[] = [],
 ): string | number | null {
   if (field.field_type === "url")
     return isUrlInput(value) ? urlDisplayText(value) || null : null;
+  if (field.field_type === "attachment")
+    return Array.isArray(value)
+      ? value
+          .flatMap((id) => {
+            const file = attachments.find(
+              (entry) => entry.id === id && entry.field_id === field.id,
+            );
+            return file ? [file.filename] : [];
+          })
+          .sort(collator.compare)
+          .join(", ") || null
+      : null;
   if (
     value == null ||
     value === "" ||

@@ -21,6 +21,8 @@ export function itemFilterOperators(
 ): ItemFilterOperator[] {
   let operators: ItemFilterOperator[];
   switch (type) {
+    case "attachment":
+      return emptyOperators;
     case "text":
     case "url":
       operators = ["contains", "notContains", "equals", "notEquals"];

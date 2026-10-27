@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAttachmentDraft } from "./useAttachmentDraft";
 import { getInventoryConfiguration } from "../services/inventoryEditor";
 import {
   getInventoryItems,
@@ -37,6 +38,7 @@ interface TableDraft {
  */
 export function useInventoryTableEdit(inventoryId: string) {
   const client = useQueryClient();
+  const attachments = useAttachmentDraft();
   const [draft, setDraft] = useState<TableDraft | null>(null);
   const submitting = useRef(false);
   const load = useMutation({
@@ -68,6 +70,7 @@ export function useInventoryTableEdit(inventoryId: string) {
     mutationFn: (input: Parameters<typeof updateInventoryItems>[1]) =>
       updateInventoryItems(inventoryId, input),
     onSuccess: (saved) => {
+      attachments.controller.finish(saved);
       // Merge only committed rows, leaving unrelated cached updates intact.
       client.setQueryData<InventoryItem[]>(
         ["inventories", inventoryId, "items"],
@@ -116,6 +119,9 @@ export function useInventoryTableEdit(inventoryId: string) {
     load.reset();
     load.mutate(structuredClone(presentation), {
       onSuccess: (snapshot) => {
+        attachments.controller.begin(
+          snapshot.items.flatMap((item) => item.attachments ?? []),
+        );
         client.setQueryData(
           ["inventories", inventoryId, "fields"],
           snapshot.fields,
@@ -189,6 +195,7 @@ export function useInventoryTableEdit(inventoryId: string) {
   function commit() {
     if (
       !replacement ||
+      attachments.controller.getSnapshot().busy ||
       save.isPending ||
       submitting.current ||
       load.isPending ||
@@ -197,6 +204,7 @@ export function useInventoryTableEdit(inventoryId: string) {
     )
       return;
     if (!replacement.input.items.length) {
+      attachments.controller.discard();
       setDraft(null);
       return;
     }
@@ -207,6 +215,7 @@ export function useInventoryTableEdit(inventoryId: string) {
   /** Discard without applying any cell changes or replacing the query cache. */
   function cancel() {
     if (save.isPending || load.isPending || submitting.current) return;
+    attachments.controller.discard();
     setDraft(null);
     save.reset();
     load.reset();
@@ -214,6 +223,8 @@ export function useInventoryTableEdit(inventoryId: string) {
 
   return {
     draft,
+    attachments: attachments.controller,
+    uploading: attachments.busy,
     begin,
     change,
     commit,
@@ -224,7 +235,7 @@ export function useInventoryTableEdit(inventoryId: string) {
     loading: load.isPending,
     saving: save.isPending,
     active: draft !== null || load.isPending,
-    dirty: (replacement?.input.items.length ?? 0) > 0,
+    dirty: (replacement?.input.items.length ?? 0) > 0 || attachments.busy,
     changedCount: replacement?.input.items.length ?? 0,
     errors: replacement?.errors ?? [],
   };

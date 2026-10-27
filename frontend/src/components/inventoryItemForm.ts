@@ -28,7 +28,7 @@ export function getInitialValue(field: InventoryField): InventoryItemFormValue {
     return field.is_required ? "" : false;
   }
 
-  if (field.field_type === "multiselect") {
+  if (field.field_type === "multiselect" || field.field_type === "attachment") {
     return [];
   }
 
@@ -108,7 +108,7 @@ export function getEditableValue(
     return isUrlInput(value) ? { ...value } : { url: "", label: "" };
   if (field.field_type === "boolean" || field.field_type === "checkbox")
     return typeof value === "boolean" ? value : getInitialValue(field);
-  if (field.field_type === "multiselect")
+  if (field.field_type === "multiselect" || field.field_type === "attachment")
     return Array.isArray(value)
       ? value.filter((entry): entry is string => typeof entry === "string")
       : [];

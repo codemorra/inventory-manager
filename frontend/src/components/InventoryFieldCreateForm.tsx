@@ -23,6 +23,7 @@ const fieldTypes: InventoryFieldType[] = [
   "duration",
   "select",
   "multiselect",
+  "attachment",
 ];
 
 /**
