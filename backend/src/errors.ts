@@ -2,6 +2,9 @@
 export class DomainError extends Error {
   constructor(
     public readonly code:
+      | "inventory_export_not_found"
+      | "inventory_export_conflict"
+      | "inventory_export_unavailable"
       | "inventory_not_found"
       | "inventory_attachment_not_found"
       | "attachment_preview_unavailable"

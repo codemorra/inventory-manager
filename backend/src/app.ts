@@ -9,6 +9,7 @@ import { errorHandler } from "./routes/error-handler.js";
 import { docsRoutes } from "./routes/docs.js";
 import { groupRoutes } from "./routes/groups.js";
 import { templateRoutes } from "./routes/templates.js";
+import { exchangeRoutes } from "./routes/exchange.js";
 import { attachmentRoutes } from "./routes/attachments.js";
 
 /**
@@ -58,6 +59,7 @@ export function createApp(logger: Pick<Logger, "error">, services: Services) {
     fieldRoutes(services),
     itemRoutes(services),
     attachmentRoutes(services),
+    exchangeRoutes(services),
   );
 
   // 404 handler for unknown routes

@@ -1,3 +1,4 @@
+import { attachmentMetadataSchema } from "./validation.js";
 import { randomUUID, createHash } from "node:crypto";
 import { constants, createWriteStream } from "node:fs";
 import { mkdir, open, readdir, rename, stat, unlink } from "node:fs/promises";
@@ -5,7 +6,6 @@ import { isAbsolute, join } from "node:path";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { and, eq, isNull, isNotNull, lt } from "drizzle-orm";
-import { z } from "zod";
 import { inventoryAttachments } from "../db/schema.js";
 import type { AppDatabase } from "../db/types.js";
 import { createInventoryService } from "../inventories/service.js";
@@ -17,30 +17,6 @@ import { isPreviewRaster, queuePreview, renderPreview } from "./preview.js";
 import { stagedAttachmentLifetime } from "./constants.js";
 export { stagedAttachmentLifetime } from "./constants.js";
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-// Original names are display metadata only and may never contain path separators or header controls.
-const uploadMetadata = z.strictObject({
-  filename: z
-    .string()
-    .min(1)
-    .refine(
-      (name) =>
-        Array.from(name).length <= 255 &&
-        name.trim().length > 0 &&
-        name !== "." &&
-        name !== ".." &&
-        !/[/\\]/u.test(name) &&
-        Array.from(name).every(
-          (letter) =>
-            letter.codePointAt(0)! >= 32 && letter.codePointAt(0)! !== 127,
-        ),
-      "Invalid filename.",
-    ),
-  media_type: z
-    .string()
-    .regex(/^[a-zA-Z0-9!#$&^_.+-]+\/[a-zA-Z0-9!#$&^_.+-]+$/)
-    .default("application/octet-stream"),
-});
-
 // Storage must be explicitly configured; test service composition never falls back to development data.
 export interface AttachmentStorageOptions {
   directory: string;
@@ -133,7 +109,7 @@ export function createAttachmentService(
       input: unknown,
       content: Readable,
     ) {
-      const metadata = uploadMetadata.parse(input);
+      const metadata = attachmentMetadataSchema.parse(input);
       requireField(db, inventoryId, fieldId);
       await mkdir(options.directory, { recursive: true });
       const id = randomUUID();

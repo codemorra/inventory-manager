@@ -20,6 +20,8 @@ export async function startServer(config: AppConfig) {
   let attachmentService: ReturnType<typeof createServices>["attachments"] =
     null;
 
+  let exportService: ReturnType<typeof createServices>["exports"] = null;
+
   try {
     // Open the database connection before starting the server.
     connection = openDatabase(config.databasePath);
@@ -27,12 +29,14 @@ export async function startServer(config: AppConfig) {
       directory: config.attachmentsDirectory,
     });
     attachmentService = services.attachments;
+    exportService = services.exports;
     const cleanup = () =>
-      attachmentService!
-        .cleanup()
-        .catch((error: unknown) =>
-          logger.error("Attachment cleanup will be retried", error),
-        );
+      Promise.all([
+        attachmentService!.cleanup(),
+        exportService!.cleanup(),
+      ]).catch((error: unknown) =>
+        logger.error("Managed file cleanup will be retried", error),
+      );
     await cleanup();
     maintenance = setInterval(() => void cleanup(), 60_000);
     maintenance.unref();
@@ -69,7 +73,10 @@ export async function startServer(config: AppConfig) {
           });
         } finally {
           try {
-            await attachmentService?.cleanup();
+            await Promise.all([
+              attachmentService?.cleanup(),
+              exportService?.cleanup(),
+            ]);
           } catch (error) {
             logger.error(
               "Attachment cleanup will be retried on startup",

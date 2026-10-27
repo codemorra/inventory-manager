@@ -1989,6 +1989,185 @@
           }
         }
       }
+    },
+    "/inventories/{inventory_id}/exports": {
+      "post": {
+        "tags": ["inventory exchange"],
+        "summary": "Prepare a complete inventory ZIP export",
+        "operationId": "prepare_inventory_export",
+        "description": "Creates a version-1 ZIP containing inventory.json and all referenced managed originals. Files stream to private scratch storage and are verified against saved sizes/SHA-256. Rejects source changes during preparation. Returns only after completion; the opaque single-use download token expires after 15 minutes. No inventory or item data/revisions are changed. Client disconnection cancels preparation.",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Completed inventory archive ready for a native download.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedInventoryExport"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Active inventory or referenced original file not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "inventory_export_conflict: source changed during construction; retry the export.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "inventory_export_unavailable: inconsistent saved data or failed attachment checksum.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected storage error; incomplete archives are removed."
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}/exports/{export_id}/download": {
+      "get": {
+        "tags": ["inventory exchange"],
+        "summary": "Download a prepared inventory archive once",
+        "operationId": "download_inventory_export",
+        "description": "Claims an unexpired inventory-scoped export token for a single download and disposes scratch files after completion or disconnection. A deleted source inventory cannot be downloaded. HEAD returns 405 without consuming the token.",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "export_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete ZIP archive containing the versioned manifest and referenced original files.",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string",
+                  "const": "nosniff"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Inventory or prepared export missing, expired, already consumed or owned by another inventory.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected download/storage error."
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}/exports/{export_id}": {
+      "delete": {
+        "tags": ["inventory exchange"],
+        "summary": "Discard a prepared inventory export",
+        "operationId": "discard_inventory_export",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "export_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Prepared export discarded and temporary archive removed."
+          },
+          "404": {
+            "description": "Inventory or prepared export missing, expired, consumed or incorrectly scoped.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3314,6 +3493,27 @@
           "updated_at"
         ],
         "description": "Managed-file metadata only. item_id is null until a successful item save claims the staged upload. No server paths, storage names, content hashes, or purge flags are exposed."
+      },
+      "PreparedInventoryExport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "filename", "byte_size", "expires_at"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "byte_size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       }
     }
   }

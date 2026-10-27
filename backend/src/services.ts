@@ -1,3 +1,5 @@
+import { join } from "node:path";
+import { createExportService } from "./exchange/export-service.js";
 import type { AppDatabase } from "./db/types.js";
 import { createInventoryService } from "./inventories/service.js";
 import { createFieldService } from "./fields/service.js";
@@ -28,6 +30,9 @@ export function createServices(
   const items = createItemService(db, inventories);
   const inventoryEditor = createInventoryEditorService(db);
   const templates = createTemplateService(db);
+  const attachments = attachmentStorage
+    ? createAttachmentService(db, attachmentStorage)
+    : null;
   return {
     inventories,
     fields,
@@ -36,9 +41,15 @@ export function createServices(
     groups,
     inventoryEditor,
     templates,
-    attachments: attachmentStorage
-      ? createAttachmentService(db, attachmentStorage)
-      : null,
+    attachments,
+    exports:
+      attachments && attachmentStorage
+        ? createExportService(
+            db,
+            attachments,
+            join(attachmentStorage.directory, ".exchange"),
+          )
+        : null,
   };
 }
 
