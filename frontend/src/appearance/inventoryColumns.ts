@@ -31,18 +31,20 @@ export function defaultColumnWidth(
     (field.is_sortable ? 40 : 24) +
     4;
   let content = field.field_type === "checkbox" ? 16 : 0;
+  // File chips include their own icon, gap, border, and inner padding.
+  const padding = field.field_type === "attachment" ? 64 : 24;
   if (field.field_type !== "checkbox") {
     for (const value of values) {
       for (const line of value.split(/\r?\n/u)) {
         content = Math.max(content, measure(line, false));
-        if (content + 24 >= MAX_DEFAULT_CONTENT_WIDTH) break;
+        if (content + padding >= MAX_DEFAULT_CONTENT_WIDTH) break;
       }
-      if (content + 24 >= MAX_DEFAULT_CONTENT_WIDTH) break;
+      if (content + padding >= MAX_DEFAULT_CONTENT_WIDTH) break;
     }
   }
   return clampColumnWidth(
     Math.ceil(
-      Math.max(heading, Math.min(content + 24, MAX_DEFAULT_CONTENT_WIDTH)),
+      Math.max(heading, Math.min(content + padding, MAX_DEFAULT_CONTENT_WIDTH)),
     ),
   );
 }

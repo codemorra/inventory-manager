@@ -25,6 +25,7 @@ export interface TableCellError {
     | "number"
     | "text"
     | "options"
+    | "attachment"
     | "url"
     | "duration"
     | "temporal";
@@ -143,6 +144,12 @@ export function tableCellError(
   if (field.is_required && typeof value === "string" && !value.trim())
     return "required";
   switch (field.field_type) {
+    case "attachment":
+      return Array.isArray(value) &&
+        value.every((id) => typeof id === "string" && id.length > 0) &&
+        new Set(value).size === value.length
+        ? null
+        : "attachment";
     case "number":
       return typeof value === "string" &&
         value.trim() !== "" &&

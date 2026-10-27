@@ -15,6 +15,7 @@ The screenshot uses synthetic demo data.
 ## Current features
 
 - Inventory lists with custom fields and typed items
+- Managed file attachments with download links
 - Reusable inventory structure templates
 - Single-level groups with drag-and-drop organization
 - Sidebar filtering by inventory title
@@ -37,20 +38,21 @@ Open **Settings** at the bottom of the sidebar to change language, appearance, a
 
 ## Fields and item values
 
-| Field type      | Purpose                                                    |
-| --------------- | ---------------------------------------------------------- |
-| Text            | Text with a limit of 1–1,000 characters, defaulting to 255 |
-| Number          | Whole or decimal numbers                                   |
-| Yes/No          | A boolean value displayed as yes or no                     |
-| Checkbox        | A checkbox that can be toggled directly in the item table  |
-| Date            | A calendar date                                            |
-| Time            | A time of day                                              |
-| Date and time   | A calendar date with a time                                |
-| Duration        | Hours, minutes, and seconds, stored as whole seconds       |
-| Single choice   | One option from this field's selection options             |
-| Multiple choice | Several options from this field's selection options        |
-| URL             | An HTTP or HTTPS address with optional link text           |
-| Automatic ID    | A read-only number assigned automatically to each item     |
+| Field type      | Purpose                                                           |
+| --------------- | ----------------------------------------------------------------- |
+| Text            | Text with a limit of 1–1,000 characters, defaulting to 255        |
+| Number          | Whole or decimal numbers                                          |
+| Yes/No          | A boolean value displayed as yes or no                            |
+| Checkbox        | A checkbox that can be toggled directly in the item table         |
+| Date            | A calendar date                                                   |
+| Time            | A time of day                                                     |
+| Date and time   | A calendar date with a time                                       |
+| Duration        | Hours, minutes, and seconds, stored as whole seconds              |
+| Single choice   | One option from this field's selection options                    |
+| Multiple choice | Several options from this field's selection options               |
+| URL             | An HTTP or HTTPS address with optional link text                  |
+| Files           | Managed copies of one or more files; click a filename to download |
+| Automatic ID    | A read-only number assigned automatically to each item            |
 
 Selection options belong to their field within one inventory. Item dialogs use themed dropdowns for single and multiple choices. Web links open in a new tab; without link text, the address is displayed.
 

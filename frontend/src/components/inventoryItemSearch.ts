@@ -1,5 +1,6 @@
 import type { InventoryField } from "../types/inventoryField";
 import type { InventoryItem } from "../types/inventoryItem";
+import type { InventoryAttachment } from "../types/inventoryItem";
 import { formatDuration } from "./duration";
 import { isUrlInput } from "./url";
 
@@ -22,8 +23,17 @@ function searchTexts(
   value: unknown,
   labels: ItemSearchLabels,
   locale: string,
+  attachments: InventoryAttachment[],
 ): string[] {
   if (value == null || value === "") return [];
+  if (field.field_type === "attachment")
+    return Array.isArray(value)
+      ? attachments
+          .filter(
+            (file) => file.field_id === field.id && value.includes(file.id),
+          )
+          .map((file) => file.filename)
+      : [];
   if (field.field_type === "url")
     return isUrlInput(value) ? [value.url, value.label ?? ""] : [];
   if (field.field_type === "select" || field.field_type === "multiselect") {
@@ -65,9 +75,13 @@ export function searchInventoryItems(
       item.values.map((value) => [value.field_id, value.value]),
     );
     return fields.some((field) =>
-      searchTexts(field, values.get(field.id), labels, locale).some((text) =>
-        normalize(text).includes(needle),
-      ),
+      searchTexts(
+        field,
+        values.get(field.id),
+        labels,
+        locale,
+        item.attachments ?? [],
+      ).some((text) => normalize(text).includes(needle)),
     );
   });
 }

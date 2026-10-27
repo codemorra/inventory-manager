@@ -610,6 +610,58 @@ test("frontend clients complete configuration and item CRUD against Express", as
       status: 422,
       message: "An unexpected error occurred.",
     });
+    // Exercise the real binary transport, staged ownership, and streamed download contract.
+    const attachments = await import("../src/services/attachments");
+    const fileInventory = await inventories.createInventory({
+      name: "File clients",
+    });
+    const fileField = await fields.createInventoryField(fileInventory.id, {
+      name: "Files",
+      field_type: "attachment",
+    });
+    const staged = await attachments.uploadAttachment(
+      fileInventory.id,
+      fileField.id,
+      new File(["Managed file content"], "Prüfung.txt", { type: "text/plain" }),
+    );
+    const fileItem = await items.createInventoryItem(fileInventory.id, {
+      values: [{ field_id: fileField.id, value: [staged.id] }],
+    });
+    expect(fileItem.attachments?.[0]).toMatchObject({
+      id: staged.id,
+      item_id: fileItem.id,
+      filename: "Prüfung.txt",
+    });
+    const download = await fetch(attachments.attachmentDownloadUrl(staged));
+    expect(download.headers.get("Content-Disposition")).toMatch(/^attachment;/);
+    expect(await download.text()).toBe("Managed file content");
+    const image = await attachments.uploadAttachment(
+      fileInventory.id,
+      fileField.id,
+      new File(["Image test bytes"], "photo.png", { type: "image/png" }),
+    );
+    const imageDownload = await fetch(attachments.attachmentDownloadUrl(image));
+    expect(imageDownload.headers.get("Content-Disposition")).toMatch(
+      /^attachment;.*photo\.png/,
+    );
+    expect(imageDownload.headers.get("Content-Type")).toBe(
+      "application/octet-stream",
+    );
+    expect(await imageDownload.text()).toBe("Image test bytes");
+    await attachments.discardAttachment(image);
+    await expect(attachments.discardAttachment(staged)).rejects.toMatchObject({
+      status: 409,
+    });
+    const unused = await attachments.uploadAttachment(
+      fileInventory.id,
+      fileField.id,
+      new File(["Discard"], "unused.txt"),
+    );
+    await attachments.discardAttachment(unused);
+    expect(
+      (await fetch(attachments.attachmentDownloadUrl(unused))).status,
+    ).toBe(404);
+    await inventories.deleteInventory(fileInventory.id);
     expect(await inventories.getInventories()).toEqual([]);
   } finally {
     if (probe.listening) probe.close();
