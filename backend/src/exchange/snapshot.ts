@@ -55,7 +55,12 @@ export function readExportSnapshot(db: AppDatabase, inventoryId: string) {
       )
       .all();
     const fieldKeys = new Map(fields.map((f, i) => [f.id, `f${i + 1}`]));
-    const optionKeys = new Map(options.map((o, i) => [o.id, `o${i + 1}`]));
+    const orderedOptions = fields.flatMap((field) =>
+      options.filter((option) => option.fieldId === field.id),
+    );
+    const optionKeys = new Map(
+      orderedOptions.map((o, i) => [o.id, `o${i + 1}`]),
+    );
     const selectedOptions = new Set<string>();
     const attachments: InventoryManifest["attachments"] = [];
     const sources: (typeof inventoryAttachments.$inferSelect)[] = [];

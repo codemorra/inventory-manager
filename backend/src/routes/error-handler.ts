@@ -22,13 +22,16 @@ export function errorHandler(
       const status =
         error.code === "attachment_preview_unavailable"
           ? 415
-          : error.code === "inventory_export_conflict" ||
+          : error.code === "inventory_import_conflict" ||
+              error.code === "inventory_export_conflict" ||
               error.code === "attachment_already_attached" ||
               error.code === "inventory_item_conflict" ||
               error.code === "inventory_template_conflict" ||
               error.code === "inventory_configuration_conflict"
             ? 409
-            : error.code === "inventory_export_unavailable" ||
+            : error.code === "invalid_inventory_archive" ||
+                error.code === "unsupported_inventory_archive_version" ||
+                error.code === "inventory_export_unavailable" ||
                 error.code === "inventory_field_options_not_supported" ||
                 error.code === "automatic_id_exhausted" ||
                 error.code === "invalid_inventory_field_configuration" ||

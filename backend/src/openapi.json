@@ -2168,6 +2168,212 @@
           }
         }
       }
+    },
+    "/inventory-imports": {
+      "post": {
+        "tags": ["inventory exchange"],
+        "summary": "Validate an inventory archive and stage an import preview",
+        "operationId": "prepare_inventory_import",
+        "description": "Streams ZIP/ZIP64 into private staging and validates layout, typed manifest, file sizes, CRC and SHA-256 without creating database records. No attachment or ZIP byte-size cap. Metadata processing bounds: 64 MiB JSON and 524,290 entries. Rejects encrypted/nonregular/unsafe/extra/missing/duplicate entries and unsupported compression; accepts Store/Deflate. Preview expires after 30 minutes. Disconnect cancels copying/validation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/zip": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Validated preview with opaque token; no filesystem paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryImportPreview"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Expected application/zip or application/octet-stream."
+          },
+          "422": {
+            "description": "invalid_inventory_archive or unsupported_inventory_archive_version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected storage error; no partial inventory is published."
+          }
+        }
+      }
+    },
+    "/inventory-imports/{import_id}": {
+      "get": {
+        "tags": ["inventory exchange"],
+        "summary": "Read import preview or confirmation status",
+        "operationId": "read_inventory_import",
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current ready/importing/completed session summary.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryImportPreview"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "inventory_import_not_found: missing or expired token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["inventory exchange"],
+        "summary": "Discard an import preview or completed receipt",
+        "operationId": "discard_inventory_import",
+        "description": "Removes only staging/receipt, never the imported inventory or its bound files. A publishing import cannot be canceled.",
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Staging/receipt discarded."
+          },
+          "404": {
+            "description": "Missing or expired import token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "inventory_import_conflict: confirmation is in progress.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventory-imports/{import_id}/confirm": {
+      "post": {
+        "tags": ["inventory exchange"],
+        "summary": "Atomically create an independent inventory from a validated preview",
+        "operationId": "confirm_inventory_import",
+        "description": "Optional metadata overrides preserve absent archived name/description. Uses fresh technical identities, preserved automatic numbers/counters, order and historical saved-state semantics. Rechecks/copies staged files then publishes one SQLite transaction. Identical concurrent/repeated requests return one inventory; changed retry parameters return 409. Confirmation continues after disconnect and receipts remain recoverable for 30 minutes. No existing inventory is overwritten.",
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryImportConfirm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New or previously confirmed inventory.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing/expired session, deleted successful result, or missing destination group.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "inventory_import_conflict: different parameters for an in-progress/completed confirmation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid destination metadata or changed/corrupt staged file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Storage/database failure; incomplete publication rolled back and copied files reconciled."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3512,6 +3718,82 @@
           "expires_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "InventoryImportPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "expires_at",
+          "inventory",
+          "field_count",
+          "item_count",
+          "attachment_count",
+          "attachment_bytes",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "inventory": {
+            "type": "object",
+            "required": ["name", "description"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": ["string", "null"]
+              }
+            }
+          },
+          "field_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "item_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "attachment_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "attachment_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ready", "importing", "completed"]
+          },
+          "inventory_id": {
+            "type": "string"
+          }
+        }
+      },
+      "InventoryImportConfirm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "group_id": {
+            "type": ["string", "null"],
+            "minLength": 1
           }
         }
       }
