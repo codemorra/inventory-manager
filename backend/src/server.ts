@@ -20,6 +20,7 @@ export async function startServer(config: AppConfig) {
   let attachmentService: ReturnType<typeof createServices>["attachments"] =
     null;
 
+  let importService: ReturnType<typeof createServices>["imports"] = null;
   let exportService: ReturnType<typeof createServices>["exports"] = null;
 
   try {
@@ -30,10 +31,12 @@ export async function startServer(config: AppConfig) {
     });
     attachmentService = services.attachments;
     exportService = services.exports;
+    importService = services.imports;
     const cleanup = () =>
       Promise.all([
         attachmentService!.cleanup(),
         exportService!.cleanup(),
+        importService!.cleanup(),
       ]).catch((error: unknown) =>
         logger.error("Managed file cleanup will be retried", error),
       );
@@ -76,6 +79,7 @@ export async function startServer(config: AppConfig) {
             await Promise.all([
               attachmentService?.cleanup(),
               exportService?.cleanup(),
+              importService?.cleanup(),
             ]);
           } catch (error) {
             logger.error(

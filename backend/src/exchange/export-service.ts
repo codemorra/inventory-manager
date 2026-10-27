@@ -9,6 +9,7 @@ import type { AppDatabase } from "../db/types.js";
 import type { createAttachmentService } from "../attachments/service.js";
 import { readExportSnapshot } from "./snapshot.js";
 import { createInventoryService } from "../inventories/service.js";
+import { maxArchiveEntries, maxManifestBytes } from "./limits.js";
 import { DomainError } from "../errors.js";
 
 interface ExportArtifact {
@@ -76,6 +77,15 @@ export function createExportService(
     async create(inventoryId: string, signal?: AbortSignal) {
       signal?.throwIfAborted();
       const snapshot = readExportSnapshot(db, inventoryId);
+      const manifestJson = `${JSON.stringify(snapshot.manifest, null, 2)}\n`;
+      if (
+        Buffer.byteLength(manifestJson) > maxManifestBytes ||
+        snapshot.sources.length + 1 > maxArchiveEntries
+      )
+        throw new DomainError(
+          "inventory_export_unavailable",
+          "Inventory metadata exceeds the supported archive processing bounds.",
+        );
       await mkdir(directory, { recursive: true, mode: 0o700 });
       const workspace = await mkdtemp(join(directory, "export-"));
       active.add(workspace);
@@ -104,11 +114,9 @@ export function createExportService(
       // Observe failures immediately, including while lazy managed reads are still opening.
       void completion.catch(() => {});
       try {
-        zip.addBuffer(
-          Buffer.from(`${JSON.stringify(snapshot.manifest, null, 2)}\n`),
-          "inventory.json",
-          { mode: 0o100600 },
-        );
+        zip.addBuffer(Buffer.from(manifestJson), "inventory.json", {
+          mode: 0o100600,
+        });
         for (const [index, file] of snapshot.sources.entries()) {
           zip.addReadStreamLazy(
             `attachments/${snapshot.manifest.attachments[index]!.key}`,

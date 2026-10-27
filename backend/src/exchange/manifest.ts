@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { nameSchema } from "../validation/common.js";
 import { templateFieldSchema } from "../templates/validation.js";
 import { attachmentMetadataSchema } from "../attachments/validation.js";
 import { inventoryCreateSchema } from "../inventories/validation.js";
@@ -8,13 +9,13 @@ import { validateValues } from "../items/validation.js";
 const key = z.string().regex(/^[a-zA-Z0-9_-]{1,128}$/);
 const safeInteger = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const optionSchema = z.discriminatedUnion("available", [
-  z.strictObject({ key, available: z.literal(true), name: z.string() }),
+  z.strictObject({ key, available: z.literal(true), name: nameSchema }),
   // Deleted option names must never be resurrected by inventory exchange.
   z.strictObject({ key, available: z.literal(false), name: z.null() }),
 ]);
 const fieldSchema = z.strictObject({
   key,
-  name: z.string(),
+  name: nameSchema,
   field_type: z.enum(fieldTypes),
   max_length: z.number().int().min(1).max(1_000).nullable(),
   is_required: z.boolean(),

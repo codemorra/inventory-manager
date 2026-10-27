@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { createImportService } from "./exchange/import-service.js";
 import { createExportService } from "./exchange/export-service.js";
 import type { AppDatabase } from "./db/types.js";
 import { createInventoryService } from "./inventories/service.js";
@@ -42,6 +43,10 @@ export function createServices(
     inventoryEditor,
     templates,
     attachments,
+    imports:
+      attachments && attachmentStorage
+        ? createImportService(db, attachments, attachmentStorage.directory)
+        : null,
     exports:
       attachments && attachmentStorage
         ? createExportService(
