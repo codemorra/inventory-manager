@@ -1,9 +1,9 @@
-import { mkdir } from "node:fs/promises";
 import { createServer } from "node:http";
 import { createApp } from "./app.js";
 import type { AppConfig } from "./config.js";
 import { openDatabase } from "./db/connection.js";
 import { createLogger } from "./logging.js";
+import { initializeStorage } from "./storage.js";
 import { createServices } from "./services.js";
 
 /**
@@ -12,7 +12,7 @@ import { createServices } from "./services.js";
  * @returns An object containing the server instance, database connection, and a stop function to gracefully shut down the server.
  */
 export async function startServer(config: AppConfig) {
-  await mkdir(config.attachmentsDirectory, { recursive: true });
+  await initializeStorage(config);
   const logger = await createLogger(config);
   let connection: ReturnType<typeof openDatabase> | undefined;
   const server = createServer();
@@ -28,6 +28,7 @@ export async function startServer(config: AppConfig) {
     connection = openDatabase(config.databasePath);
     const services = createServices(connection.db, {
       directory: config.attachmentsDirectory,
+      tempDirectory: config.tempDirectory,
     });
     attachmentService = services.attachments;
     exportService = services.exports;

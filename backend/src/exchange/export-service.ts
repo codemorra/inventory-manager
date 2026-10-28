@@ -1,7 +1,7 @@
 import { randomUUID, createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { mkdir, mkdtemp, readdir, rm, stat, lstat } from "node:fs/promises";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { ZipFile } from "yazl";
@@ -47,7 +47,7 @@ export function archiveFilename(name: string) {
  * Build completed, verified ZIPs on disk; original files and archives are never buffered in full.
  * @param db The inventory database.
  * @param attachments The existing managed-file reader, preserving its lifecycle and storage checks.
- * @param directory Explicit private scratch storage beneath the configured managed directory.
+ * @param directory Explicit absolute private scratch storage, separate from durable files.
  * @returns Export and orphan reconciliation operations.
  */
 export function createExportService(
@@ -55,6 +55,8 @@ export function createExportService(
   attachments: ReturnType<typeof createAttachmentService>,
   directory: string,
 ) {
+  if (!isAbsolute(directory))
+    throw new Error("Temporary directory must be absolute.");
   const active = new Set<string>();
   const prepared = new Map<
     string,

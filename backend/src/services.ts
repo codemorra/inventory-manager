@@ -14,6 +14,11 @@ import {
   type AttachmentStorageOptions,
 } from "./attachments/service.js";
 
+export interface ServiceStorageOptions extends AttachmentStorageOptions {
+  // Production always supplies the root-level temp directory; isolated storage-only callers may omit it.
+  tempDirectory?: string;
+}
+
 /**
  * Compose the domain services once; they have no dependency on Express or HTTP.
  * @param db - The application database instance.
@@ -22,7 +27,7 @@ import {
  */
 export function createServices(
   db: AppDatabase,
-  attachmentStorage?: AttachmentStorageOptions,
+  attachmentStorage?: ServiceStorageOptions,
 ) {
   const groups = createGroupService(db);
   const inventories = createInventoryService(db, groups);
@@ -45,14 +50,21 @@ export function createServices(
     attachments,
     imports:
       attachments && attachmentStorage
-        ? createImportService(db, attachments, attachmentStorage.directory)
+        ? createImportService(
+            db,
+            attachments,
+            attachmentStorage.directory,
+            attachmentStorage.tempDirectory ??
+              join(attachmentStorage.directory, ".exchange"),
+          )
         : null,
     exports:
       attachments && attachmentStorage
         ? createExportService(
             db,
             attachments,
-            join(attachmentStorage.directory, ".exchange"),
+            attachmentStorage.tempDirectory ??
+              join(attachmentStorage.directory, ".exchange"),
           )
         : null,
   };

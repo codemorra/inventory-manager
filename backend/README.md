@@ -30,15 +30,15 @@ Update `src/openapi.json` when routes or DTOs change.
 Optionally copy `.env.example` to `.env`. Development, start, and migration commands
 load it automatically; process environment variables take precedence.
 
-| Variable              | Default                                   |
-| --------------------- | ----------------------------------------- |
-| `INVENTORY_DATA_DIR`  | Repository-relative `InventoryData/node/` |
-| `INVENTORY_DB_PATH`   | `<data directory>/inventory.db`           |
-| `INVENTORY_HOST`      | `127.0.0.1`                               |
-| `INVENTORY_PORT`      | `8000`                                    |
-| `INVENTORY_LOG_LEVEL` | `INFO`                                    |
+| Variable              | Default                                           |
+| --------------------- | ------------------------------------------------- |
+| `INVENTORY_DATA_DIR`  | Repository-relative `InventoryData/` storage root |
+| `INVENTORY_DB_PATH`   | `<storage root>/data/inventory.db`                |
+| `INVENTORY_HOST`      | `127.0.0.1`                                       |
+| `INVENTORY_PORT`      | `8000`                                            |
+| `INVENTORY_LOG_LEVEL` | `INFO`                                            |
 
-Storage overrides must be absolute paths; `~/` is supported. Logs and managed attachment copies are stored under the data directory.
+Storage overrides must be absolute paths; `~/` is supported. `INVENTORY_DATA_DIR` selects the complete storage root. Runtime layout: `config/settings.json`, `data/inventory.db`, `data/attachments/`, `backups/`, `logs/`, and `temp/`. Server startup and manual migration initialize the directories and create a version-1 settings document only when missing; existing settings/data are preserved. Preference migration and user-configurable paths are subsequent storage-settings work. An explicit `INVENTORY_DB_PATH` can still override the SQLite location independently.
 
 ## Migrations and checks
 
@@ -149,7 +149,7 @@ their inventories initially ungrouped.
 
 `POST /inventories/{inventory_id}/exports` prepares a complete ZIP containing a versioned `inventory.json` and referenced managed originals in `attachments/`. Its response contains an opaque `id`, safe `filename`, compressed `byte_size` and `expires_at`. `GET /inventories/{inventory_id}/exports/{export_id}/download` consumes it once as a native ZIP download; `DELETE /inventories/{inventory_id}/exports/{export_id}` cancels it. Prepared exports expire after 15 minutes. HEAD on the download endpoint returns 405 without consuming the token. Deleted source inventories are not downloadable. The sidebar inventory context menu offers export; the import icon beside New inventory opens preview and confirmation.
 
-Exports preserve typed saved values, field/option order, automatic numbers/high-water marks and referenced file bytes, with fresh archive-local references rather than source database identities. Original files stream into a private temporary ZIP and must match their stored size and SHA-256. Changes during preparation return 409 `inventory_export_conflict`; inconsistent saved data or failed checksums return 422 `inventory_export_unavailable`. Preparation supports disconnect cancellation; success, failure, download, cancellation and expiry clean temporary files. Startup/periodic/shutdown maintenance sweeps crash leftovers older than 24 hours while protecting active exports. Scratch data lives under `attachments/.exchange/` and does not belong in backups. Export never modifies inventory/item revisions or original files and imposes no attachment-size cap. The streaming ZIP dependency is yazl (including its transitive license notices); ZIP64 is used when required. See the [version-1 archive specification](docs/inventory-archive.md) for saved-state compatibility, references and lifecycle details.
+Exports preserve typed saved values, field/option order, automatic numbers/high-water marks and referenced file bytes, with fresh archive-local references rather than source database identities. Original files stream into a private temporary ZIP and must match their stored size and SHA-256. Changes during preparation return 409 `inventory_export_conflict`; inconsistent saved data or failed checksums return 422 `inventory_export_unavailable`. Preparation supports disconnect cancellation; success, failure, download, cancellation and expiry clean temporary files. Startup/periodic/shutdown maintenance sweeps crash leftovers older than 24 hours while protecting active exports. Scratch data lives under `<storage root>/temp/` and does not belong in backups. Export never modifies inventory/item revisions or original files and imposes no attachment-size cap. The streaming ZIP dependency is yazl (including its transitive license notices); ZIP64 is used when required. See the [version-1 archive specification](docs/inventory-archive.md) for saved-state compatibility, references and lifecycle details.
 
 ### Inventory archive imports
 
