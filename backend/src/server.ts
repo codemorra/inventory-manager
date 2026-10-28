@@ -12,6 +12,7 @@ import { DomainError } from "./errors.js";
 import { randomUUID } from "node:crypto";
 import { lstat } from "node:fs/promises";
 import { cleanupBackupWorkspaces, createBackup } from "./backups/service.js";
+import { createAutomaticBackups } from "./backups/automatic.js";
 import {
   assertRestoreIdle,
   commitRestore,
@@ -40,6 +41,7 @@ export async function startServer(config: AppConfig) {
   let connection: ReturnType<typeof openDatabase> | undefined;
   const server = createServer();
   let maintenance: ReturnType<typeof setInterval> | undefined;
+  let automatic: ReturnType<typeof createAutomaticBackups> | undefined;
   let attachmentService: ReturnType<typeof createServices>["attachments"] =
     null;
 
@@ -88,7 +90,10 @@ export async function startServer(config: AppConfig) {
       );
     await cleanup();
     maintenance = setInterval(() => {
-      if (!paused && !shuttingDown && !unavailable) void cleanup();
+      if (!paused && !shuttingDown && !unavailable) {
+        void cleanup();
+        void automatic?.tick();
+      }
     }, 60_000);
     maintenance.unref();
     async function relocate(input: unknown, response: ServerResponse) {
@@ -289,11 +294,39 @@ export async function startServer(config: AppConfig) {
       switching = operation;
       return operation;
     }
+    automatic = createAutomaticBackups(config, services.backups!, {
+      onError: (error) =>
+        logger.error("Automatic backup work will be retried", error),
+      create: (identity) =>
+        createBackup(config, connection!, "automatic", identity),
+      exclusive: async (work) => {
+        if (paused || shuttingDown || unavailable) return false;
+        paused = new Promise<void>((resolve) => {
+          resume = resolve;
+        });
+        const operation = (async () => {
+          try {
+            await activity.idle();
+            await work();
+            return true;
+          } finally {
+            const release = resume;
+            paused = undefined;
+            resume = undefined;
+            release?.();
+          }
+        })();
+        switching = operation;
+        return operation;
+      },
+    });
+    await automatic.tick();
     const app = createApp(logger, services, {
       relocate,
       backup,
       restore,
       generation: () => generation,
+      automatic,
     });
     server.on("request", (request, response) => {
       void (async () => {
@@ -330,6 +363,7 @@ export async function startServer(config: AppConfig) {
   } catch (error) {
     logger.error("Application startup failed", error);
     clearInterval(maintenance);
+    await automatic?.stop();
     connection?.close();
     releaseStorage?.();
     await logger.close();
@@ -349,6 +383,7 @@ export async function startServer(config: AppConfig) {
       stopping ??= (async () => {
         shuttingDown = true;
         clearInterval(maintenance);
+        await automatic?.stop();
         await switching?.catch(() => {});
         try {
           // Attempt to gracefully shut down the server.

@@ -49,11 +49,25 @@ export const revisionSchema = z
   .int()
   .min(0)
   .max(Number.MAX_SAFE_INTEGER);
+export const backupPolicySchema = z.strictObject({
+  frequency: z.enum(["disabled", "daily", "weekly"]),
+  retention: z.number().int().min(1).max(1000),
+});
+export type BackupPolicy = z.output<typeof backupPolicySchema>;
+export const defaultBackupPolicy: BackupPolicy = {
+  frequency: "disabled",
+  retention: 10,
+};
+export const backupPolicyUpdateSchema = z.strictObject({
+  expected_revision: revisionSchema,
+  policy: backupPolicySchema,
+});
 export const settingsDocumentSchema = z.strictObject({
   version: z.literal(1),
   revision: revisionSchema.default(0),
   preferences: preferenceSchema.partial().default({}),
   storage: storageLocationsSchema.optional(),
+  backups: backupPolicySchema.optional(),
 });
 export type SettingsDocument = z.output<typeof settingsDocumentSchema>;
 export const settingsUpdateSchema = z.strictObject({

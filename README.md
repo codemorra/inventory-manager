@@ -17,6 +17,7 @@ The screenshot uses synthetic demo data.
 - Inventory lists with custom fields and typed items
 - Managed file attachments with download links and optional image previews
 - ZIP inventory import/export including attached files
+- Full data backups with checked restoration and daily/weekly automatic scheduling
 - Reusable inventory structure templates
 - Single-level groups with drag-and-drop organization
 - Sidebar filtering by inventory title
@@ -37,7 +38,7 @@ Click a column heading to cycle through ascending, descending, and original orde
 
 Open **Settings** at the bottom of the sidebar to change language, appearance, and accent color. **Templates** directly above it lets you edit or delete saved structures.
 
-Use **Settings > Backups** to create a ZIP backup of your inventories, templates, table views and attached files. Saved backups show their date, kind and size. Use the download icon to save an archive or the delete icon to remove it after confirmation.
+Use **Settings > Backups** to create a ZIP backup of your inventories, templates, table views and attached files, or enable daily/weekly automatic backups with a retention limit. Saved backups show their date, kind and size. Use the download icon to save an archive or the delete icon to remove it after confirmation.
 
 To restore data, use a saved backup's restore icon or **Restore from file**. Review the checked summary and confirm replacement of the current data. A safety backup is created first. Reload the application after restoration to continue with the restored data.
 

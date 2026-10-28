@@ -570,6 +570,30 @@
     "checkRestore": "Check status",
     "reloadApplication": "Reload application",
     "dataChangedTitle": "Data has changed",
-    "dataChanged": "The data has changed in another session. Reload the application before continuing."
+    "dataChanged": "The data has changed in another session. Reload the application before continuing.",
+    "automaticTitle": "Automatic backups",
+    "frequency": "Frequency",
+    "frequencies": {
+      "disabled": "Disabled",
+      "daily": "Daily",
+      "weekly": "Weekly"
+    },
+    "weeklyHelp": "One automatic backup per calendar week, Monday to Sunday.",
+    "retention": "Automatic backups to keep",
+    "retentionHelp": "Older automatic backups are removed after a successful new backup.",
+    "scheduleLoading": "Loading backup settings…",
+    "scheduleSave": "Save backup settings",
+    "scheduleSaving": "Saving…",
+    "scheduleSaved": "Backup settings saved.",
+    "scheduleReload": "Reload backup settings",
+    "scheduleLoadFailed": "Backup settings could not be loaded. Please reload them.",
+    "scheduleSaveFailed": "Backup settings could not be saved. Reload them to check the current state.",
+    "scheduleConflict": "Backup settings have changed. Your edits are still here. Reload the settings before trying again.",
+    "lastAutomatic": "Last automatic backup: {{date}}",
+    "noAutomaticYet": "No successful automatic backup yet.",
+    "automaticRunning": "An automatic backup is running…",
+    "automaticFailed": "The last automatic backup failed.",
+    "retentionFailed": "Some older automatic backups could not be removed.",
+    "retryAt": "Next attempt: {{date}}"
   }
 }

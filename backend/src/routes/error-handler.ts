@@ -20,7 +20,8 @@ export function errorHandler(
     // Handle domain-specific errors first
     if (error instanceof DomainError) {
       const status =
-        error.code === "application_settings_unavailable"
+        error.code === "application_settings_unavailable" ||
+        error.code === "backup_schedule_unavailable"
           ? 503
           : error.code === "attachment_preview_unavailable"
             ? 415

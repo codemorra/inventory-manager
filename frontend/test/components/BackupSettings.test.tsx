@@ -17,6 +17,13 @@ import { deferred } from "../helpers/inventoryArchives";
 import type { CreatedBackup, StoredBackup } from "../../src/types/backup";
 import i18n from "../../src/i18n";
 import { restorePreview } from "../helpers/backupRestores";
+import * as automaticApi from "../../src/services/automaticBackups";
+import { automaticSchedule } from "../helpers/automaticBackups";
+
+vi.mock("../../src/services/automaticBackups", () => ({
+  getBackupSchedule: vi.fn(),
+  updateBackupSchedule: vi.fn(),
+}));
 
 vi.mock("../../src/services/backups", () => ({
   listBackups: vi.fn(),
@@ -46,6 +53,9 @@ const stored: StoredBackup = {
   },
 };
 beforeEach(() => {
+  vi.mocked(automaticApi.getBackupSchedule).mockResolvedValue(
+    automaticSchedule,
+  );
   vi.mocked(api.listBackups).mockResolvedValue([]);
   vi.mocked(api.createBackup).mockResolvedValue(created);
   vi.mocked(api.deleteBackup).mockResolvedValue(undefined);
@@ -93,6 +103,7 @@ test("keeps an accepted creation mounted and blocks dismissal and appearance cha
   );
   expect(api.createBackup).toHaveBeenCalledOnce();
   expect(screen.getByLabelText("Appearance")).toBeDisabled();
+  expect(screen.getByRole("combobox", { name: "Frequency" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Close dialog" })).toBeDisabled();
   await userEvent.keyboard("{Escape}");
   await userEvent.click(screen.getByRole("dialog").parentElement!);

@@ -4,6 +4,7 @@ import { storageRoutes } from "./routes/storage.js";
 import { backupRoutes } from "./routes/backups.js";
 import { restoreRoutes } from "./routes/restores.js";
 import { DomainError } from "./errors.js";
+import type { createAutomaticBackups } from "./backups/automatic.js";
 import { viewRoutes } from "./routes/views.js";
 import cors from "cors";
 import express from "express";
@@ -35,6 +36,7 @@ export function createApp(
     backup?: (response: ServerResponse) => Promise<unknown>;
     restore?: (id: string, response: ServerResponse) => Promise<unknown>;
     generation?: () => string;
+    automatic?: ReturnType<typeof createAutomaticBackups>;
   } = {},
 ) {
   const app = express();
@@ -93,7 +95,10 @@ export function createApp(
   app.use(docsRoutes());
   app.use("/application-settings", settingsRoutes(services));
   app.use("/storage-locations", storageRoutes(services, options.relocate));
-  app.use("/backups", backupRoutes(services, options.backup));
+  app.use(
+    "/backups",
+    backupRoutes(services, options.backup, options.automatic),
+  );
   app.use("/backup-restores", restoreRoutes(services, options.restore));
   app.use(viewRoutes(services));
   app.use("/inventory-groups", groupRoutes(services));

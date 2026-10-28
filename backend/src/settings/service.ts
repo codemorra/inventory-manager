@@ -5,6 +5,8 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { DomainError } from "../errors.js";
 import {
   defaultPreferences,
+  defaultBackupPolicy,
+  backupPolicyUpdateSchema,
   settingsDocumentSchema,
   settingsUpdateSchema,
   type SettingsDocument,
@@ -106,6 +108,42 @@ export function createSettingsService(settingsPath: string) {
     return document.revision + 1;
   }
   return {
+    /**
+     * Read backup policy alongside the shared configuration revision.
+     * @returns Effective daily/weekly policy and automatic retention count.
+     * @throws {DomainError} When the settings document is unavailable or invalid.
+     */
+    async readBackupPolicy() {
+      const document = await readDocument();
+      return {
+        revision: document.revision,
+        policy: document.backups ?? { ...defaultBackupPolicy },
+      };
+    },
+    /**
+     * Save backup policy without replacing appearance preferences or storage locations.
+     * @param input The complete policy and the user's captured settings revision.
+     * @returns The accepted policy and its new configuration revision.
+     * @throws {Error} When validation, revision checks or durable writing fail.
+     */
+    async updateBackupPolicy(input: unknown) {
+      const data = backupPolicyUpdateSchema.parse(input);
+      return serialize(async () => {
+        const current = await readDocument();
+        if (current.revision !== data.expected_revision)
+          throw new DomainError(
+            "application_settings_conflict",
+            "The settings have changed. Reload before saving again.",
+          );
+        const next = {
+          ...current,
+          revision: nextRevision(current),
+          backups: data.policy,
+        };
+        await write(next);
+        return { revision: next.revision, policy: next.backups };
+      });
+    },
     async readStorageState() {
       const document = await readDocument();
       return { revision: document.revision, storage: document.storage ?? {} };
