@@ -21,7 +21,6 @@ export const settingsDocumentSchema = z.strictObject({
   version: z.literal(1),
   revision: revisionSchema.default(0),
   preferences: preferenceSchema.partial().default({}),
-  browser_migration_completed: z.boolean().default(false),
 });
 export type SettingsDocument = z.output<typeof settingsDocumentSchema>;
 export const settingsUpdateSchema = z.strictObject({
@@ -32,7 +31,4 @@ export const settingsUpdateSchema = z.strictObject({
       (value) => Object.keys(value).length > 0,
       "At least one preference is required.",
     ),
-});
-export const settingsMigrationSchema = z.strictObject({
-  preferences: preferenceSchema.partial(),
 });

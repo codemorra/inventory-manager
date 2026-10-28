@@ -107,31 +107,6 @@ test("retains manual bases, normalizes stale references and keeps at least one v
   assert.deepEqual(automatic.preferences.columnWidths, {});
 });
 
-// Legacy browser garbage is sanitized, while already persisted choices win over stale browser migration retries.
-test("migrates legacy views once per inventory without overriding saved views", async (context) => {
-  const f = fixture(context);
-  const migrated = f.services.views.migrate(f.inventory.id, {
-    preferences: {
-      version: 1,
-      wrapText: false,
-      attachmentPreviews: "invalid",
-      hiddenFieldIds: [f.fields[1]!.id, f.fields[1]!.id, "gone", null],
-      columnWidths: { [f.fields[0]!.id]: 123, [f.fields[1]!.id]: 1, gone: 100 },
-      sort: { fieldId: f.fields[1]!.id, direction: "descending" },
-    },
-  });
-  assert.deepEqual(migrated.preferences, {
-    ...initial,
-    wrapText: false,
-    hiddenFieldIds: [f.fields[1]!.id],
-    columnWidths: { [f.fields[0]!.id]: 123 },
-  });
-  assert.deepEqual(
-    f.services.views.migrate(f.inventory.id, { preferences: initial }),
-    migrated,
-  );
-});
-
 // Full view replacements reject stale windows and invalid schemas without losing existing preferences.
 test("enforces public revisions, allowed widths and strict view properties", async (context) => {
   const f = fixture(context);

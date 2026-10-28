@@ -33,7 +33,8 @@
     "language": {
       "de": "Deutsch",
       "en": "English",
-      "label": "Language"
+      "label": "Language",
+      "system": "System language"
     },
     "theme": {
       "dark": "Dark",
@@ -474,5 +475,15 @@
     "statusFailed": "The import status could not be checked. Please try again.",
     "resultUnavailable": "The import status is no longer available. Check your inventory list before selecting the archive again.",
     "close": "Close"
+  },
+  "preferences": {
+    "loading": "Loading preferences…",
+    "loadFailed": "Saved preferences could not be loaded. Check that the backend is available and try again.",
+    "saving": "Saving preferences…",
+    "saveFailed": "Preference changes could not be saved. They remain active here until you retry or load the saved values.",
+    "conflict": "Preferences were changed elsewhere. Your local changes are still active. Load the saved values to discard the unsaved changes.",
+    "refreshFailed": "Saved preferences could not be refreshed. The last loaded values remain active.",
+    "reload": "Load saved values",
+    "unsaved": "Some changes have not been saved."
   }
 }

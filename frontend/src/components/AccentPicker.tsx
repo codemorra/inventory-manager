@@ -2,20 +2,13 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useStoredPreference } from "../hooks/useStoredPreference";
 
-import {
-  ACCENT_STORAGE_KEY,
-  accentColors,
-  applyAccent,
-  getInitialAccent,
-} from "../appearance/accent";
+import { accentColors, applyAccent } from "../appearance/accent";
 
 // Render the stored accent color selection for the application.
 export function AccentPicker() {
   const { t } = useTranslation();
-  const [accent, setAccent] = useStoredPreference(
-    ACCENT_STORAGE_KEY,
-    getInitialAccent,
-  );
+  const [saved, setAccent] = useStoredPreference("accent");
+  const accent = saved ?? "teal";
 
   useEffect(() => {
     applyAccent(accent);

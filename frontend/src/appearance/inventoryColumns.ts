@@ -2,7 +2,7 @@ import type { InventoryField } from "../types/inventoryField";
 
 export const MIN_COLUMN_WIDTH = 48;
 export const MAX_COLUMN_WIDTH = 1200;
-// Preserve existing preferences from earlier width handling when reading legacy data.
+// Maximum supported stored manual column base.
 export const MAX_STORED_COLUMN_WIDTH = 32768;
 const MAX_DEFAULT_CONTENT_WIDTH = 320;
 

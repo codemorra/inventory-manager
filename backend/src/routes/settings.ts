@@ -15,8 +15,5 @@ export function settingsRoutes({ settings }: Services) {
   router.patch("/", async (request, response) => {
     response.json(await settings.update(request.body));
   });
-  router.post("/migrate", async (request, response) => {
-    response.json(await settings.migrate(request.body));
-  });
   return router;
 }

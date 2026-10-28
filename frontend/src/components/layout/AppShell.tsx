@@ -1,3 +1,4 @@
+import { PreferenceStatus } from "../PreferenceStatus";
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
@@ -153,6 +154,7 @@ export function AppShell({ children }: AppShellProps) {
       }}
     >
       <div className="min-h-dvh bg-canvas text-foreground">
+        <PreferenceStatus />
         <InventoryImportDialog
           open={isImportOpen}
           onClose={() => setIsImportOpen(false)}

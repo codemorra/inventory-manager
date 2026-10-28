@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+import { preferenceStore } from "../preferences/store";
 import { useTranslation } from "react-i18next";
 
 import { LanguageSwitch } from "./LanguageSwitch";
@@ -19,6 +21,11 @@ interface SettingsDialogProps {
 export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const { t } = useTranslation();
   const [warning, setWarning] = useAttachmentWarnings();
+  const persistence = useSyncExternalStore(
+    preferenceStore.subscribe,
+    preferenceStore.getStatus,
+    preferenceStore.getStatus,
+  );
 
   return (
     <Modal onClose={onClose} title={t("settings.title")} size="small">
@@ -41,7 +48,13 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
         </div>
       </div>
       <p className="mt-5 border-t border-shell pt-4 text-xs text-muted">
-        {t("settings.savedAutomatically")}
+        {t(
+          persistence.failed
+            ? "preferences.unsaved"
+            : persistence.pending
+              ? "preferences.saving"
+              : "settings.savedAutomatically",
+        )}
       </p>
     </Modal>
   );

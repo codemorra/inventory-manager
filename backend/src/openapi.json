@@ -2477,69 +2477,6 @@
         }
       }
     },
-    "/application-settings/migrate": {
-      "post": {
-        "tags": ["preferences"],
-        "summary": "Import legacy browser application preferences once",
-        "operationId": "migrate_application_settings",
-        "description": "Fills only previously unconfigured file keys. Once browser_migration_completed is true, repeated calls return existing settings unchanged. The browser must clear legacy keys only after an acknowledged success.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["preferences"],
-                "properties": {
-                  "preferences": {
-                    "$ref": "#/components/schemas/ApplicationPreferences"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Effective versioned preferences with current revision; no filesystem paths.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApplicationSettings"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Settings revision exhausted.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DomainErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Invalid legacy preference values."
-          },
-          "503": {
-            "description": "application_settings_unavailable: invalid/unreadable/unsupported settings file, preserved without reset.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DomainErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Storage failure; migration can safely be retried."
-          }
-        }
-      }
-    },
     "/inventory-view-preferences": {
       "get": {
         "tags": ["preferences"],
@@ -2670,64 +2607,6 @@
           },
           "422": {
             "description": "Invalid view schema, width bounds or expected revision."
-          }
-        }
-      }
-    },
-    "/inventories/{inventory_id}/view-preferences/migrate": {
-      "post": {
-        "tags": ["preferences"],
-        "summary": "Import a legacy browser view if none is stored",
-        "operationId": "migrate_inventory_view",
-        "description": "Sanitizes malformed/unsupported/stale legacy properties against current fields. Existing file-independent database views are returned unchanged. Safe to retry before clearing browser keys.",
-        "parameters": [
-          {
-            "name": "inventory_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["preferences"],
-                "properties": {
-                  "preferences": {}
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Normalized complete view; revision 0 means no persisted row.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InventoryViewState"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Active inventory not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DomainErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Invalid migration envelope."
           }
         }
       }
@@ -4179,12 +4058,7 @@
       "ApplicationSettings": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "version",
-          "revision",
-          "preferences",
-          "browser_migration_completed"
-        ],
+        "required": ["version", "revision", "preferences"],
         "properties": {
           "version": {
             "const": 1,
@@ -4209,9 +4083,6 @@
                 ]
               }
             ]
-          },
-          "browser_migration_completed": {
-            "type": "boolean"
           }
         }
       },

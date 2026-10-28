@@ -24,8 +24,5 @@ export function viewRoutes({ views }: Services) {
   router.put(path, (request, response) => {
     response.json(views.update(request.params.inventory_id, request.body));
   });
-  router.post(`${path}/migrate`, (request, response) => {
-    response.json(views.migrate(request.params.inventory_id, request.body));
-  });
   return router;
 }

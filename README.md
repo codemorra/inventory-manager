@@ -33,7 +33,7 @@ The screenshot uses synthetic demo data.
 
 Create an inventory from the sidebar, optionally choosing a template, its included fields, and a group. Use the **Inventory settings** gear beside its title to define fields and selection options or save its structure as a template. Save the configuration and add items with **New item**. Drag inventories onto sidebar groups to organize them. Right-click an inventory to export a ZIP with its saved entries and files; use the import icon beside **New inventory** to check an archive and create an independent copy.
 
-Click a column heading to cycle through ascending, descending, and original order. Use **View** to show or hide columns, wrap text, toggle image previews for file columns, or restore automatic widths. Drag a heading's right edge to resize a column; right-click the heading to restore its automatic width or hide it. Table preferences are saved per inventory in this browser. Use search and filters to narrow items, or the pencil to edit cells and save or discard changes together.
+Click a column heading to cycle through ascending, descending, and original order. Use **View** to show or hide columns, wrap text, toggle image previews for file columns, or restore automatic widths. Drag a heading's right edge to resize a column; right-click the heading to restore its automatic width or hide it. Table preferences are saved with each inventory. Use search and filters to narrow items, or the pencil to edit cells and save or discard changes together.
 
 Open **Settings** at the bottom of the sidebar to change language, appearance, and accent color. **Templates** directly above it lets you edit or delete saved structures.
 
@@ -113,7 +113,7 @@ Copy `backend/.env.example` to `backend/.env` to customize the backend. The deve
 
 Configure the frontend through `frontend/.env`, based on `frontend/.env.example`. Backend storage paths support `~/` and are independent of the current working directory. The backend permits requests from `http://localhost:5173` and `http://127.0.0.1:5173`.
 
-The frontend initially selects German for a `de` system locale and English for all other locales. Language, appearance, and accent color are stored locally in the browser and restored on the next visit. The system appearance option follows the operating system's light or dark preference, including changes while the application is open. Inventory groups and memberships are stored in SQLite.
+The frontend initially selects German for a `de` system locale and English for all other locales. Language, appearance, accent color and file-warning choices are stored in `config/settings.json`; inventory views are stored in SQLite. The system appearance option follows the operating system's light or dark preference, including changes while the application is open. Inventory groups and their assigned inventories are stored in SQLite.
 
 ```text
 InventoryData/
@@ -127,7 +127,7 @@ InventoryData/
 └── temp/
 ```
 
-This storage root is excluded from version control and initialized at startup. Running from the repository keeps runtime files here; data and attachments are separate from backup storage, logs and temporary archive files. `config/settings.json` supports versioned application preferences through the backend settings API; the interface remains browser-backed until the subsequent preference migration. Configurable storage locations follow in the storage settings work.
+This storage root is excluded from version control and initialized at startup. Running from the repository keeps runtime files here; data and attachments are separate from backup storage, logs and temporary archive files. The interface loads versioned preferences before editing is available and reports failed saves or conflicting changes with retry/reload actions. Configurable storage locations follow in the storage settings work.
 
 See [backend documentation](backend/README.md) for migration commands and API behavior.
 

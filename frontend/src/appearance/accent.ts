@@ -1,4 +1,4 @@
-export const ACCENT_STORAGE_KEY = "inventory-manager-accent";
+import { preferenceStore } from "../preferences/store";
 
 // Define the supported accent palettes.
 export const accentColors = ["teal", "blue", "purple", "orange"] as const;
@@ -10,7 +10,7 @@ export type AccentColor = (typeof accentColors)[number];
  */
 export function getInitialAccent(): AccentColor {
   if (typeof window === "undefined") return "teal";
-  const stored = localStorage.getItem(ACCENT_STORAGE_KEY);
+  const stored = preferenceStore.readPreferences()?.accent;
   return accentColors.find((color) => color === stored) ?? "teal";
 }
 

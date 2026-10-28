@@ -1,3 +1,4 @@
+import { seedView, savedView } from "../helpers/preferences";
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -241,14 +242,8 @@ test("freezes row membership, ordering and presentation until editing ends", asy
     wrapText: false,
     columnWidths: { "text-field": 1000 },
   };
-  act(() => {
-    localStorage.setItem(
-      "inventory-manager-view:inventory",
-      JSON.stringify(external),
-    );
-    window.dispatchEvent(
-      new StorageEvent("storage", { key: "inventory-manager-view:inventory" }),
-    );
+  await act(async () => {
+    await seedView("inventory", external);
     client.setQueryData(["inventories", "inventory", "items"], []);
   });
   await act(async () => {
@@ -259,9 +254,7 @@ test("freezes row membership, ordering and presentation until editing ends", asy
   expect(heading).toHaveAttribute("aria-sort", "descending");
   expect(widths()).toEqual(before);
   expect(screen.getByRole("status")).toHaveTextContent("2 von 3 Einträgen");
-  expect(
-    JSON.parse(localStorage.getItem("inventory-manager-view:inventory")!),
-  ).toEqual(external);
+  expect(savedView("inventory")!).toMatchObject(external);
   // Restore the simulated remote result before leaving; only presentation changes are deferred.
   act(() =>
     client.setQueryData(["inventories", "inventory", "items"], serverItems),
@@ -394,14 +387,11 @@ test("keeps action rows aligned as edited cell contents and errors change row he
 
 // Test typed edits save once, omit read-only IDs and retain hidden structured and legacy values.
 test("saves changed cells atomically and preserves hidden values, original versions and IDs", async () => {
-  localStorage.setItem(
-    "inventory-manager-view:inventory",
-    JSON.stringify({
-      version: 1,
-      hiddenFieldIds: ["url-field", "datetime-field"],
-      columnWidths: { "text-field": 90 },
-    }),
-  );
+  await seedView("inventory", {
+    version: 1,
+    hiddenFieldIds: ["url-field", "datetime-field"],
+    columnWidths: { "text-field": 90 },
+  });
   const user = userEvent.setup();
   renderTable();
   await start(user);
@@ -440,10 +430,9 @@ test("saves changed cells atomically and preserves hidden values, original versi
     payload.items[0].values.some((value) => value.field_id === "id-field"),
   ).toBe(false);
   expect(within(row()).getByText("Changed")).toBeVisible();
-  expect(
-    JSON.parse(localStorage.getItem("inventory-manager-view:inventory")!)
-      .columnWidths,
-  ).toEqual({ "text-field": 90 });
+  expect(savedView("inventory")!.columnWidths).toEqual({
+    "text-field": 90,
+  });
 });
 
 // Test one Save combines multiple row revisions and keeps false/zero as real typed values.
@@ -552,10 +541,7 @@ test("validates cells and reveals missing required hidden values", async () => {
     id: "hidden",
     is_required: true,
   };
-  localStorage.setItem(
-    "inventory-manager-view:inventory",
-    JSON.stringify({ version: 1, hiddenFieldIds: ["hidden"] }),
-  );
+  await seedView("inventory", { version: 1, hiddenFieldIds: ["hidden"] });
   const user = userEvent.setup();
   renderTable([...fields, hidden]);
   await start(user);
@@ -563,10 +549,7 @@ test("validates cells and reveals missing required hidden values", async () => {
   await user.clear(title);
   await user.type(title, "Changed");
   await user.click(screen.getByRole("button", { name: "Show Hidden" }));
-  expect(
-    JSON.parse(localStorage.getItem("inventory-manager-view:inventory")!)
-      .hiddenFieldIds,
-  ).toEqual(["hidden"]);
+  expect(savedView("inventory")!.hiddenFieldIds).toEqual(["hidden"]);
   const required = within(row()).getByRole("textbox", { name: "Hidden" });
   expect(required).toHaveAttribute("aria-invalid", "true");
   await user.type(required, "Required");

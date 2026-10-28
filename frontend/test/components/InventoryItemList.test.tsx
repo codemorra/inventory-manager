@@ -1,3 +1,4 @@
+import { seedView, savedView, preferenceApi } from "../helpers/preferences";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
@@ -22,7 +23,6 @@ import type { InventoryItem } from "../../src/types/inventoryItem";
 import { InventoryItemList } from "../../src/components/InventoryItemList";
 import { chooseOptions } from "../helpers/choices";
 import { useInventoryItems } from "../../src/hooks/useInventoryItems";
-import { inventoryViewStorageKey } from "../../src/hooks/useInventoryView";
 
 vi.mock("../../src/services/inventoryItems", () => ({
   createInventoryItem: vi.fn(),
@@ -979,14 +979,11 @@ describe("InventoryItemList", () => {
   // Test cursor-positioned settings enable Auto only for the chosen field and preserve other manual bases.
   test("offers per-column Auto and visibility settings at the cursor", async () => {
     const user = userEvent.setup();
-    const key = inventoryViewStorageKey("inventory-1");
-    localStorage.setItem(
-      key,
-      JSON.stringify({
-        version: 1,
-        columnWidths: { "title-field": 210, "genre-field": 190 },
-      }),
-    );
+    const key = "inventory-1";
+    await seedView(key, {
+      version: 1,
+      columnWidths: { "title-field": 210, "genre-field": 190 },
+    });
     renderInventoryItemList();
     fireEvent.contextMenu(screen.getByRole("columnheader", { name: "Title" }), {
       clientX: 31,
@@ -1001,7 +998,7 @@ describe("InventoryItemList", () => {
     });
     expect(automatic).not.toBeChecked();
     await user.click(automatic);
-    expect(JSON.parse(localStorage.getItem(key)!).columnWidths).toEqual({
+    expect(savedView(key)!.columnWidths).toEqual({
       "genre-field": 190,
     });
     fireEvent.contextMenu(screen.getByRole("columnheader", { name: "Title" }), {
@@ -1020,7 +1017,7 @@ describe("InventoryItemList", () => {
     expect(
       screen.queryByRole("columnheader", { name: "Genre" }),
     ).not.toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem(key)!).columnWidths).toEqual({
+    expect(savedView(key)!.columnWidths).toEqual({
       "genre-field": 190,
     });
     await user.click(screen.getByRole("button", { name: "View" }));
@@ -1030,7 +1027,7 @@ describe("InventoryItemList", () => {
     expect(all).toBeChecked();
     expect(all).toBeEnabled();
     await user.click(all);
-    expect(JSON.parse(localStorage.getItem(key)!).columnWidths).toEqual({});
+    expect(savedView(key)!.columnWidths).toEqual({});
   });
 
   // Test keyboard invocation and the last-column visibility guard work in the header context menu.
@@ -1075,12 +1072,9 @@ describe("InventoryItemList", () => {
         disconnect = vi.fn();
       },
     );
-    const key = inventoryViewStorageKey("inventory-1");
-    localStorage.setItem(
-      key,
-      JSON.stringify({ version: 1, columnWidths: { "title-field": 180 } }),
-    );
-    const writes = vi.spyOn(Storage.prototype, "setItem");
+    const key = "inventory-1";
+    await seedView(key, { version: 1, columnWidths: { "title-field": 180 } });
+    const writes = vi.spyOn(preferenceApi, "updateInventoryView");
     renderInventoryItemList();
     const viewport = screen.getByRole("region", { name: "Inventory items" });
     const table = within(viewport).getByRole("table");
@@ -1102,7 +1096,7 @@ describe("InventoryItemList", () => {
     expect(wideAuto).toBeGreaterThan(base);
     handle.focus();
     await user.keyboard("{ArrowRight}");
-    expect(JSON.parse(localStorage.getItem(key)!).columnWidths).toEqual({
+    expect(savedView(key)!.columnWidths).toEqual({
       "title-field": 180,
       "genre-field": base + 16,
     });
@@ -1306,7 +1300,7 @@ describe("InventoryItemList", () => {
   });
 
   // Test that row actions have a hover surface distinct from the highlighted row.
-  test("uses a distinct hover surface for the edit action", () => {
+  test("uses a distinct hover surface for the edit action", async () => {
     renderInventoryItemList();
     expect(screen.getByRole("button", { name: "Edit" })).toHaveClass(
       "enabled:hover:bg-control-hover",
@@ -1396,7 +1390,7 @@ describe("InventoryItemList", () => {
   });
 
   // Test that the item list renders fields as columns and items as rows
-  test("renders fields as columns and items as rows", () => {
+  test("renders fields as columns and items as rows", async () => {
     renderInventoryItemList();
 
     expect(
@@ -1410,7 +1404,7 @@ describe("InventoryItemList", () => {
   });
 
   // Test that an em dash is rendered for a missing field value
-  test("renders an em dash for a missing field value", () => {
+  test("renders an em dash for a missing field value", async () => {
     renderInventoryItemList([{ ...items[0], values: [] }]);
 
     expect(screen.getAllByText("—")).toHaveLength(3);
