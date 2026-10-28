@@ -2,6 +2,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import {
   createBackup,
   downloadBackup,
+  deleteBackup,
   listBackups,
 } from "../../src/services/backups";
 
@@ -45,4 +46,15 @@ test("downloads the encoded filename natively without fetching or buffering the 
   expect(clicked[0]!.target).toBe("_self");
   expect(clicked[0]!.isConnected).toBe(false);
   expect(fetch).not.toHaveBeenCalled();
+});
+
+test("deletes the selected encoded filename without sending file content", async () => {
+  const fetch = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+  vi.stubGlobal("fetch", fetch);
+  await expect(deleteBackup("backup file.zip")).resolves.toBeUndefined();
+  expect(fetch).toHaveBeenCalledWith(
+    expect.stringMatching(/\/backups\/backup%20file.zip$/),
+    expect.objectContaining({ method: "DELETE" }),
+  );
+  expect(fetch.mock.calls[0]![1]).not.toHaveProperty("body");
 });

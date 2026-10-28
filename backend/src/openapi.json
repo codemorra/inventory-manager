@@ -2862,6 +2862,9 @@
           },
           "500": {
             "description": "Backup storage access failed."
+          },
+          "409": {
+            "description": "backup_conflict: the selected archive is being deleted."
           }
         }
       },
@@ -2905,6 +2908,42 @@
           },
           "500": {
             "description": "Backup storage access failed."
+          },
+          "409": {
+            "description": "backup_conflict: the selected archive is being deleted."
+          }
+        }
+      }
+    },
+    "/backups/{filename}": {
+      "parameters": [
+        {
+          "name": "filename",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Generated archive basename selected from the backup list."
+        }
+      ],
+      "delete": {
+        "tags": ["backups"],
+        "summary": "Delete a saved data backup",
+        "operationId": "delete_application_backup",
+        "description": "Remove the selected regular archive from the active backup directory. Reject symbolic links, directories and unrelated names. Opening or active downloads and pending deletions reserve their archive until completion. Responses use Cache-Control: no-store.",
+        "responses": {
+          "204": {
+            "description": "Backup archive deleted."
+          },
+          "404": {
+            "description": "backup_not_found: invalid filename, missing archive or nonregular file."
+          },
+          "409": {
+            "description": "backup_conflict: the archive has an opening or active download, or a pending deletion."
+          },
+          "500": {
+            "description": "Storage access or file removal failed."
           }
         }
       }

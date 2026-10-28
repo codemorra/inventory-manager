@@ -535,6 +535,14 @@
       "manual": "Manual",
       "automatic": "Automatic",
       "pre-restore": "Before restore"
-    }
+    },
+    "deleteLabel": "Delete {{filename}}",
+    "deleteTitle": "Delete backup",
+    "confirmDelete": "Permanently delete the backup “{{filename}}”?",
+    "deleted": "Backup deleted.",
+    "deleteFailed": "The backup could not be deleted. Please try again.",
+    "deleteUncertain": "The deletion result could not be confirmed. Refresh the list before trying again.",
+    "missing": "The backup is no longer available. The list has been updated.",
+    "inUse": "The backup is in use. Wait for the current download or deletion to finish and try again."
   }
 }

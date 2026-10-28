@@ -535,6 +535,14 @@
       "manual": "Manuell",
       "automatic": "Automatisch",
       "pre-restore": "Vor Wiederherstellung"
-    }
+    },
+    "deleteLabel": "{{filename}} löschen",
+    "deleteTitle": "Backup löschen",
+    "confirmDelete": "Das Backup „{{filename}}“ endgültig löschen?",
+    "deleted": "Backup gelöscht.",
+    "deleteFailed": "Das Backup konnte nicht gelöscht werden. Versuche es erneut.",
+    "deleteUncertain": "Das Ergebnis des Löschvorgangs konnte nicht bestätigt werden. Aktualisiere die Liste, bevor du es erneut versuchst.",
+    "missing": "Das Backup ist nicht mehr verfügbar. Die Liste wurde aktualisiert.",
+    "inUse": "Das Backup wird gerade verwendet. Warte, bis der laufende Download oder Löschvorgang abgeschlossen ist, und versuche es erneut."
   }
 }
