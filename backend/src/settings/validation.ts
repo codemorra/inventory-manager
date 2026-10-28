@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { storagePath } from "../storage-paths.js";
 
-const directorySchema = z
+export const directorySchema = z
   .string()
   .min(1)
   .max(4096)
@@ -13,10 +13,24 @@ const directorySchema = z
       return false;
     }
   }, "An absolute storage directory is required.");
+const locationPairSchema = z.strictObject({
+  dataDirectory: directorySchema,
+  backupsDirectory: directorySchema,
+});
 export const storageLocationsSchema = z.strictObject({
   dataDirectory: directorySchema.optional(),
   backupsDirectory: directorySchema.optional(),
+  relocation: z
+    .strictObject({
+      id: z.uuid(),
+      phase: z.enum(["pending", "cleanup"]),
+      source: locationPairSchema,
+      target: locationPairSchema,
+    })
+    .optional(),
+  moveFailed: z.boolean().optional(),
 });
+export type StorageLocations = z.output<typeof storageLocationsSchema>;
 
 export const preferenceSchema = z.strictObject({
   language: z.enum(["system", "de", "en"]),

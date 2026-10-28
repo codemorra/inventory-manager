@@ -2610,6 +2610,143 @@
           }
         }
       }
+    },
+    "/storage-locations": {
+      "get": {
+        "tags": ["storage"],
+        "operationId": "read_storage_locations",
+        "summary": "Read active application storage locations",
+        "description": "Responses use Cache-Control: no-store. Storage changes share the application-settings revision. PUT holds new requests, drains existing HTTP/service/file activity, closes SQLite, verifies and publishes copies, reopens storage and resumes requests. Prepared import/export sessions remain valid. Previous files are removed only after verified activation. A persistent journal recovers interruptions at startup. Default buttons only fill draft paths until confirmation.",
+        "responses": {
+          "200": {
+            "description": "Active paths and restart-time relocation status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageLocationState"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "application_settings_unavailable: invalid or unavailable settings file."
+          }
+        }
+      },
+      "put": {
+        "tags": ["storage"],
+        "operationId": "change_storage_locations",
+        "summary": "Apply checked storage relocation without restarting",
+        "description": "Responses use Cache-Control: no-store. Storage changes share the application-settings revision. PUT holds new requests, drains existing HTTP/service/file activity, closes SQLite, verifies and publishes copies, reopens storage and resumes requests. Prepared import/export sessions remain valid. Previous files are removed only after verified activation. A persistent journal recovers interruptions at startup. Default buttons only fill draft paths until confirmation.",
+        "responses": {
+          "200": {
+            "description": "Active paths and restart-time relocation status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageLocationState"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "application_settings_unavailable: invalid or unavailable settings file."
+          },
+          "409": {
+            "description": "application_settings_conflict or storage_location_conflict: stale revision, existing relocation/cleanup or independent database override."
+          },
+          "422": {
+            "description": "Validation failure or storage_location_invalid: invalid, occupied or overlapping destination directories."
+          },
+          "500": {
+            "description": "Settings file write failed; reload the state before retrying."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "expected_revision",
+                  "dataDirectory",
+                  "backupsDirectory"
+                ],
+                "properties": {
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "dataDirectory": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "description": "Absolute native path or leading ~/ shorthand."
+                  },
+                  "backupsDirectory": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "description": "Absolute native path or leading ~/ shorthand."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["storage"],
+        "operationId": "cancel_storage_relocation",
+        "summary": "Cancel an unexecuted recovery plan",
+        "description": "Responses use Cache-Control: no-store. Storage changes share the application-settings revision. PUT holds new requests, drains existing HTTP/service/file activity, closes SQLite, verifies and publishes copies, reopens storage and resumes requests. Prepared import/export sessions remain valid. Previous files are removed only after verified activation. A persistent journal recovers interruptions at startup. Default buttons only fill draft paths until confirmation.",
+        "responses": {
+          "200": {
+            "description": "Active paths and restart-time relocation status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageLocationState"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "application_settings_unavailable: invalid or unavailable settings file."
+          },
+          "409": {
+            "description": "application_settings_conflict or storage_location_conflict: stale revision, existing relocation/cleanup or independent database override."
+          },
+          "422": {
+            "description": "Validation failure or storage_location_invalid: invalid, occupied or overlapping destination directories."
+          },
+          "500": {
+            "description": "Settings file write failed; reload the state before retrying."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["expected_revision"],
+                "properties": {
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4162,6 +4299,99 @@
           },
           "preferences": {
             "$ref": "#/components/schemas/InventoryViewPreferences"
+          }
+        }
+      },
+      "StorageDirectories": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["dataDirectory", "backupsDirectory"],
+        "properties": {
+          "dataDirectory": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute native path or leading ~/ shorthand."
+          },
+          "backupsDirectory": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute native path or leading ~/ shorthand."
+          }
+        }
+      },
+      "StorageLocationState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "paths",
+          "dataMovable",
+          "pending",
+          "cleanupPending",
+          "moveFailed",
+          "defaults"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "paths": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dataDirectory",
+              "backupsDirectory",
+              "databasePath",
+              "settingsPath",
+              "logsDirectory",
+              "tempDirectory"
+            ],
+            "properties": {
+              "dataDirectory": {
+                "type": "string"
+              },
+              "backupsDirectory": {
+                "type": "string"
+              },
+              "databasePath": {
+                "type": "string"
+              },
+              "settingsPath": {
+                "type": "string"
+              },
+              "logsDirectory": {
+                "type": "string"
+              },
+              "tempDirectory": {
+                "type": "string"
+              }
+            }
+          },
+          "dataMovable": {
+            "type": "boolean"
+          },
+          "pending": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StorageDirectories"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cleanupPending": {
+            "type": "boolean"
+          },
+          "moveFailed": {
+            "type": "boolean"
+          },
+          "defaults": {
+            "$ref": "#/components/schemas/StorageDirectories"
           }
         }
       }

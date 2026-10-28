@@ -1,4 +1,6 @@
+import type { ServerResponse } from "node:http";
 import { settingsRoutes } from "./routes/settings.js";
+import { storageRoutes } from "./routes/storage.js";
 import { viewRoutes } from "./routes/views.js";
 import cors from "cors";
 import express from "express";
@@ -21,7 +23,13 @@ import { attachmentRoutes } from "./routes/attachments.js";
  * @param services The domain services with an already initialized database.
  * @returns The configured Express application instance.
  */
-export function createApp(logger: Pick<Logger, "error">, services: Services) {
+export function createApp(
+  logger: Pick<Logger, "error">,
+  services: Services,
+  options: {
+    relocate?: (input: unknown, response: ServerResponse) => Promise<unknown>;
+  } = {},
+) {
   const app = express();
   app.disable("x-powered-by");
   app.use(
@@ -36,7 +44,10 @@ export function createApp(logger: Pick<Logger, "error">, services: Services) {
   app.use(express.json({ limit: "1mb" }));
   // Physical file removal must follow committed mutations, including field/inventory cascades.
   app.use((request, response, next) => {
-    if (!["GET", "HEAD", "OPTIONS"].includes(request.method))
+    if (
+      !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+      !/^\/storage-locations(?:\/|$)/i.test(request.path)
+    )
       response.once("finish", () => {
         void services.attachments
           ?.cleanup(false)
@@ -53,6 +64,7 @@ export function createApp(logger: Pick<Logger, "error">, services: Services) {
   });
   app.use(docsRoutes());
   app.use("/application-settings", settingsRoutes(services));
+  app.use("/storage-locations", storageRoutes(services, options.relocate));
   app.use(viewRoutes(services));
   app.use("/inventory-groups", groupRoutes(services));
   app.use("/inventory-templates", templateRoutes(services));

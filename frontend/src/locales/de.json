@@ -277,7 +277,7 @@
   "settings": {
     "title": "Einstellungen",
     "description": "Wähle Sprache, Darstellung und Akzentfarbe für die Anwendung.",
-    "savedAutomatically": "Änderungen werden automatisch in diesem Browser gespeichert."
+    "savedAutomatically": "Anwendungseinstellungen werden automatisch gespeichert."
   },
   "table": {
     "search": {
@@ -485,5 +485,32 @@
     "refreshFailed": "Gespeicherte Einstellungen konnten nicht aktualisiert werden. Die zuletzt geladenen Werte bleiben aktiv.",
     "reload": "Gespeicherte Werte laden",
     "unsaved": "Einige Änderungen sind noch nicht gespeichert."
+  },
+  "storage": {
+    "title": "Speicherorte",
+    "description": "Wähle, wo deine Daten und Backups gespeichert werden. Vorhandene Dateien werden automatisch verschoben. Der Zielordner muss leer sein.",
+    "dataDirectory": "Datenordner (Datenbank und Anhänge)",
+    "backupsDirectory": "Backupordner",
+    "current": "Aktuell: {{path}}",
+    "loading": "Speicherorte werden geladen…",
+    "loadFailed": "Die Speicherorte konnten nicht geladen werden.",
+    "reload": "Speicherorte neu laden",
+    "schedule": "Speicherorte ändern",
+    "saving": "Speicherorte werden geändert …",
+    "pending": "Ein Speicherortwechsel ist noch nicht abgeschlossen.",
+    "cancel": "Vorgemerkten Wechsel abbrechen",
+    "moveFailed": "Der Wechsel ist fehlgeschlagen. Die bisherigen Speicherorte werden weiter verwendet. Prüfe die Zielordner und den freien Speicherplatz und versuche es erneut.",
+    "cleanupPending": "Die neuen Speicherorte werden verwendet. Einige bisherige Dateien konnten noch nicht entfernt werden. Die Anwendung versucht dies beim nächsten Start erneut.",
+    "fixedPaths": "Weitere Anwendungspfade",
+    "settingsPath": "Einstellungsdatei",
+    "logsDirectory": "Protokolle",
+    "tempDirectory": "Temporäre Dateien",
+    "overridden": "Der Datenordner wird beim Start vorgegeben und kann hier nicht geändert werden.",
+    "conflict": "Einstellungen oder Speicherorte haben sich geändert. Lade die Speicherorte vor einem erneuten Versuch neu.",
+    "invalid": "Wähle getrennte, leere Zielordner mit absoluten Pfaden.",
+    "saveFailed": "Die Speicherorte konnten nicht geändert werden. Lade sie neu, um den aktuellen Stand zu prüfen.",
+    "changed": "Die Speicherorte wurden geändert.",
+    "default": "Standard verwenden",
+    "defaultLabel": "Standard verwenden: {{folder}}"
   }
 }
