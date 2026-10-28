@@ -1,5 +1,7 @@
+import { Readable } from "node:stream";
+import { ZipFile } from "yazl";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import request from "supertest";
@@ -77,6 +79,100 @@ test("does not listen when the database cannot be opened, and closes the startup
     assert.match(log, /Application startup failed/);
     assert.doesNotMatch(log, /Application started/);
   } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+// Production service composition must send both archive workflows to root-level temp, away from original files.
+test("uses the new runtime layout for archive staging and keeps saved data across restarts", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "inventory-node-layout-"));
+  const config = { ...loadConfig({ INVENTORY_DATA_DIR: directory }), port: 0 };
+  let runtime: Awaited<ReturnType<typeof startServer>> | undefined;
+  try {
+    runtime = await startServer(config);
+    const api = request(runtime.server);
+    const inventory = (
+      await api.post("/inventories").send({ name: "Saved" }).expect(201)
+    ).body;
+    const field = (
+      await api
+        .post(`/inventories/${inventory.id}/fields`)
+        .send({ name: "Files", field_type: "attachment" })
+        .expect(201)
+    ).body;
+    const file = (
+      await api
+        .post(`/inventories/${inventory.id}/fields/${field.id}/attachments`)
+        .set("Content-Type", "application/octet-stream")
+        .set("X-File-Name", "file.txt")
+        .send(Buffer.from("Saved file"))
+        .expect(201)
+    ).body;
+    await api
+      .post(`/inventories/${inventory.id}/items`)
+      .send({ values: [{ field_id: field.id, value: [file.id] }] })
+      .expect(201);
+    const prepared = (
+      await api.post(`/inventories/${inventory.id}/exports`).expect(201)
+    ).body;
+    assert.ok(
+      (await readdir(config.tempDirectory)).some((name) =>
+        name.startsWith("export-"),
+      ),
+    );
+    assert.deepEqual(await readdir(config.attachmentsDirectory), [
+      `${file.id}.blob`,
+    ]);
+    await api
+      .delete(`/inventories/${inventory.id}/exports/${prepared.id}`)
+      .expect(204);
+    const zip = new ZipFile();
+    zip.addBuffer(
+      Buffer.from(
+        JSON.stringify({
+          format: "inventory-manager",
+          version: 1,
+          inventory: { name: "Preview", description: null },
+          fields: [],
+          items: [],
+          attachments: [],
+        }),
+      ),
+      "inventory.json",
+    );
+    zip.end();
+    const chunks: Buffer[] = [];
+    for await (const chunk of zip.outputStream as Readable)
+      chunks.push(Buffer.from(chunk));
+    const preview = (
+      await api
+        .post("/inventory-imports")
+        .set("Content-Type", "application/zip")
+        .send(Buffer.concat(chunks))
+        .expect(201)
+    ).body;
+    assert.ok(
+      (await readdir(config.tempDirectory)).some((name) =>
+        name.startsWith("import-"),
+      ),
+    );
+    await api.delete(`/inventory-imports/${preview.id}`).expect(204);
+    assert.deepEqual(await readdir(config.tempDirectory), []);
+    assert.deepEqual(JSON.parse(await readFile(config.settingsPath, "utf8")), {
+      version: 1,
+    });
+    await runtime.stop();
+    runtime = await startServer(config);
+    const saved = await request(runtime.server).get("/inventories").expect(200);
+    assert.equal(saved.body[0].id, inventory.id);
+    assert.equal(
+      (
+        await readFile(join(config.attachmentsDirectory, `${file.id}.blob`))
+      ).toString(),
+      "Saved file",
+    );
+  } finally {
+    await runtime?.stop();
     await rm(directory, { recursive: true, force: true });
   }
 });

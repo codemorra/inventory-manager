@@ -46,17 +46,23 @@ function absolutePath(value: string): string {
 export function loadConfig(environment: NodeJS.ProcessEnv = process.env) {
   const settings = environmentSchema.parse(environment);
   // Resolve the development default from the module location, independently of cwd.
-  const dataDirectory = settings.INVENTORY_DATA_DIR
+  const storageRoot = settings.INVENTORY_DATA_DIR
     ? absolutePath(settings.INVENTORY_DATA_DIR)
-    : join(projectRoot, "InventoryData", "node");
+    : join(projectRoot, "InventoryData");
+  const dataDirectory = join(storageRoot, "data");
 
   return {
+    storageRoot,
+    configDirectory: join(storageRoot, "config"),
+    settingsPath: join(storageRoot, "config", "settings.json"),
     dataDirectory,
+    backupsDirectory: join(storageRoot, "backups"),
+    tempDirectory: join(storageRoot, "temp"),
     databasePath: settings.INVENTORY_DB_PATH
       ? absolutePath(settings.INVENTORY_DB_PATH)
       : join(dataDirectory, "inventory.db"),
     attachmentsDirectory: join(dataDirectory, "attachments"),
-    logsDirectory: join(dataDirectory, "logs"),
+    logsDirectory: join(storageRoot, "logs"),
     logLevel: settings.INVENTORY_LOG_LEVEL,
     host: settings.INVENTORY_HOST,
     port: settings.INVENTORY_PORT,

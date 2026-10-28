@@ -102,28 +102,32 @@ API documentation remains available at `http://127.0.0.1:8000/docs`, with the AP
 
 Copy `backend/.env.example` to `backend/.env` to customize the backend. The development, start, and migration commands load that optional file using Node's built-in environment support. Existing process environment variables take precedence.
 
-| Variable              | Purpose                                                                    |
-| --------------------- | -------------------------------------------------------------------------- |
-| `INVENTORY_DATA_DIR`  | Absolute data directory, default repository-relative `InventoryData/node/` |
-| `INVENTORY_DB_PATH`   | Absolute database path, default `<data directory>/inventory.db`            |
-| `INVENTORY_HOST`      | Bind address, default `127.0.0.1`                                          |
-| `INVENTORY_PORT`      | Backend port, default `8000`                                               |
-| `INVENTORY_LOG_LEVEL` | Application log level, default `INFO`                                      |
-| `VITE_API_BASE_URL`   | Frontend backend URL, default `http://127.0.0.1:8000`                      |
+| Variable              | Purpose                                                             |
+| --------------------- | ------------------------------------------------------------------- |
+| `INVENTORY_DATA_DIR`  | Absolute storage root, default repository-relative `InventoryData/` |
+| `INVENTORY_DB_PATH`   | Absolute database path, default `<storage root>/data/inventory.db`  |
+| `INVENTORY_HOST`      | Bind address, default `127.0.0.1`                                   |
+| `INVENTORY_PORT`      | Backend port, default `8000`                                        |
+| `INVENTORY_LOG_LEVEL` | Application log level, default `INFO`                               |
+| `VITE_API_BASE_URL`   | Frontend backend URL, default `http://127.0.0.1:8000`               |
 
 Configure the frontend through `frontend/.env`, based on `frontend/.env.example`. Backend storage paths support `~/` and are independent of the current working directory. The backend permits requests from `http://localhost:5173` and `http://127.0.0.1:5173`.
 
 The frontend initially selects German for a `de` system locale and English for all other locales. Language, appearance, and accent color are stored locally in the browser and restored on the next visit. The system appearance option follows the operating system's light or dark preference, including changes while the application is open. Inventory groups and memberships are stored in SQLite.
 
 ```text
-InventoryData/node/
-├── inventory.db
-├── attachments/
-└── logs/
-    └── inventory-manager.log
+InventoryData/
+├── config/
+│   └── settings.json
+├── data/
+│   ├── inventory.db
+│   └── attachments/
+├── backups/
+├── logs/
+└── temp/
 ```
 
-This data directory is excluded from version control. Its location is retained across application updates so existing inventories remain available.
+This storage root is excluded from version control and initialized at startup. Running from the repository keeps runtime files here; data and attachments are separate from backup storage, logs and temporary archive files. `config/settings.json` currently reserves a versioned settings document; browser preference migration and configurable storage locations follow in the storage settings work.
 
 See [backend documentation](backend/README.md) for migration commands and API behavior.
 

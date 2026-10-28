@@ -38,16 +38,20 @@ interface ImportSession extends Validated {
  * @param db The destination database.
  * @param attachments The managed storage service, supplying reconciliation leases.
  * @param directory Explicit absolute managed file storage, never a development default.
+ * @param tempDirectory Explicit scratch storage, separate from durable managed originals.
  * @returns Preview, atomic import, cancellation and reconciliation operations.
  */
 export function createImportService(
   db: AppDatabase,
   attachments: ReturnType<typeof createAttachmentService>,
   directory: string,
+  tempDirectory = join(directory, ".exchange"),
 ) {
   if (!isAbsolute(directory))
     throw new Error("Attachment directory must be absolute.");
-  const root = join(directory, ".exchange");
+  if (!isAbsolute(tempDirectory))
+    throw new Error("Temporary directory must be absolute.");
+  const root = tempDirectory;
   const sessions = new Map<string, ImportSession>();
   const active = new Set<string>();
   const missing = () =>

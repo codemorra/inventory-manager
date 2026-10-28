@@ -38,7 +38,7 @@ test("frontend clients complete configuration and item CRUD against Express", as
       env: {
         ...process.env,
         INVENTORY_DATA_DIR: dataDirectory,
-        INVENTORY_DB_PATH: join(dataDirectory, "inventory.db"),
+        INVENTORY_DB_PATH: join(dataDirectory, "data", "inventory.db"),
         INVENTORY_HOST: "127.0.0.1",
         INVENTORY_PORT: String(port),
         INVENTORY_LOG_LEVEL: "INFO",
