@@ -38,7 +38,25 @@ load it automatically; process environment variables take precedence.
 | `INVENTORY_PORT`      | `8000`                                            |
 | `INVENTORY_LOG_LEVEL` | `INFO`                                            |
 
-Storage overrides must be absolute paths; `~/` is supported. `INVENTORY_DATA_DIR` selects the complete storage root. Runtime layout: `config/settings.json`, `data/inventory.db`, `data/attachments/`, `backups/`, `logs/`, and `temp/`. Server startup and manual migration initialize the directories and create a version-1 settings document only when missing; existing settings/data are preserved. The settings API supplies file-backed preferences to the frontend. User-configurable paths are subsequent storage-settings work. An explicit `INVENTORY_DB_PATH` can still override the SQLite location independently.
+Storage overrides must be absolute paths; `~/` is supported. `INVENTORY_DATA_DIR` selects the complete storage root. Runtime layout: `config/settings.json`, `data/inventory.db`, `data/attachments/`, `backups/`, `logs/`, and `temp/`. Server startup and manual database migration resolve the settings file before creating data/backup directories or opening SQLite. They initialize the selected directories and create a version-1 settings document only when missing; existing settings/data are preserved. The settings API supplies file-backed preferences to the frontend. An explicit `INVENTORY_DB_PATH` takes precedence over the database location selected through the settings file.
+
+### Stored locations
+
+The fixed `<storage root>/config/settings.json` may include a `storage` object alongside `version`, `revision` and `preferences`:
+
+```json
+{
+  "version": 1,
+  "storage": {
+    "dataDirectory": "/absolute/path/to/inventory-data",
+    "backupsDirectory": "/absolute/path/to/inventory-backups"
+  }
+}
+```
+
+Both entries are optional; omitted values use the layout defaults above. Absolute native Windows/Linux paths and `~/` are supported. `dataDirectory` contains `inventory.db` and `attachments/`; configuration, logs and temporary files remain at the fixed application root. Data, backup, configuration, log and temporary directories must not overlap, including through symbolic links. The database cannot be placed inside backup, configuration, log, temporary or attachment storage. Invalid settings or overlapping locations stop startup without rewriting the settings file. Preference responses exclude filesystem locations, and preference writes preserve stored locations.
+
+Locations are applied at backend startup, not while requests are running. These entries select storage; they do not move files. Stop the backend and place the complete database/attachment data unit at its selected location before changing an existing installation. Changing the backup directory likewise leaves existing backups at their original location. A separate `INVENTORY_DB_PATH` continues to select SQLite independently, while `dataDirectory` selects managed attachment storage.
 
 ## Persistent preferences
 
