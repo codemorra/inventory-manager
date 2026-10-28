@@ -5,6 +5,7 @@ export class DomainError extends Error {
       | "application_settings_unavailable"
       | "invalid_backup_archive"
       | "backup_conflict"
+      | "backup_schedule_unavailable"
       | "backup_not_found"
       | "backup_restore_not_found"
       | "application_data_changed"

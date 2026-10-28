@@ -3802,6 +3802,102 @@
           }
         ]
       }
+    },
+    "/backups/schedule": {
+      "get": {
+        "tags": ["backups"],
+        "summary": "Read automatic backup settings and status",
+        "operationId": "read_backup_schedule",
+        "description": "Read the shared settings revision, disabled/daily/weekly policy, automatic-only success history and creation/retention failure status. Operational history does not consume configuration revisions.",
+        "responses": {
+          "200": {
+            "description": "Effective policy and automatic execution status. Uses Cache-Control: no-store.",
+            "headers": {
+              "X-Inventory-Generation": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupScheduleState"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "backup_schedule_unavailable or application_settings_unavailable: existing state is invalid or unreadable and was preserved."
+          }
+        }
+      },
+      "put": {
+        "tags": ["backups"],
+        "summary": "Save automatic backup frequency and retention",
+        "operationId": "update_backup_schedule",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ],
+        "description": "Save the complete policy at the captured shared configuration revision. Trigger an eligibility check after acknowledging the accepted change. Daily periods use local calendar days; weekly periods begin on Monday. Successful automatic archives alone satisfy a period. Retention removes only tracked automatic archives after a successful publication.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["expected_revision", "policy"],
+                "properties": {
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "policy": {
+                    "$ref": "#/components/schemas/BackupPolicy"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Effective policy and automatic execution status. Uses Cache-Control: no-store.",
+            "headers": {
+              "X-Inventory-Generation": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupScheduleState"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "application_settings_conflict or application_data_changed: reload before saving again."
+          },
+          "422": {
+            "description": "Invalid frequency, retention count or revision."
+          },
+          "503": {
+            "description": "Settings or scheduler status is unavailable; existing state is preserved."
+          },
+          "500": {
+            "description": "Policy publication failed; reload to check the accepted configuration."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5626,6 +5722,121 @@
           },
           "receipt": {
             "$ref": "#/components/schemas/BackupRestoreReceipt"
+          }
+        }
+      },
+      "BackupPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["frequency", "retention"],
+        "properties": {
+          "frequency": {
+            "type": "string",
+            "enum": ["disabled", "daily", "weekly"],
+            "default": "disabled"
+          },
+          "retention": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "default": 10
+          }
+        }
+      },
+      "AutomaticBackupRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "filename", "created_at", "completed_at"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AutomaticBackupFailure": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "stage"],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stage": {
+            "type": "string",
+            "enum": ["backup", "retention"]
+          }
+        }
+      },
+      "BackupScheduleState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "policy",
+          "running",
+          "last_success",
+          "last_failure",
+          "retention_pending",
+          "next_retry_at"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "policy": {
+            "$ref": "#/components/schemas/BackupPolicy"
+          },
+          "running": {
+            "type": "boolean"
+          },
+          "last_success": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AutomaticBackupRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_failure": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AutomaticBackupFailure"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retention_pending": {
+            "type": "boolean"
+          },
+          "next_retry_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       }

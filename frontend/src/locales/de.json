@@ -570,6 +570,30 @@
     "checkRestore": "Status prüfen",
     "reloadApplication": "Anwendung neu laden",
     "dataChangedTitle": "Datenbestand geändert",
-    "dataChanged": "Der Datenbestand hat sich in einer anderen Sitzung geändert. Lade die Anwendung neu, bevor du weiterarbeitest."
+    "dataChanged": "Der Datenbestand hat sich in einer anderen Sitzung geändert. Lade die Anwendung neu, bevor du weiterarbeitest.",
+    "automaticTitle": "Automatische Backups",
+    "frequency": "Häufigkeit",
+    "frequencies": {
+      "disabled": "Deaktiviert",
+      "daily": "Täglich",
+      "weekly": "Wöchentlich"
+    },
+    "weeklyHelp": "Ein automatisches Backup pro Kalenderwoche, Montag bis Sonntag.",
+    "retention": "Automatische Backups aufbewahren",
+    "retentionHelp": "Ältere automatische Backups werden nach einer erfolgreichen neuen Sicherung entfernt.",
+    "scheduleLoading": "Backup-Einstellungen werden geladen…",
+    "scheduleSave": "Backup-Einstellungen speichern",
+    "scheduleSaving": "Wird gespeichert…",
+    "scheduleSaved": "Backup-Einstellungen gespeichert.",
+    "scheduleReload": "Backup-Einstellungen neu laden",
+    "scheduleLoadFailed": "Die Backup-Einstellungen konnten nicht geladen werden. Lade sie erneut.",
+    "scheduleSaveFailed": "Die Backup-Einstellungen konnten nicht gespeichert werden. Lade sie neu, um den aktuellen Stand zu prüfen.",
+    "scheduleConflict": "Die Backup-Einstellungen haben sich geändert. Deine Eingaben bleiben erhalten. Lade die Einstellungen vor einem neuen Versuch neu.",
+    "lastAutomatic": "Letztes automatisches Backup: {{date}}",
+    "noAutomaticYet": "Noch kein erfolgreiches automatisches Backup.",
+    "automaticRunning": "Ein automatisches Backup wird erstellt…",
+    "automaticFailed": "Das letzte automatische Backup ist fehlgeschlagen.",
+    "retentionFailed": "Einige ältere automatische Backups konnten nicht entfernt werden.",
+    "retryAt": "Nächster Versuch: {{date}}"
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ApiError } from "../services/api";
 import {
@@ -11,6 +11,7 @@ import type { StoredBackup } from "../types/backup";
 import { archiveSize } from "./archiveMessages";
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 import { BackupRestoreDialog } from "./BackupRestoreDialog";
+import { AutomaticBackupSettings } from "./AutomaticBackupSettings";
 
 /**
  * Manage durable data backups within the application settings.
@@ -26,6 +27,7 @@ export function BackupSettings({
   const [backups, setBackups] = useState<StoredBackup[]>();
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [policyBusy, setPolicyBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<"created" | "deleted" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StoredBackup | null>(null);
@@ -37,12 +39,29 @@ export function BackupSettings({
   const [needsReload, setNeedsReload] = useState(false);
   const [reload, setReload] = useState(0);
   const working = useRef(false);
+  const catalogVersion = useRef(0);
   const refreshButton = useRef<HTMLButtonElement>(null);
   const restoreFileInput = useRef<HTMLInputElement>(null);
   const focusRefresh = useRef(false);
   const locale = i18n.resolvedLanguage ?? "en";
   const blocked =
-    busy || deleting || Boolean(deleteTarget) || Boolean(restoreTarget);
+    busy ||
+    policyBusy ||
+    deleting ||
+    Boolean(deleteTarget) ||
+    Boolean(restoreTarget);
+  /**
+   * Guard both parent settings and manual backup actions during a schedule save.
+   * @param pending Whether the explicit configuration save is still running.
+   * @returns No value; the shared backup panel reports the active operation to its parent.
+   */
+  const policyBusyChanged = useCallback(
+    (pending: boolean) => {
+      setPolicyBusy(pending);
+      onBusyChange(pending);
+    },
+    [onBusyChange],
+  );
 
   useEffect(() => {
     if (!deleteTarget && !deleting && !loading && focusRefresh.current) {
@@ -53,6 +72,7 @@ export function BackupSettings({
 
   useEffect(() => {
     const controller = new AbortController();
+    let polling = false;
     void listBackups(controller.signal)
       .then((result) => {
         if (controller.signal.aborted) return;
@@ -66,7 +86,35 @@ export function BackupSettings({
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
-    return () => controller.abort();
+    /**
+     * Refresh archives created automatically without replacing a more recent local mutation result.
+     * @returns Completion after a best-effort catalog refresh.
+     */
+    async function poll() {
+      if (polling || working.current) return;
+      polling = true;
+      const version = catalogVersion.current;
+      try {
+        const result = await listBackups(controller.signal);
+        if (
+          !controller.signal.aborted &&
+          !working.current &&
+          version === catalogVersion.current
+        )
+          setBackups(result);
+      } catch {
+        /* Preserve the last known catalog until the next check or explicit refresh. */
+      } finally {
+        polling = false;
+      }
+    }
+    const interval = setInterval(() => {
+      void poll();
+    }, 60_000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [reload]);
 
   /**
@@ -76,6 +124,7 @@ export function BackupSettings({
   async function save() {
     if (working.current || needsReload) return;
     working.current = true;
+    catalogVersion.current++;
     setBusy(true);
     onBusyChange(true);
     setError("");
@@ -127,6 +176,7 @@ export function BackupSettings({
     if (!deleteTarget || working.current || needsReload) return;
     const filename = deleteTarget.filename;
     working.current = true;
+    catalogVersion.current++;
     setDeleting(true);
     onBusyChange(true);
     setDeleteError(null);
@@ -170,6 +220,10 @@ export function BackupSettings({
   return (
     <div className="mt-3 space-y-3">
       <p className="text-sm text-muted">{t("backups.description")}</p>
+      <AutomaticBackupSettings
+        disabled={blocked}
+        onBusyChange={policyBusyChanged}
+      />
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
