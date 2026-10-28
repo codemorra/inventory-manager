@@ -39,6 +39,8 @@ Open **Settings** at the bottom of the sidebar to change language, appearance, a
 
 Use **Settings > Backups** to create a ZIP backup of your inventories, templates, table views and attached files. Saved backups show their date, kind and size. Use the download icon to save an archive or the delete icon to remove it after confirmation.
 
+To restore data, use a saved backup's restore icon or **Restore from file**. Review the checked summary and confirm replacement of the current data. A safety backup is created first. Reload the application after restoration to continue with the restored data.
+
 ## Fields and item values
 
 | Field type      | Purpose                                                           |

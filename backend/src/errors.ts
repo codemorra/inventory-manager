@@ -6,6 +6,8 @@ export class DomainError extends Error {
       | "invalid_backup_archive"
       | "backup_conflict"
       | "backup_not_found"
+      | "backup_restore_not_found"
+      | "application_data_changed"
       | "application_settings_conflict"
       | "storage_location_invalid"
       | "storage_location_conflict"

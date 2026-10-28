@@ -14,12 +14,14 @@ import {
   backupManifestSchema,
   invalidBackup,
   type BackupFile,
+  type BackupManifest,
 } from "./manifest.js";
 
 /**
  * Build verified full backups while the runtime holds exclusive access to managed state.
  * @param config Active paths, resolved again by the runtime after each storage change.
  * @param connection Current SQLite connection; the caller must drain other operations first.
+ * @param kind The reason the backup is being created.
  * @returns The published backup identity, filename, creation time, kind and compressed byte count.
  * @throws {DomainError} When managed files or the completed archive fail validation.
  * @throws {Error} When snapshot creation, archive publication or workspace cleanup fails.
@@ -27,6 +29,7 @@ import {
 export async function createBackup(
   config: AppConfig,
   connection: DatabaseConnection,
+  kind: BackupManifest["kind"] = "manual",
 ) {
   const workspace = await mkdtemp(join(config.tempDirectory, "backup-"));
   // Stage beside the destination so publishing works across configured filesystems.
@@ -62,7 +65,7 @@ export async function createBackup(
       version: 1,
       id,
       created_at: createdAt,
-      kind: "manual",
+      kind,
       files,
     });
     publication = await mkdtemp(join(config.backupsDirectory, ".backup-"));

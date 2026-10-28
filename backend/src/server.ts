@@ -9,7 +9,18 @@ import { acquireStorageLock } from "./storage-lock.js";
 import { createRuntimeActivity } from "./runtime-activity.js";
 import type { AppDatabase } from "./db/types.js";
 import { DomainError } from "./errors.js";
+import { randomUUID } from "node:crypto";
+import { lstat } from "node:fs/promises";
 import { cleanupBackupWorkspaces, createBackup } from "./backups/service.js";
+import {
+  assertRestoreIdle,
+  commitRestore,
+  publishRestore,
+  readRestoreReceipt,
+  recoverRestore,
+  stageRestore,
+  type RestoreReceipt,
+} from "./backups/restore-storage.js";
 
 /**
  * Start the HTTP server with the given application configuration.
@@ -24,6 +35,7 @@ export async function startServer(config: AppConfig) {
   let switching: Promise<unknown> | undefined;
   let unavailable = false;
   let shuttingDown = false;
+  let generation = randomUUID();
   const logger = await createLogger(config);
   let connection: ReturnType<typeof openDatabase> | undefined;
   const server = createServer();
@@ -70,6 +82,7 @@ export async function startServer(config: AppConfig) {
         attachmentService!.cleanup(),
         exportService!.cleanup(),
         importService!.cleanup(),
+        services.restores!.cleanup(),
       ]).catch((error: unknown) =>
         logger.error("Managed file cleanup will be retried", error),
       );
@@ -91,6 +104,7 @@ export async function startServer(config: AppConfig) {
       const operation = (async () => {
         try {
           await activity.idle();
+          await assertRestoreIdle(config);
           const plan = await services.storageLocations!.schedule(input);
           if (!plan.pending) return plan;
           await cleanup();
@@ -153,9 +167,137 @@ export async function startServer(config: AppConfig) {
       switching = operation;
       return operation;
     }
-    const app = createApp(logger, services, { relocate, backup });
+    /**
+     * Invalidate old exchange sessions after the restored database becomes authoritative.
+     * @param id The completed restore selection.
+     * @param receipt Its durable confirmation result.
+     * @returns The same successful result even when temporary cleanup requires a later retry.
+     */
+    async function finishRestore(id: string, receipt: RestoreReceipt) {
+      generation = randomUUID();
+      const results = await Promise.allSettled([
+        services.imports!.reset(),
+        services.exports!.reset(),
+        services.restores!.complete(id, receipt),
+      ]);
+      for (const result of results)
+        if (result.status === "rejected")
+          logger.error(
+            "Restore session cleanup will be retried",
+            result.reason,
+          );
+      return receipt;
+    }
+    /**
+     * Replace the checked data under the runtime barrier with a durable rollback journal.
+     * @param id The explicitly confirmed preview identity.
+     * @param response The confirming request excluded from the drain barrier.
+     * @returns The durable, idempotent successful restore receipt.
+     * @throws {Error} When validation, safety backup or activation fails; originals are recovered before resuming.
+     */
+    async function restore(id: string, response: ServerResponse) {
+      const status = await services.restores!.read(id);
+      if (status.status === "completed") return status.receipt;
+      if (paused || shuttingDown || unavailable)
+        throw new DomainError(
+          "backup_conflict",
+          "Another storage operation is in progress.",
+        );
+      activity.exclude(response);
+      paused = new Promise<void>((resolve) => {
+        resume = resolve;
+      });
+      const operation = (async () => {
+        let checked:
+          | Awaited<
+              ReturnType<NonNullable<typeof services.restores>["checked"]>
+            >
+          | undefined;
+        let storageClosed = false;
+        try {
+          await activity.idle();
+          await assertRestoreIdle(config);
+          checked = await services.restores!.checked(id);
+          const safety = await createBackup(config, connection!, "pre-restore");
+          const journal = await stageRestore(
+            config,
+            checked.workspace,
+            checked.manifest,
+            {
+              id,
+              backup_id: checked.manifest.id,
+              safety_backup: safety.filename,
+              completed_at: new Date().toISOString(),
+            },
+          );
+          const checkpoint = connection!.sqlite.pragma(
+            "wal_checkpoint(TRUNCATE)",
+          ) as { busy: number }[];
+          if (checkpoint.some((entry) => entry.busy))
+            throw new Error(
+              "SQLite checkpoint could not drain external readers.",
+            );
+          connection!.close();
+          storageClosed = true;
+          await publishRestore(journal);
+          connection = openDatabase(config.databasePath);
+          const receipt = await commitRestore(config, journal);
+          await recoverRestore(config, (error) =>
+            logger.error("Restore cleanup will be retried", error),
+          );
+          logger.info("Application data restored");
+          return await finishRestore(id, receipt);
+        } catch (error) {
+          try {
+            if (storageClosed) connection!.close();
+            const committed = await recoverRestore(config, (failure) =>
+              logger.error("Restore cleanup will be retried", failure),
+            );
+            if (storageClosed) {
+              if (!(await lstat(config.databasePath)).isFile())
+                throw new Error("Recovered database is missing.", {
+                  cause: error,
+                });
+              connection = openDatabase(config.databasePath);
+            }
+            if (committed) {
+              const receipt = await readRestoreReceipt(config);
+              if (!receipt || receipt.id !== id)
+                throw new Error("Committed restore receipt is unavailable.", {
+                  cause: error,
+                });
+              return await finishRestore(id, receipt);
+            }
+          } catch (failure) {
+            unavailable = true;
+            logger.error("Restore recovery requires attention", failure);
+          }
+          throw error;
+        } finally {
+          services.restores!.release(id);
+          await checked
+            ?.dispose()
+            .catch((error: unknown) =>
+              logger.error("Restore staging cleanup will be retried", error),
+            );
+          const release = resume;
+          paused = undefined;
+          resume = undefined;
+          release?.();
+        }
+      })();
+      switching = operation;
+      return operation;
+    }
+    const app = createApp(logger, services, {
+      relocate,
+      backup,
+      restore,
+      generation: () => generation,
+    });
     server.on("request", (request, response) => {
       void (async () => {
+        request.headers["x-inventory-generation"] ??= generation;
         while (paused) await paused;
         if (response.destroyed) return;
         if (shuttingDown || unavailable) {

@@ -1,6 +1,7 @@
 import {
   act,
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -15,12 +16,18 @@ import * as api from "../../src/services/backups";
 import { deferred } from "../helpers/inventoryArchives";
 import type { CreatedBackup, StoredBackup } from "../../src/types/backup";
 import i18n from "../../src/i18n";
+import { restorePreview } from "../helpers/backupRestores";
 
 vi.mock("../../src/services/backups", () => ({
   listBackups: vi.fn(),
   createBackup: vi.fn(),
   downloadBackup: vi.fn(),
   deleteBackup: vi.fn(),
+  prepareBackupRestore: vi.fn(),
+  confirmBackupRestore: vi.fn(),
+  readBackupRestore: vi.fn(),
+  discardBackupRestore: vi.fn(),
+  reloadAfterRestore: vi.fn(),
 }));
 const created: CreatedBackup = {
   id: "backup-id",
@@ -42,6 +49,8 @@ beforeEach(() => {
   vi.mocked(api.listBackups).mockResolvedValue([]);
   vi.mocked(api.createBackup).mockResolvedValue(created);
   vi.mocked(api.deleteBackup).mockResolvedValue(undefined);
+  vi.mocked(api.prepareBackupRestore).mockResolvedValue(restorePreview);
+  vi.mocked(api.discardBackupRestore).mockResolvedValue(undefined);
 });
 afterEach(() => {
   cleanup();
@@ -191,6 +200,41 @@ test("requires explicit confirmation and restores focus after canceling deletion
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(action).toHaveFocus();
   expect(api.deleteBackup).not.toHaveBeenCalled();
+});
+
+test("opens stored and external restore selections from backup settings", async () => {
+  vi.mocked(api.listBackups).mockResolvedValue([stored]);
+  render(<BackupSettings onBusyChange={() => {}} />);
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Restore backup.zip" }),
+  );
+  expect(await screen.findByText("Inventories")).toBeVisible();
+  expect(api.prepareBackupRestore).toHaveBeenCalledWith(
+    "backup.zip",
+    expect.any(AbortSignal),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(api.discardBackupRestore).toHaveBeenCalledExactlyOnceWith(
+    "restore-id",
+  );
+  const input = screen.getByLabelText("Backup file");
+  const picker = vi.spyOn(input, "click");
+  await userEvent.click(
+    screen.getByRole("button", { name: "Restore from file" }),
+  );
+  expect(picker).toHaveBeenCalledOnce();
+  picker.mockRestore();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  fireEvent(input, new Event("cancel"));
+  expect(api.prepareBackupRestore).toHaveBeenCalledOnce();
+  const file = new File(["zip"], "external.zip", { type: "application/zip" });
+  await userEvent.upload(input, file);
+  expect(await screen.findByText("external.zip")).toBeVisible();
+  expect(api.prepareBackupRestore).toHaveBeenLastCalledWith(
+    file,
+    expect.any(AbortSignal),
+  );
+  expect(screen.getByRole("dialog", { name: "Restore backup" })).toBeVisible();
 });
 
 test("deletes only the confirmed entry once and protects the pending confirmation from dismissal", async () => {

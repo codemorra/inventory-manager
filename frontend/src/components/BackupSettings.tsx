@@ -10,6 +10,7 @@ import {
 import type { StoredBackup } from "../types/backup";
 import { archiveSize } from "./archiveMessages";
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
+import { BackupRestoreDialog } from "./BackupRestoreDialog";
 
 /**
  * Manage durable data backups within the application settings.
@@ -28,15 +29,20 @@ export function BackupSettings({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<"created" | "deleted" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StoredBackup | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<string | File | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [needsReload, setNeedsReload] = useState(false);
   const [reload, setReload] = useState(0);
   const working = useRef(false);
   const refreshButton = useRef<HTMLButtonElement>(null);
+  const restoreFileInput = useRef<HTMLInputElement>(null);
   const focusRefresh = useRef(false);
   const locale = i18n.resolvedLanguage ?? "en";
-  const blocked = busy || deleting || Boolean(deleteTarget);
+  const blocked =
+    busy || deleting || Boolean(deleteTarget) || Boolean(restoreTarget);
 
   useEffect(() => {
     if (!deleteTarget && !deleting && !loading && focusRefresh.current) {
@@ -175,6 +181,26 @@ export function BackupSettings({
         </button>
         <button
           type="button"
+          disabled={blocked || loading || needsReload}
+          onClick={() => restoreFileInput.current?.click()}
+          className="rounded-md border border-shell px-3 py-2 text-sm enabled:hover:bg-control-hover disabled:opacity-50"
+        >
+          {t("backups.restoreFile")}
+        </button>
+        <input
+          ref={restoreFileInput}
+          type="file"
+          accept=".zip,application/zip"
+          aria-label={t("backups.chooseRestoreFile")}
+          hidden
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (file) setRestoreTarget(file);
+          }}
+        />
+        <button
+          type="button"
           ref={refreshButton}
           disabled={blocked || loading}
           onClick={() => {
@@ -273,6 +299,29 @@ export function BackupSettings({
                   <button
                     type="button"
                     disabled={blocked || loading || needsReload}
+                    title={t("backups.restore")}
+                    aria-label={t("backups.restoreLabel", {
+                      filename: backup.filename,
+                    })}
+                    onClick={() => setRestoreTarget(backup.filename)}
+                    className="rounded-md border border-shell p-1.5 enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      className="size-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M3 10a9 9 0 1 1 2 8M3 4v6h6M12 7v5l3 2" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={blocked || loading || needsReload}
                     title={t("common.actions.delete")}
                     aria-label={t("backups.deleteLabel", {
                       filename: backup.filename,
@@ -336,6 +385,13 @@ export function BackupSettings({
             </button>
           )}
         </DeleteConfirmationDialog>
+      )}
+      {restoreTarget && (
+        <BackupRestoreDialog
+          source={restoreTarget}
+          onClose={() => setRestoreTarget(null)}
+          onBusyChange={onBusyChange}
+        />
       )}
     </div>
   );

@@ -2,6 +2,8 @@ import type { ServerResponse } from "node:http";
 import { settingsRoutes } from "./routes/settings.js";
 import { storageRoutes } from "./routes/storage.js";
 import { backupRoutes } from "./routes/backups.js";
+import { restoreRoutes } from "./routes/restores.js";
+import { DomainError } from "./errors.js";
 import { viewRoutes } from "./routes/views.js";
 import cors from "cors";
 import express from "express";
@@ -22,6 +24,7 @@ import { attachmentRoutes } from "./routes/attachments.js";
  * Create and configure an Express application instance.
  * @param logger A logger instance with an "error" method for logging unexpected errors.
  * @param services The domain services with an already initialized database.
+ * @param options Optional runtime storage coordination and data-generation callbacks.
  * @returns The configured Express application instance.
  */
 export function createApp(
@@ -30,6 +33,8 @@ export function createApp(
   options: {
     relocate?: (input: unknown, response: ServerResponse) => Promise<unknown>;
     backup?: (response: ServerResponse) => Promise<unknown>;
+    restore?: (id: string, response: ServerResponse) => Promise<unknown>;
+    generation?: () => string;
   } = {},
 ) {
   const app = express();
@@ -40,8 +45,29 @@ export function createApp(
       methods: ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"],
       credentials: false,
       optionsSuccessStatus: 200,
+      exposedHeaders: ["X-Inventory-Generation"],
     }),
   );
+  app.use((request, response, next) => {
+    const generation = options.generation?.();
+    if (generation) {
+      response.set("X-Inventory-Generation", generation);
+      if (
+        !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+        request.get("X-Inventory-Generation") &&
+        request.get("X-Inventory-Generation") !== generation
+      ) {
+        next(
+          new DomainError(
+            "application_data_changed",
+            "The application data has changed. Reload before editing.",
+          ),
+        );
+        return;
+      }
+    }
+    next();
+  });
   // JSON body parser middleware
   app.use(express.json({ limit: "1mb" }));
   // Physical file removal must follow committed mutations, including field/inventory cascades.
@@ -68,6 +94,7 @@ export function createApp(
   app.use("/application-settings", settingsRoutes(services));
   app.use("/storage-locations", storageRoutes(services, options.relocate));
   app.use("/backups", backupRoutes(services, options.backup));
+  app.use("/backup-restores", restoreRoutes(services, options.restore));
   app.use(viewRoutes(services));
   app.use("/inventory-groups", groupRoutes(services));
   app.use("/inventory-templates", templateRoutes(services));

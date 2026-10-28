@@ -1,5 +1,6 @@
 import { createSettingsService } from "./settings/service.js";
 import { createBackupCatalog } from "./backups/catalog.js";
+import { createRestoreService } from "./backups/restore-service.js";
 import { createStorageLocationService } from "./storage-relocation.js";
 import type { AppConfig } from "./config.js";
 import { createViewService } from "./views/service.js";
@@ -46,10 +47,15 @@ export function createServices(
   const attachments = attachmentStorage
     ? createAttachmentService(db, attachmentStorage)
     : null;
+  const backups = attachmentStorage?.storageConfig
+    ? createBackupCatalog(attachmentStorage.storageConfig)
+    : null;
   return {
-    backups: attachmentStorage?.storageConfig
-      ? createBackupCatalog(attachmentStorage.storageConfig)
-      : null,
+    backups,
+    restores:
+      backups && attachmentStorage?.storageConfig
+        ? createRestoreService(attachmentStorage.storageConfig, backups)
+        : null,
     inventories,
     views: createViewService(db),
     storageLocations: attachmentStorage?.storageConfig
