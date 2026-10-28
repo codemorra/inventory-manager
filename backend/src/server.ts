@@ -9,6 +9,7 @@ import { acquireStorageLock } from "./storage-lock.js";
 import { createRuntimeActivity } from "./runtime-activity.js";
 import type { AppDatabase } from "./db/types.js";
 import { DomainError } from "./errors.js";
+import { cleanupBackupWorkspaces, createBackup } from "./backups/service.js";
 
 /**
  * Start the HTTP server with the given application configuration.
@@ -39,6 +40,7 @@ export async function startServer(config: AppConfig) {
     config = await prepareStorage(config, (error) =>
       logger.error("Storage relocation could not be completed", error),
     );
+    await cleanupBackupWorkspaces(config);
     // Open the database connection before starting the server.
     connection = openDatabase(config.databasePath);
     // Domain services retain their sessions while each new operation uses the current connection.
@@ -124,7 +126,34 @@ export async function startServer(config: AppConfig) {
       switching = operation;
       return operation;
     }
-    const app = createApp(logger, services, { relocate });
+    /** Hold writes and background work until a consistent backup has been verified and published. */
+    async function backup(response: ServerResponse) {
+      if (paused || shuttingDown || unavailable)
+        throw new DomainError(
+          "backup_conflict",
+          "Another storage operation is in progress.",
+        );
+      activity.exclude(response);
+      paused = new Promise<void>((resolve) => {
+        resume = resolve;
+      });
+      const operation = (async () => {
+        try {
+          await activity.idle();
+          const result = await createBackup(config, connection!);
+          logger.info("Manual application backup completed");
+          return result;
+        } finally {
+          const release = resume;
+          paused = undefined;
+          resume = undefined;
+          release?.();
+        }
+      })();
+      switching = operation;
+      return operation;
+    }
+    const app = createApp(logger, services, { relocate, backup });
     server.on("request", (request, response) => {
       void (async () => {
         while (paused) await paused;

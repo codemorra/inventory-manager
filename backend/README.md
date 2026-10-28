@@ -66,6 +66,10 @@ A lifetime SQLite lock in `config/.runtime-lock.sqlite` prevents a second backen
 
 Directly editing `storage.dataDirectory` or `storage.backupsDirectory` selects a location at startup without moving files; use the interface for a checked relocation of an existing installation. Do not edit the internal relocation journal manually.
 
+## Application backups
+
+`POST /backups` saves a verified manual ZIP backup of SQLite and active managed attachments in the configured backup directory, and temporarily queues other requests for consistency. Existing backups and application data are preserved on failure. See the [backup format and lifecycle](docs/application-backup.md) for validation, disk-space requirements and the current API scope.
+
 ## Persistent preferences
 
 `GET /application-settings` reads effective preferences from `config/settings.json`: language (`system`, `de`, `en`), theme (`system`, `light`, `dark`), accent (`teal`, `blue`, `purple`, `orange`), and attachmentWarnings (`show`, `hide`). A version-1 placeholder remains valid and reads as system language/theme, teal accent and shown file warnings. `PATCH` takes `expected_revision` and a nonempty partial `preferences` object. Writes validate strictly, serialize per configured path within the backend process, sync a private sibling temporary file and rename it over the original; failed/stale writes preserve existing settings. Stale/exhausted revisions return 409 `application_settings_conflict`. Unknown versions, invalid JSON/schema, nonregular files and files over 64 KiB return 503 `application_settings_unavailable` and prevent server startup instead of resetting preferences. No request accepts a settings filesystem path.

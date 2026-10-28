@@ -2747,6 +2747,35 @@
           }
         }
       }
+    },
+    "/backups": {
+      "post": {
+        "tags": ["backups"],
+        "summary": "Create a complete manual data backup",
+        "description": "Pause new requests and drain existing HTTP streams and background work. Save a SQLite snapshot and active managed attachment files. Validate all archive entries and database references before atomically publishing the ZIP in the configured backup directory. The operation finishes even if the requesting client disconnects. No request body or filesystem path is accepted.",
+        "operationId": "create_application_backup",
+        "responses": {
+          "201": {
+            "description": "Verified backup saved. Response uses Cache-Control: no-store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationBackupRead"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "backup_conflict: another storage operation is in progress or shutdown has begun."
+          },
+          "422": {
+            "description": "invalid_backup_archive: managed content or the completed archive failed validation. No new backup was published."
+          },
+          "500": {
+            "description": "Storage or unexpected backup failure. Existing backups and application data are preserved."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4392,6 +4421,33 @@
           },
           "defaults": {
             "$ref": "#/components/schemas/StorageDirectories"
+          }
+        }
+      },
+      "ApplicationBackupRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "filename", "created_at", "kind", "byte_size"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "filename": {
+            "type": "string",
+            "description": "Generated ZIP filename; no local filesystem path."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["manual", "automatic", "pre-restore"]
+          },
+          "byte_size": {
+            "type": "integer",
+            "minimum": 0
           }
         }
       }

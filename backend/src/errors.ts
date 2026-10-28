@@ -3,6 +3,8 @@ export class DomainError extends Error {
   constructor(
     public readonly code:
       | "application_settings_unavailable"
+      | "invalid_backup_archive"
+      | "backup_conflict"
       | "application_settings_conflict"
       | "storage_location_invalid"
       | "storage_location_conflict"

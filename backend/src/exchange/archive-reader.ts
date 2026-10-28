@@ -25,13 +25,15 @@ export function invalidArchive(message: string) {
  * @param target The private file writer or bounded manifest collector.
  * @param signal Cancellation from the caller.
  * @param expected Optional attachment metadata verified against actual bytes.
+ * @param invalid Format-specific error factory, shared by inventory exchange and full backups.
  */
-async function readEntry(
+export async function readEntry(
   zip: ZipFile,
   entry: Entry,
   target: () => Writable,
   signal: AbortSignal,
   expected?: { byte_size: number; sha256: string },
+  invalid: (message: string) => Error = invalidArchive,
 ) {
   signal.throwIfAborted();
   const source = await zip.openReadStreamPromise(entry);
@@ -44,7 +46,7 @@ async function readEntry(
       size += chunk.length;
       if (size > maximum) {
         done(
-          invalidArchive(
+          invalid(
             "An archive entry exceeds its declared size or the manifest processing bound.",
           ),
         );
@@ -61,7 +63,7 @@ async function readEntry(
           (expected &&
             (size !== expected.byte_size ||
               hash.digest("hex") !== expected.sha256))
-          ? invalidArchive(
+          ? invalid(
               "An archive entry failed its size, CRC or SHA-256 verification.",
             )
           : null,
