@@ -25,11 +25,10 @@ export const viewUpdateSchema = z.strictObject({
   expected_revision: revisionSchema,
   preferences: viewPreferencesSchema,
 });
-export const viewMigrationSchema = z.strictObject({ preferences: z.unknown() });
 
 /**
- * Normalize stored/legacy presentation against active fields, preserving the established Auto-width model.
- * @param input A previously saved browser/database document or an empty initial state.
+ * Normalize stored presentation against active fields, preserving the established Auto-width model.
+ * @param input A stored presentation document or an empty initial state.
  * @param fields Active field identities, sorting capability and configured order.
  * @returns A complete, safe view; missing columnWidths entries remain the only definition of Auto.
  */

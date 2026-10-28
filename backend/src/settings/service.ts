@@ -6,7 +6,6 @@ import { DomainError } from "../errors.js";
 import {
   defaultPreferences,
   settingsDocumentSchema,
-  settingsMigrationSchema,
   settingsUpdateSchema,
   type SettingsDocument,
 } from "./validation.js";
@@ -18,7 +17,7 @@ const maximumSettingsBytes = 64 * 1024;
 /**
  * Read and atomically replace versioned user settings without falling back over a damaged file.
  * @param settingsPath The fixed absolute configuration file selected by startup configuration.
- * @returns Effective settings, optimistic-concurrency updates and idempotent legacy migration.
+ * @returns Effective settings, optimistic-concurrency updates.
  */
 export function createSettingsService(settingsPath: string) {
   if (!isAbsolute(settingsPath))
@@ -121,22 +120,6 @@ export function createSettingsService(settingsPath: string) {
           ...current,
           revision: nextRevision(current),
           preferences: { ...current.preferences, ...data.preferences },
-        };
-        await write(next);
-        return response(next);
-      });
-    },
-    /** Import only once, filling previously unconfigured keys and never overwriting file-backed choices. */
-    async migrate(input: unknown) {
-      const data = settingsMigrationSchema.parse(input);
-      return serialize(async () => {
-        const current = await readDocument();
-        if (current.browser_migration_completed) return response(current);
-        const next = {
-          ...current,
-          revision: nextRevision(current),
-          preferences: { ...data.preferences, ...current.preferences },
-          browser_migration_completed: true,
         };
         await write(next);
         return response(next);

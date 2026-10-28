@@ -1,3 +1,4 @@
+import { seedView } from "../helpers/preferences";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
@@ -257,16 +258,13 @@ test("retains uploaded filenames after a failed item save and discards only stag
 // Full replacements retain untouched hidden file arrays rather than turning them into comma-separated text.
 test("preserves hidden attachment IDs while editing another table cell", async () => {
   const user = userEvent.setup();
-  localStorage.setItem(
-    "inventory-manager-view:inventory",
-    JSON.stringify({
-      version: 1,
-      hiddenFieldIds: ["files"],
-      sort: null,
-      wrapText: false,
-      columnWidths: {},
-    }),
-  );
+  await seedView("inventory", {
+    version: 1,
+    hiddenFieldIds: ["files"],
+    sort: null,
+    wrapText: false,
+    columnWidths: {},
+  });
   show();
   await user.click(await screen.findByRole("button", { name: "Edit table" }));
   const title = await screen.findByRole("textbox", { name: "Title" });
@@ -410,7 +408,7 @@ test("cleans a staged upload that finishes after its parent form unmounts", asyn
 // The real table wires View to the persisted preference and keeps thumbnail loading opt-in.
 test("toggles image previews from View and restores the choice when the inventory remounts", async () => {
   const user = userEvent.setup();
-  window.localStorage.clear();
+
   rows[0]!.attachments = [
     { ...savedAttachment, filename: "photo.png", media_type: "image/png" },
   ];
@@ -437,5 +435,4 @@ test("toggles image previews from View and restores the choice when the inventor
     screen.getByRole("menuitemcheckbox", { name: "Image previews" }),
   );
   expect(document.querySelector("img")).toBeNull();
-  window.localStorage.clear();
 });

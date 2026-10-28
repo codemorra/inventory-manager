@@ -1,9 +1,7 @@
+import { seedView, savedView } from "../helpers/preferences";
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import {
-  inventoryViewStorageKey,
-  useInventoryView,
-} from "../../src/hooks/useInventoryView";
+import { useInventoryView } from "../../src/hooks/useInventoryView";
 import type { InventoryField } from "../../src/types/inventoryField";
 
 const fields: InventoryField[] = ["first", "second"].map((id, position) => ({
@@ -32,30 +30,41 @@ test.each([
   "[]",
   '{"version":9}',
   '{"version":1,"sort":42,"hiddenFieldIds":false,"wrapText":"no"}',
-])("falls back to the default view for invalid preferences: %s", (saved) => {
-  localStorage.setItem(inventoryViewStorageKey("inventory-1"), saved);
-  const { result } = renderHook(() => useInventoryView("inventory-1", fields));
-  expect(result.current.view).toEqual({
-    version: 1,
-    sort: null,
-    hiddenFieldIds: [],
-    wrapText: true,
-    attachmentPreviews: false,
-    columnWidths: {},
-  });
-});
+])(
+  "falls back to the default view for invalid preferences: %s",
+  async (saved) => {
+    await seedView(
+      "inventory-1",
+      (() => {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          return null;
+        }
+      })(),
+    );
+    const { result } = renderHook(() =>
+      useInventoryView("inventory-1", fields),
+    );
+    expect(result.current.view).toEqual({
+      version: 1,
+      sort: null,
+      hiddenFieldIds: [],
+      wrapText: true,
+      attachmentPreviews: false,
+      columnWidths: {},
+    });
+  },
+);
 
 // Test stale field references are ignored and new fields stay visible by default.
-test("validates saved fields against additions, deletions, and sorting configuration", () => {
-  localStorage.setItem(
-    inventoryViewStorageKey("inventory-1"),
-    JSON.stringify({
-      version: 1,
-      sort: { fieldId: "first", direction: "descending" },
-      hiddenFieldIds: ["second", "deleted", "second", 3],
-      wrapText: false,
-    }),
-  );
+test("validates saved fields against additions, deletions, and sorting configuration", async () => {
+  await seedView("inventory-1", {
+    version: 1,
+    sort: { fieldId: "first", direction: "descending" },
+    hiddenFieldIds: ["second", "deleted", "second", 3],
+    wrapText: false,
+  });
   const { result, rerender } = renderHook(
     ({ currentFields }) => useInventoryView("inventory-1", currentFields),
     {
@@ -77,15 +86,12 @@ test("validates saved fields against additions, deletions, and sorting configura
 });
 
 // Test unusable saved visibility recovers one column and cannot hide it through actions.
-test("retains a visible column even when saved preferences hide all fields", () => {
-  localStorage.setItem(
-    inventoryViewStorageKey("inventory-1"),
-    JSON.stringify({
-      version: 1,
-      hiddenFieldIds: ["first", "second"],
-      sort: { fieldId: "second", direction: "ascending" },
-    }),
-  );
+test("retains a visible column even when saved preferences hide all fields", async () => {
+  await seedView("inventory-1", {
+    version: 1,
+    hiddenFieldIds: ["first", "second"],
+    sort: { fieldId: "second", direction: "ascending" },
+  });
   const { result } = renderHook(() => useInventoryView("inventory-1", fields));
   expect(result.current.view.hiddenFieldIds).toEqual(["second"]);
   expect(result.current.view.sort).toBeNull();
@@ -94,7 +100,7 @@ test("retains a visible column even when saved preferences hide all fields", () 
 });
 
 // Test writes merge with the latest view and notify both this window and another tab.
-test("synchronizes mounted tables and external storage changes", () => {
+test("synchronizes mounted tables and saved backend changes", async () => {
   const first = renderHook(() => useInventoryView("inventory-1", fields));
   const second = renderHook(() => useInventoryView("inventory-1", fields));
   act(() => first.result.current.toggleSort("first"));
@@ -105,20 +111,19 @@ test("synchronizes mounted tables and external storage changes", () => {
   act(() => second.result.current.setWrapText(false));
   expect(first.result.current.view.wrapText).toBe(false);
   expect(first.result.current.view.sort?.fieldId).toBe("first");
-  act(() => {
-    const key = inventoryViewStorageKey("inventory-1");
-    localStorage.setItem(
-      key,
-      JSON.stringify({ version: 1, hiddenFieldIds: ["first"], wrapText: true }),
-    );
-    window.dispatchEvent(new StorageEvent("storage", { key }));
+  await act(async () => {
+    await seedView("inventory-1", {
+      version: 1,
+      hiddenFieldIds: ["first"],
+      wrapText: true,
+    });
   });
   expect(first.result.current.view.hiddenFieldIds).toEqual(["first"]);
   expect(second.result.current.view.wrapText).toBe(true);
 });
 
 // Test stored widths survive reopening and hiding without retaining deleted field references.
-test("stores column widths across reopening and preserves hidden widths until their field is deleted", () => {
+test("stores column widths across reopening and preserves hidden widths until their field is deleted", async () => {
   const first = renderHook(() => useInventoryView("inventory-1", fields));
   act(() => first.result.current.setColumnWidth("first", 360));
   act(() => first.result.current.setColumnWidth("second", 400));
@@ -141,17 +146,14 @@ test("stores column widths across reopening and preserves hidden widths until th
   expect(reopened.result.current.view.columnWidths).toEqual({});
 });
 
-// Test old manual preferences remain valid and Auto requires no separate stored flag.
-test("retains legacy manual widths and enables Auto solely by removing overrides", () => {
-  localStorage.setItem(
-    inventoryViewStorageKey("inventory-1"),
-    JSON.stringify({
-      version: 1,
-      columnWidths: { first: 1500 },
-      wrapText: false,
-      hiddenFieldIds: ["second"],
-    }),
-  );
+// Test stored manual preferences remain valid and Auto requires no separate stored flag.
+test("retains saved manual widths and enables Auto solely by removing overrides", async () => {
+  await seedView("inventory-1", {
+    version: 1,
+    columnWidths: { first: 1500 },
+    wrapText: false,
+    hiddenFieldIds: ["second"],
+  });
   const { result, rerender } = renderHook(
     ({ currentFields }) => useInventoryView("inventory-1", currentFields),
     { initialProps: { currentFields: fields } },
@@ -173,14 +175,11 @@ test("retains legacy manual widths and enables Auto solely by removing overrides
 });
 
 // Test invalid or stale stored widths cannot break the table's layout.
-test("ignores invalid saved widths and clamps new resize requests", () => {
-  localStorage.setItem(
-    inventoryViewStorageKey("inventory-1"),
-    JSON.stringify({
-      version: 1,
-      columnWidths: { first: "large", second: -50, deleted: 300 },
-    }),
-  );
+test("ignores invalid saved widths and clamps new resize requests", async () => {
+  await seedView("inventory-1", {
+    version: 1,
+    columnWidths: { first: "large", second: -50, deleted: 300 },
+  });
   const { result } = renderHook(() => useInventoryView("inventory-1", fields));
   expect(result.current.view.columnWidths).toEqual({});
   act(() => result.current.setColumnWidth("first", 5000));
@@ -190,48 +189,25 @@ test("ignores invalid saved widths and clamps new resize requests", () => {
   expect(result.current.view.columnWidths).toEqual({});
 });
 
-// Test view actions remain usable without persistent storage permission or quota.
-test("keeps a session view when browser storage is unavailable", () => {
-  vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-    throw new Error("blocked");
-  });
-  vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-    throw new Error("blocked");
-  });
-  const { result } = renderHook(() => useInventoryView("inventory-1", fields));
-  act(() => result.current.toggleField("second"));
-  act(() => result.current.setWrapText(false));
-  expect(result.current.view.hiddenFieldIds).toEqual(["second"]);
-  expect(result.current.view.wrapText).toBe(false);
-});
-
 // Existing preferences default to filenames only, and preview choices remain isolated per inventory.
-test("persists image previews independently per inventory and validates old or malformed flags", () => {
+test("persists image previews independently per inventory and validates old or malformed flags", async () => {
   const { result, rerender } = renderHook(
     ({ id }) => useInventoryView(id, fields),
     { initialProps: { id: "first-inventory" } },
   );
   expect(result.current.view.attachmentPreviews).toBe(false);
   act(() => result.current.setAttachmentPreviews(true));
-  expect(
-    JSON.parse(
-      localStorage.getItem(inventoryViewStorageKey("first-inventory"))!,
-    ).attachmentPreviews,
-  ).toBe(true);
+  expect(savedView("first-inventory")!.attachmentPreviews).toBe(true);
   rerender({ id: "second-inventory" });
   expect(result.current.view.attachmentPreviews).toBe(false);
   rerender({ id: "first-inventory" });
   expect(result.current.view.attachmentPreviews).toBe(true);
-  act(() => {
-    localStorage.setItem(
-      inventoryViewStorageKey("first-inventory"),
-      JSON.stringify({
-        version: 1,
-        attachmentPreviews: "yes",
-        wrapText: false,
-      }),
-    );
-    window.dispatchEvent(new StorageEvent("storage"));
+  await act(async () => {
+    await seedView("first-inventory", {
+      version: 1,
+      attachmentPreviews: "yes",
+      wrapText: false,
+    });
   });
   expect(result.current.view.attachmentPreviews).toBe(false);
   expect(result.current.view.wrapText).toBe(false);

@@ -33,7 +33,8 @@
     "language": {
       "de": "Deutsch",
       "en": "English",
-      "label": "Sprache"
+      "label": "Sprache",
+      "system": "Systemsprache"
     },
     "theme": {
       "dark": "Dunkel",
@@ -474,5 +475,15 @@
     "statusFailed": "Der Importstatus konnte nicht geprüft werden. Versuche es erneut.",
     "resultUnavailable": "Der Importstatus ist nicht mehr verfügbar. Prüfe deine Inventarliste, bevor du das Archiv erneut auswählst.",
     "close": "Schließen"
+  },
+  "preferences": {
+    "loading": "Einstellungen werden geladen…",
+    "loadFailed": "Gespeicherte Einstellungen konnten nicht geladen werden. Prüfe, ob das Backend erreichbar ist, und versuche es erneut.",
+    "saving": "Einstellungen werden gespeichert…",
+    "saveFailed": "Geänderte Einstellungen konnten nicht gespeichert werden. Sie bleiben hier aktiv, bis du es erneut versuchst oder die gespeicherten Werte lädst.",
+    "conflict": "Die Einstellungen wurden an anderer Stelle geändert. Deine lokalen Änderungen bleiben aktiv. Lade die gespeicherten Werte, um ungespeicherte Änderungen zu verwerfen.",
+    "refreshFailed": "Gespeicherte Einstellungen konnten nicht aktualisiert werden. Die zuletzt geladenen Werte bleiben aktiv.",
+    "reload": "Gespeicherte Werte laden",
+    "unsaved": "Einige Änderungen sind noch nicht gespeichert."
   }
 }

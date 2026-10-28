@@ -4,16 +4,12 @@ import type { AppDatabase } from "../db/types.js";
 import { createInventoryService } from "../inventories/service.js";
 import { createFieldRepository } from "../fields/repository.js";
 import { DomainError } from "../errors.js";
-import {
-  normalizeView,
-  viewMigrationSchema,
-  viewUpdateSchema,
-} from "./validation.js";
+import { normalizeView, viewUpdateSchema } from "./validation.js";
 
 /**
  * Store inventory presentation independently of configuration/item revisions and archive exchange.
  * @param db The inventory database; reads and writes use consistent transactions.
- * @returns Active views, revision-checked replacement and one-time per-inventory browser migration.
+ * @returns Active views, revision-checked replacement.
  */
 export function createViewService(db: AppDatabase) {
   function read(transaction: AppDatabase, inventoryId: string) {
@@ -83,23 +79,6 @@ export function createViewService(db: AppDatabase) {
             .where(eq(inventoryViews.inventoryId, inventoryId))
             .run();
         }
-        return read(transaction, inventoryId);
-      });
-    },
-    migrate(inventoryId: string, input: unknown) {
-      const data = viewMigrationSchema.parse(input);
-      return db.transaction((transaction) => {
-        const current = read(transaction, inventoryId);
-        if (current.revision !== 0) return current;
-        const preferences = normalizeView(
-          data.preferences,
-          createFieldRepository(transaction).list(inventoryId),
-        );
-        transaction
-          .insert(inventoryViews)
-          .values({ inventoryId, preferences })
-          .onConflictDoNothing()
-          .run();
         return read(transaction, inventoryId);
       });
     },

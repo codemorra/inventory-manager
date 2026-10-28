@@ -52,7 +52,6 @@ test("reads effective defaults and persists partial preferences across service r
   assert.deepEqual(initial, {
     version: 1,
     revision: 0,
-    browser_migration_completed: false,
     preferences: defaultPreferences,
   });
   assert.equal(await readFile(f.config.settingsPath, "utf8"), initialBytes);
@@ -103,43 +102,6 @@ test("rejects stale concurrent updates without losing existing preferences", asy
   assert.equal(updated.preferences.accent, latest.preferences.accent);
   assert.equal(updated.preferences.theme, latest.preferences.theme);
   assert.equal(updated.preferences.attachmentWarnings, "hide");
-});
-
-// Browser migration fills unconfigured keys once; persisted choices always win over stale browser data.
-test("migrates browser preferences idempotently without overriding configured file values", async (context) => {
-  const f = await fixture(context);
-  await f.settings.update({
-    expected_revision: 0,
-    preferences: { theme: "dark" },
-  });
-  const migrated = await f.settings.migrate({
-    preferences: {
-      theme: "light",
-      accent: "purple",
-      language: "de",
-      attachmentWarnings: "hide",
-    },
-  });
-  assert.deepEqual(migrated.preferences, {
-    theme: "dark",
-    accent: "purple",
-    language: "de",
-    attachmentWarnings: "hide",
-  });
-  assert.equal(migrated.browser_migration_completed, true);
-  const bytes = await readFile(f.config.settingsPath, "utf8");
-  assert.deepEqual(
-    await f.settings.migrate({
-      preferences: { theme: "system", accent: "orange" },
-    }),
-    migrated,
-  );
-  assert.equal(await readFile(f.config.settingsPath, "utf8"), bytes);
-  const later = await f.settings.update({
-    expected_revision: migrated.revision,
-    preferences: { language: "system" },
-  });
-  assert.equal(later.browser_migration_completed, true);
 });
 
 // Unsupported/corrupt files remain intact and never become silently reset preferences.
@@ -202,11 +164,6 @@ test("validates public settings writes and returns structured conflicts and no-s
     .send({ expected_revision: 0, preferences: { theme: "light" } })
     .expect(409);
   assert.equal(conflict.body.detail.code, "application_settings_conflict");
-  await f.api
-    .post("/application-settings/migrate")
-    .send({ preferences: { theme: "light", language: "en" } })
-    .expect(200);
-  assert.equal((await f.settings.read()).preferences.theme, "dark");
   assert.deepEqual(f.errors, []);
 });
 

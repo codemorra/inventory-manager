@@ -1,21 +1,15 @@
 import { useEffect } from "react";
 import { useStoredPreference } from "./useStoredPreference";
 
-import {
-  applyTheme,
-  getInitialThemePreference,
-  THEME_STORAGE_KEY,
-} from "../appearance/theme";
+import { applyTheme } from "../appearance/theme";
 
 /**
  * Manage the stored theme preference and system theme changes.
  * @returns The current preference and its update function.
  */
 export function useTheme() {
-  const [theme, setTheme] = useStoredPreference(
-    THEME_STORAGE_KEY,
-    getInitialThemePreference,
-  );
+  const [saved, setTheme] = useStoredPreference("theme");
+  const theme = saved ?? "system";
 
   useEffect(() => {
     applyTheme(theme);

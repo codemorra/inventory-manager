@@ -4,7 +4,7 @@ import type { InventoryItem } from "../src/types/inventoryItem";
 // @vitest-environment node
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -83,6 +83,39 @@ test("frontend clients complete configuration and item CRUD against Express", as
     const { ApiError } = await import("../src/services/api");
     const groups = await import("../src/services/inventoryGroups");
 
+    const preferences = await import("../src/services/preferences");
+    const initialSettings = await preferences.getApplicationSettings();
+    expect(initialSettings).toMatchObject({
+      version: 1,
+      revision: 0,
+      preferences: { language: "system", theme: "system" },
+    });
+    const configuredSettings = await preferences.updateApplicationSettings(
+      initialSettings.revision,
+      {
+        language: "de",
+        theme: "dark",
+        accent: "blue",
+        attachmentWarnings: "hide",
+      },
+    );
+    const savedSettings = await preferences.updateApplicationSettings(
+      configuredSettings.revision,
+      { language: "system" },
+    );
+    await expect(
+      preferences.updateApplicationSettings(0, { theme: "light" }),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: "application_settings_conflict",
+    });
+    expect(
+      JSON.parse(
+        await readFile(join(dataDirectory, "config", "settings.json"), "utf8"),
+      ).preferences,
+    ).toEqual(savedSettings.preferences);
+    expect(await preferences.getInventoryViews()).toEqual([]);
+
     const inventory = await inventories.createInventory({
       name: " Synthetic clients ",
       description: "Description",
@@ -113,6 +146,36 @@ test("frontend clients complete configuration and item CRUD against Express", as
       field_type: "select",
       options: [{ name: "First" }],
     });
+    expect((await preferences.getInventoryView(inventory.id)).revision).toBe(0);
+    const configuredView = await preferences.updateInventoryView(
+      inventory.id,
+      0,
+      {
+        version: 1,
+        sort: null,
+        wrapText: false,
+        attachmentPreviews: true,
+        columnWidths: { [boolean.id]: 160 },
+        hiddenFieldIds: [select.id],
+      },
+    );
+    expect(configuredView.preferences.columnWidths).toEqual({
+      [boolean.id]: 160,
+    });
+    const automaticView = await preferences.updateInventoryView(
+      inventory.id,
+      configuredView.revision,
+      { ...configuredView.preferences, columnWidths: {} },
+    );
+    expect((await preferences.getInventoryViews())[0]).toEqual(automaticView);
+    await expect(
+      preferences.updateInventoryView(
+        inventory.id,
+        0,
+        automaticView.preferences,
+      ),
+    ).rejects.toMatchObject({ status: 409, code: "inventory_view_conflict" });
+
     expect(
       (await fields.getInventoryFields(inventory.id)).map((field) => field.id),
     ).toEqual([boolean.id, select.id]);
@@ -612,6 +675,7 @@ test("frontend clients complete configuration and item CRUD against Express", as
       status: 422,
       message: "An unexpected error occurred.",
     });
+    expect(await preferences.getInventoryViews()).toEqual([]);
     // Exercise the real binary transport, staged ownership, and streamed download contract.
     const attachments = await import("../src/services/attachments");
     const fileInventory = await inventories.createInventory({

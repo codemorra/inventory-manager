@@ -1,4 +1,5 @@
-import { useState, useSyncExternalStore } from "react";
+import { preferenceStore } from "../preferences/store";
+import { useSyncExternalStore } from "react";
 import {
   clampColumnWidth,
   MIN_COLUMN_WIDTH,
@@ -9,31 +10,6 @@ import type {
   InventoryViewPreferences,
   ItemSort,
 } from "../types/inventoryView";
-
-const changeEvent = "inventory-view-change";
-
-/**
- * Return the browser preference key for one inventory, including empty inventories.
- * @param inventoryId The inventory whose view is stored.
- * @returns A stable key independent of field names and item contents.
- */
-export function inventoryViewStorageKey(inventoryId: string): string {
-  return `inventory-manager-view:${inventoryId}`;
-}
-
-/**
- * Listen for view changes in this window and other browser tabs.
- * @param onChange The callback refreshing the primitive storage snapshot.
- * @returns A function removing the event subscriptions.
- */
-function subscribe(onChange: () => void) {
-  window.addEventListener(changeEvent, onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    window.removeEventListener(changeEvent, onChange);
-    window.removeEventListener("storage", onChange);
-  };
-}
 
 /**
  * Validate saved presentation settings against the current field configuration.
@@ -56,7 +32,7 @@ function readView(
     )
       saved = parsed as Partial<InventoryViewPreferences>;
   } catch {
-    // Invalid browser preferences must not prevent opening an inventory.
+    // Invalid presentation data must not prevent opening an inventory.
   }
   const activeIds = new Set(fields.map((field) => field.id));
   let hiddenFieldIds = Array.isArray(saved.hiddenFieldIds)
@@ -112,27 +88,11 @@ export function useInventoryView(
   inventoryId: string,
   fields: InventoryField[],
 ) {
-  const key = inventoryViewStorageKey(inventoryId);
-  // Retain a usable local view if browser storage is blocked or its quota is exhausted.
-  const [temporary, setTemporary] = useState<{
-    key: string;
-    value: string;
-  } | null>(null);
-
-  /**
-   * Read a stable primitive snapshot suitable for React's external-store subscription.
-   * @returns Stored JSON or the current session's fallback when storage is unavailable.
-   */
-  function getSnapshot(): string | null {
-    if (temporary?.key === key) return temporary.value;
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  }
-
-  const raw = useSyncExternalStore(subscribe, getSnapshot, () => null);
+  const raw = useSyncExternalStore(
+    preferenceStore.subscribe,
+    () => preferenceStore.readView(inventoryId),
+    () => null,
+  );
   const view = readView(raw, fields);
 
   /**
@@ -142,15 +102,11 @@ export function useInventoryView(
   function updateView(
     update: (current: InventoryViewPreferences) => InventoryViewPreferences,
   ) {
-    const next = update(readView(getSnapshot(), fields));
-    const value = JSON.stringify(readView(JSON.stringify(next), fields));
-    try {
-      localStorage.setItem(key, value);
-      setTemporary(null);
-    } catch {
-      setTemporary({ key, value });
-    }
-    window.dispatchEvent(new Event(changeEvent));
+    const next = update(
+      readView(preferenceStore.readView(inventoryId), fields),
+    );
+    const normalized = readView(JSON.stringify(next), fields);
+    preferenceStore.setView(inventoryId, normalized);
   }
 
   /**

@@ -1,4 +1,4 @@
-export const THEME_STORAGE_KEY = "inventory-manager-theme";
+import { preferenceStore } from "../preferences/store";
 
 // Define the theme choices available to users.
 export type ThemePreference = "system" | "light" | "dark";
@@ -31,7 +31,7 @@ export function getInitialThemePreference(): ThemePreference {
     return "system";
   }
 
-  const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+  const storedTheme = preferenceStore.readPreferences()?.theme;
 
   if (storedTheme === "light" || storedTheme === "dark") {
     return storedTheme;

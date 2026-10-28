@@ -1,3 +1,4 @@
+import { preferenceStore } from "../../src/preferences/store";
 import { useState } from "react";
 import {
   cleanup,
@@ -16,10 +17,7 @@ import {
   discardAttachment,
 } from "../../src/services/attachments";
 import { attachment, attachmentField } from "../helpers/attachments";
-import {
-  attachmentWarningStorageKey,
-  largeAttachmentWarningBytes,
-} from "../../src/hooks/useAttachmentWarnings";
+import { largeAttachmentWarningBytes } from "../../src/hooks/useAttachmentWarnings";
 
 vi.mock("../../src/services/attachments", async (original) => ({
   ...(await original<object>()),
@@ -108,7 +106,7 @@ test("remembers warning dismissal and restores warnings from Settings", async ()
   await user.click(screen.getByLabelText("Do not show this warning again"));
   await user.click(screen.getByRole("button", { name: "Add files" }));
   await waitFor(() => expect(uploadAttachment).toHaveBeenCalledOnce());
-  expect(localStorage.getItem(attachmentWarningStorageKey)).toBe("hide");
+  expect(preferenceStore.readPreferences()?.attachmentWarnings).toBe("hide");
   vi.mocked(uploadAttachment).mockResolvedValueOnce(attachment("second"));
   await user.upload(
     screen.getByLabelText("Files"),
@@ -120,7 +118,7 @@ test("remembers warning dismissal and restores warnings from Settings", async ()
   await user.click(
     screen.getByRole("button", { name: "Show file warnings again" }),
   );
-  expect(localStorage.getItem(attachmentWarningStorageKey)).toBe("show");
+  expect(preferenceStore.readPreferences()?.attachmentWarnings).toBe("show");
   await user.click(screen.getByRole("button", { name: "Close dialog" }));
   await user.upload(
     screen.getByLabelText("Files"),
@@ -143,7 +141,7 @@ test("cancels a large-file batch before uploading or remembering a preference", 
   await user.click(screen.getByLabelText("Do not show this warning again"));
   await user.click(screen.getByRole("button", { name: "Cancel" }));
   expect(uploadAttachment).not.toHaveBeenCalled();
-  expect(localStorage.getItem(attachmentWarningStorageKey)).toBeNull();
+  expect(preferenceStore.readPreferences()?.attachmentWarnings).toBe("show");
 });
 
 // Just below the boundary is not a warning case, and removing a staged name changes only the local value.
