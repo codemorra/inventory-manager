@@ -512,5 +512,29 @@
     "changed": "Die Speicherorte wurden geändert.",
     "default": "Standard verwenden",
     "defaultLabel": "Standard verwenden: {{folder}}"
+  },
+  "backups": {
+    "title": "Backups",
+    "description": "Sichere deine Inventare, Vorlagen, Tabellenansichten und angehängten Dateien als ZIP-Archiv.",
+    "create": "Backup erstellen",
+    "creating": "Backup wird erstellt…",
+    "creatingHelp": "Deine Daten werden gesichert und geprüft. Bitte warte.",
+    "created": "Backup gespeichert.",
+    "refresh": "Liste aktualisieren",
+    "loading": "Backups werden geladen…",
+    "empty": "Noch keine Backups vorhanden.",
+    "list": "Gespeicherte Backups",
+    "download": "Herunterladen",
+    "downloadLabel": "{{filename}} herunterladen",
+    "unreadable": "Metadaten konnten nicht gelesen werden",
+    "loadFailed": "Die Backupliste konnte nicht geladen werden. Aktualisiere die Liste, um es erneut zu versuchen.",
+    "createFailed": "Das Backup konnte nicht erstellt werden. Prüfe die Dateien und den verfügbaren Speicherplatz und versuche es erneut.",
+    "conflict": "Ein anderer Speichervorgang läuft. Versuche es anschließend erneut.",
+    "uncertain": "Das Ergebnis der Sicherung konnte nicht bestätigt werden. Aktualisiere die Liste, bevor du ein weiteres Backup erstellst.",
+    "kinds": {
+      "manual": "Manuell",
+      "automatic": "Automatisch",
+      "pre-restore": "Vor Wiederherstellung"
+    }
   }
 }

@@ -7,6 +7,7 @@ import { Modal } from "./Modal";
 import { AccentPicker } from "./AccentPicker";
 import { ThemeSwitch } from "./ThemeSwitch";
 import { StorageSettings } from "./StorageSettings";
+import { BackupSettings } from "./BackupSettings";
 import { useAttachmentWarnings } from "../hooks/useAttachmentWarnings";
 
 // Define properties for the application settings dialog.
@@ -24,6 +25,8 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const [warning, setWarning] = useAttachmentWarnings();
   const [storageOpen, setStorageOpen] = useState(false);
   const [storageBusy, setStorageBusy] = useState(false);
+  const [backupOpen, setBackupOpen] = useState(false);
+  const [backupBusy, setBackupBusy] = useState(false);
   const persistence = useSyncExternalStore(
     preferenceStore.subscribe,
     preferenceStore.getStatus,
@@ -31,12 +34,17 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   );
 
   return (
-    <Modal onClose={onClose} title={t("settings.title")} size="medium">
+    <Modal
+      onClose={onClose}
+      closeDisabled={backupBusy || storageBusy}
+      title={t("settings.title")}
+      size="medium"
+    >
       <p className="mb-5 text-sm leading-relaxed text-muted">
         {t("settings.description")}
       </p>
       <fieldset
-        disabled={storageBusy}
+        disabled={storageBusy || backupBusy}
         className="grid max-w-sm gap-5 disabled:opacity-60"
       >
         <LanguageSwitch />
@@ -60,7 +68,24 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
         <summary className="cursor-pointer text-sm font-semibold text-heading">
           {t("storage.title")}
         </summary>
-        {storageOpen && <StorageSettings onBusyChange={setStorageBusy} />}
+        {(storageOpen || storageBusy) && (
+          <fieldset disabled={backupBusy} className="disabled:opacity-60">
+            <StorageSettings onBusyChange={setStorageBusy} />
+          </fieldset>
+        )}
+      </details>
+      <details
+        className="mt-5 border-t border-shell pt-4"
+        onToggle={(event) => setBackupOpen(event.currentTarget.open)}
+      >
+        <summary className="cursor-pointer text-sm font-semibold text-heading">
+          {t("backups.title")}
+        </summary>
+        {(backupOpen || backupBusy) && (
+          <fieldset disabled={storageBusy} className="disabled:opacity-60">
+            <BackupSettings onBusyChange={setBackupBusy} />
+          </fieldset>
+        )}
       </details>
       <p className="mt-5 border-t border-shell pt-4 text-xs text-muted">
         {t(

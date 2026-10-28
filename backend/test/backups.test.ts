@@ -17,7 +17,7 @@ import test, { type TestContext } from "node:test";
 import Database from "better-sqlite3";
 import { openPromise } from "yauzl";
 import { ZipFile } from "yazl";
-import request from "supertest";
+import request, { type Response } from "supertest";
 import { loadConfig } from "../src/config.js";
 import { openDatabase } from "../src/db/connection.js";
 import { createServices } from "../src/services.js";
@@ -29,6 +29,23 @@ import {
 import { verifyBackup } from "../src/backups/archive.js";
 import { backupManifestSchema } from "../src/backups/manifest.js";
 import { startServer } from "../src/server.js";
+import { createBackupCatalog } from "../src/backups/catalog.js";
+
+/**
+ * Collect only small synthetic ZIP responses for byte-for-byte HTTP assertions.
+ * @param response The test HTTP download stream.
+ * @param done Report the collected bytes or an interrupted response.
+ * @returns No value; the parser reports completion through its callback.
+ */
+function binaryBody(
+  response: Response,
+  done: (error: Error | null, body?: Buffer) => void,
+) {
+  const chunks: Buffer[] = [];
+  response.on("data", (chunk: Buffer) => chunks.push(chunk));
+  response.once("end", () => done(null, Buffer.concat(chunks)));
+  response.once("error", done);
+}
 
 /** Isolate every backup, database and filesystem operation from development storage. */
 async function fixture(context: TestContext) {
@@ -324,6 +341,61 @@ test("reconciles abandoned private workspaces while preserving completed backups
   assert.deepEqual(await readdir(f.config.backupsDirectory), ["keep.zip"]);
 });
 
+test("lists durable backups with bounded metadata and retains unreadable archives without exposing unrelated files", async (context) => {
+  const f = await fixture(context);
+  const backup = await createBackup(f.config, f.connection);
+  const catalog = createBackupCatalog(f.config);
+  const broken =
+    "backup-9999-01-01T00-00-00-000Z-00000000-0000-4000-8000-000000000000.zip";
+  const linked =
+    "backup-9998-01-01T00-00-00-000Z-00000000-0000-4000-8000-000000000000.zip";
+  const directory =
+    "backup-9997-01-01T00-00-00-000Z-00000000-0000-4000-8000-000000000000.zip";
+  await writeFile(join(f.config.backupsDirectory, broken), "damaged archive");
+  await symlink(
+    join(f.config.backupsDirectory, backup.filename),
+    join(f.config.backupsDirectory, linked),
+  );
+  await mkdir(join(f.config.backupsDirectory, directory));
+  await writeFile(
+    join(f.config.backupsDirectory, "unrelated.zip"),
+    "unrelated",
+  );
+  const entries = await catalog.list();
+  assert.deepEqual(entries, [
+    { filename: broken, byte_size: 15, metadata: null },
+    {
+      filename: backup.filename,
+      byte_size: backup.byte_size,
+      metadata: {
+        id: backup.id,
+        created_at: backup.created_at,
+        kind: "manual",
+      },
+    },
+  ]);
+  for (const filename of [
+    "../inventory.db",
+    "..\\inventory.db",
+    "unrelated.zip",
+    linked,
+    directory,
+  ])
+    await assert.rejects(catalog.download(filename), {
+      code: "backup_not_found",
+    });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const download = await catalog.download(backup.filename);
+    const chunks: Buffer[] = [];
+    for await (const chunk of download.stream) chunks.push(Buffer.from(chunk));
+    assert.deepEqual(
+      Buffer.concat(chunks),
+      await readFile(join(f.config.backupsDirectory, backup.filename)),
+    );
+  }
+  assert.deepEqual(await readdir(f.config.tempDirectory), []);
+});
+
 test("serves manual backups from the runtime, survives errors and follows relocated storage", async () => {
   const root = await mkdtemp(join(tmpdir(), "inventory-backup-runtime-"));
   let runtime: Awaited<ReturnType<typeof startServer>> | undefined;
@@ -333,10 +405,33 @@ test("serves manual backups from the runtime, survives errors and follows reloca
       port: 0,
     });
     const api = request(runtime.server);
+    await api.get("/backups").expect(200, []);
     await api.post("/inventories").send({ name: "Saved" }).expect(201);
     const backup = await api.post("/backups").expect(201);
     assert.equal(backup.headers["cache-control"], "no-store");
     assert.equal(backup.body.kind, "manual");
+    const list = await api.get("/backups").expect(200);
+    assert.equal(list.headers["cache-control"], "no-store");
+    assert.equal(list.body[0].filename, backup.body.filename);
+    assert.equal(list.body[0].metadata.id, backup.body.id);
+    const url = `/backups/${backup.body.filename}/download`;
+    const head = await api.head(url).expect(200);
+    assert.equal(Number(head.headers["content-length"]), backup.body.byte_size);
+    const downloaded = await api
+      .get(url)
+      .buffer(true)
+      .parse(binaryBody)
+      .expect(200);
+    assert.equal(downloaded.headers["content-type"], "application/zip");
+    assert.equal(downloaded.headers["x-content-type-options"], "nosniff");
+    assert.equal(downloaded.headers["cache-control"], "no-store");
+    assert.match(downloaded.headers["content-disposition"]!, /^attachment;/);
+    assert.deepEqual(
+      downloaded.body,
+      await readFile(
+        join(runtime.config.backupsDirectory, backup.body.filename),
+      ),
+    );
     assert.deepEqual(await readdir(runtime.config.backupsDirectory), [
       backup.body.filename,
     ]);
@@ -351,6 +446,9 @@ test("serves manual backups from the runtime, survives errors and follows reloca
       })
       .expect(200);
     const next = await api.post("/backups").expect(201);
+    assert.equal((await api.get("/backups").expect(200)).body.length, 2);
+    await api.get(url).expect(200);
+    await api.get("/backups/not-a-backup/download").expect(404);
     assert.deepEqual(
       (await readdir(target)).sort(),
       [backup.body.filename, next.body.filename].sort(),

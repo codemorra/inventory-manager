@@ -1,4 +1,5 @@
 import { createSettingsService } from "./settings/service.js";
+import { createBackupCatalog } from "./backups/catalog.js";
 import { createStorageLocationService } from "./storage-relocation.js";
 import type { AppConfig } from "./config.js";
 import { createViewService } from "./views/service.js";
@@ -46,6 +47,9 @@ export function createServices(
     ? createAttachmentService(db, attachmentStorage)
     : null;
   return {
+    backups: attachmentStorage?.storageConfig
+      ? createBackupCatalog(attachmentStorage.storageConfig)
+      : null,
     inventories,
     views: createViewService(db),
     storageLocations: attachmentStorage?.storageConfig

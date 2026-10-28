@@ -68,7 +68,7 @@ Directly editing `storage.dataDirectory` or `storage.backupsDirectory` selects a
 
 ## Application backups
 
-`POST /backups` saves a verified manual ZIP backup of SQLite and active managed attachments in the configured backup directory, and temporarily queues other requests for consistency. Existing backups and application data are preserved on failure. See the [backup format and lifecycle](docs/application-backup.md) for validation, disk-space requirements and the current API scope.
+`POST /backups` saves a verified manual ZIP backup of SQLite and active managed attachments in the configured backup directory, and temporarily queues other requests for consistency. `GET /backups` lists saved archives with available metadata; `GET /backups/{filename}/download` streams a repeatable download. Existing backups and application data are preserved on failure. See the [backup format and lifecycle](docs/application-backup.md) for validation, disk-space requirements and API behavior.
 
 ## Persistent preferences
 

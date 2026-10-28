@@ -9,6 +9,7 @@ interface ModalProps {
   title: string;
   size?: "small" | "medium" | "large";
   contentClassName?: string;
+  closeDisabled?: boolean;
 }
 
 /**
@@ -18,6 +19,7 @@ interface ModalProps {
  * @param title The title of the modal dialog.
  * @param size The content width appropriate for the form.
  * @param contentClassName Optional layout classes for independently scrolling content.
+ * @param closeDisabled Prevent dismissal while a durable operation is awaiting its result.
  * @returns The modal overlay and dialog content.
  */
 export function Modal({
@@ -26,6 +28,7 @@ export function Modal({
   title,
   size = "large",
   contentClassName = "",
+  closeDisabled = false,
 }: ModalProps) {
   const { t } = useTranslation();
   const titleId = useId();
@@ -45,7 +48,8 @@ export function Modal({
       );
       if (
         event.key === "Escape" &&
-        dialogs[dialogs.length - 1] === dialogRef.current
+        dialogs[dialogs.length - 1] === dialogRef.current &&
+        !closeDisabled
       ) {
         onClose();
       }
@@ -53,14 +57,14 @@ export function Modal({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [onClose, closeDisabled]);
 
   // Escape sidebar stacking contexts so sticky table actions stay below the overlay.
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
+        if (event.target === event.currentTarget && !closeDisabled) {
           onClose();
         }
       }}
@@ -83,6 +87,7 @@ export function Modal({
             aria-label={t("common.actions.closeDialog")}
             className="shrink-0 rounded-md p-1.5 text-muted transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
             onClick={onClose}
+            disabled={closeDisabled}
             type="button"
           >
             <svg
