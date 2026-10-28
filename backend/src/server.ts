@@ -3,7 +3,7 @@ import { createApp } from "./app.js";
 import type { AppConfig } from "./config.js";
 import { openDatabase } from "./db/connection.js";
 import { createLogger } from "./logging.js";
-import { initializeStorage } from "./storage.js";
+import { prepareStorage } from "./storage.js";
 import { createServices } from "./services.js";
 
 /**
@@ -12,7 +12,6 @@ import { createServices } from "./services.js";
  * @returns An object containing the server instance, database connection, and a stop function to gracefully shut down the server.
  */
 export async function startServer(config: AppConfig) {
-  await initializeStorage(config);
   const logger = await createLogger(config);
   let connection: ReturnType<typeof openDatabase> | undefined;
   const server = createServer();
@@ -24,6 +23,7 @@ export async function startServer(config: AppConfig) {
   let exportService: ReturnType<typeof createServices>["exports"] = null;
 
   try {
+    config = await prepareStorage(config);
     // Open the database connection before starting the server.
     connection = openDatabase(config.databasePath);
     const services = createServices(connection.db, {
@@ -66,6 +66,7 @@ export async function startServer(config: AppConfig) {
   const database = connection;
   let stopping: Promise<void> | undefined;
   return {
+    config,
     server,
     database,
     stop() {

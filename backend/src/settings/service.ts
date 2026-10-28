@@ -64,7 +64,8 @@ export function createSettingsService(settingsPath: string) {
     }
   }
   const response = (document: SettingsDocument) => ({
-    ...document,
+    version: document.version,
+    revision: document.revision,
     preferences: { ...defaultPreferences, ...document.preferences },
   });
   function serialize<T>(operation: () => Promise<T>): Promise<T> {
@@ -104,6 +105,10 @@ export function createSettingsService(settingsPath: string) {
     return document.revision + 1;
   }
   return {
+    /** Read startup locations without exposing filesystem paths through preference responses. */
+    async readStorage() {
+      return (await readDocument()).storage ?? {};
+    },
     async read() {
       return response(await readDocument());
     },

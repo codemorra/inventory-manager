@@ -1,7 +1,15 @@
 import { Readable } from "node:stream";
 import { ZipFile } from "yazl";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import request from "supertest";
@@ -84,12 +92,36 @@ test("does not listen when the database cannot be opened, and closes the startup
 });
 
 // Production service composition must send both archive workflows to root-level temp, away from original files.
-test("uses the new runtime layout for archive staging and keeps saved data across restarts", async () => {
+test("uses configured storage, keeps archives in root temp and preserves saved data across restarts", async () => {
   const directory = await mkdtemp(join(tmpdir(), "inventory-node-layout-"));
-  const config = { ...loadConfig({ INVENTORY_DATA_DIR: directory }), port: 0 };
+  const config = {
+    ...loadConfig({ INVENTORY_DATA_DIR: join(directory, "application") }),
+    port: 0,
+  };
+  const storage = {
+    dataDirectory: join(directory, "saved-data"),
+    backupsDirectory: join(directory, "saved-backups"),
+  };
   let runtime: Awaited<ReturnType<typeof startServer>> | undefined;
   try {
+    await mkdir(config.configDirectory, { recursive: true });
+    await mkdir(storage.backupsDirectory);
+    await writeFile(
+      join(storage.backupsDirectory, "keep.zip"),
+      "Existing backup",
+    );
+    await writeFile(
+      config.settingsPath,
+      JSON.stringify({ version: 1, storage }),
+    );
     runtime = await startServer(config);
+    assert.equal(runtime.config.dataDirectory, storage.dataDirectory);
+    assert.equal(
+      runtime.config.databasePath,
+      join(storage.dataDirectory, "inventory.db"),
+    );
+    assert.equal(runtime.config.backupsDirectory, storage.backupsDirectory);
+    const attachmentsDirectory = join(storage.dataDirectory, "attachments");
     const api = request(runtime.server);
     const inventory = (
       await api.post("/inventories").send({ name: "Saved" }).expect(201)
@@ -120,9 +152,7 @@ test("uses the new runtime layout for archive staging and keeps saved data acros
         name.startsWith("export-"),
       ),
     );
-    assert.deepEqual(await readdir(config.attachmentsDirectory), [
-      `${file.id}.blob`,
-    ]);
+    assert.deepEqual(await readdir(attachmentsDirectory), [`${file.id}.blob`]);
     await api
       .delete(`/inventories/${inventory.id}/exports/${prepared.id}`)
       .expect(204);
@@ -160,6 +190,7 @@ test("uses the new runtime layout for archive staging and keeps saved data acros
     assert.deepEqual(await readdir(config.tempDirectory), []);
     assert.deepEqual(JSON.parse(await readFile(config.settingsPath, "utf8")), {
       version: 1,
+      storage,
     });
     await runtime.stop();
     runtime = await startServer(config);
@@ -167,10 +198,17 @@ test("uses the new runtime layout for archive staging and keeps saved data acros
     assert.equal(saved.body[0].id, inventory.id);
     assert.equal(
       (
-        await readFile(join(config.attachmentsDirectory, `${file.id}.blob`))
+        await readFile(join(attachmentsDirectory, `${file.id}.blob`))
       ).toString(),
       "Saved file",
     );
+    assert.equal(
+      await readFile(join(storage.backupsDirectory, "keep.zip"), "utf8"),
+      "Existing backup",
+    );
+    await assert.rejects(stat(config.databasePath), { code: "ENOENT" });
+    await assert.rejects(stat(config.attachmentsDirectory), { code: "ENOENT" });
+    await assert.rejects(stat(config.backupsDirectory), { code: "ENOENT" });
   } finally {
     await runtime?.stop();
     await rm(directory, { recursive: true, force: true });
