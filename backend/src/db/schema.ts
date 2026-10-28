@@ -1,3 +1,4 @@
+import type { ViewPreferences } from "../views/validation.js";
 import { randomUUID } from "node:crypto";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { TemplateField } from "../templates/validation.js";
@@ -200,3 +201,14 @@ export const inventoryAttachments = sqliteTable(
     ),
   ],
 );
+
+// Presentation belongs to its inventory; it never changes configuration or item revisions.
+export const inventoryViews = sqliteTable("inventory_views", {
+  inventoryId: text("inventory_id")
+    .primaryKey()
+    .references(() => inventories.id, { onDelete: "cascade" }),
+  revision: integer("revision").notNull().default(1),
+  preferences: text("preferences", { mode: "json" })
+    .$type<ViewPreferences>()
+    .notNull(),
+});

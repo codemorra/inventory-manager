@@ -2,6 +2,9 @@
 export class DomainError extends Error {
   constructor(
     public readonly code:
+      | "application_settings_unavailable"
+      | "application_settings_conflict"
+      | "inventory_view_conflict"
       | "inventory_import_not_found"
       | "inventory_import_conflict"
       | "invalid_inventory_archive"

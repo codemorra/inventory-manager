@@ -127,7 +127,7 @@ InventoryData/
 └── temp/
 ```
 
-This storage root is excluded from version control and initialized at startup. Running from the repository keeps runtime files here; data and attachments are separate from backup storage, logs and temporary archive files. `config/settings.json` currently reserves a versioned settings document; browser preference migration and configurable storage locations follow in the storage settings work.
+This storage root is excluded from version control and initialized at startup. Running from the repository keeps runtime files here; data and attachments are separate from backup storage, logs and temporary archive files. `config/settings.json` supports versioned application preferences through the backend settings API; the interface remains browser-backed until the subsequent preference migration. Configurable storage locations follow in the storage settings work.
 
 See [backend documentation](backend/README.md) for migration commands and API behavior.
 
