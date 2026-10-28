@@ -34,6 +34,8 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { AppShell } from "../../src/components/layout/AppShell";
 import { getInventories } from "../../src/services/inventories";
+import * as backups from "../../src/services/backups";
+import { dataChangedEvent } from "../../src/services/api";
 
 vi.mock("../../src/services/inventories", () => ({
   createInventory: vi.fn(),
@@ -68,6 +70,31 @@ function renderAppShell() {
     </QueryClientProvider>,
   );
 }
+
+test("requires a reload after another session replaces the application data", async () => {
+  mockedGetInventories.mockResolvedValue([]);
+  const reload = vi
+    .spyOn(backups, "reloadAfterRestore")
+    .mockImplementation(() => {});
+  try {
+    renderAppShell();
+    fireEvent(window, new Event(dataChangedEvent));
+    const dialog = await screen.findByRole("dialog", {
+      name: "Data has changed",
+    });
+    expect(dialog).toHaveTextContent(
+      "Reload the application before continuing",
+    );
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(dialog).toBeVisible();
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Reload application" }),
+    );
+    expect(reload).toHaveBeenCalledOnce();
+  } finally {
+    reload.mockRestore();
+  }
+});
 
 describe("AppShell", () => {
   // Test the complete right-click-to-edit flow through the actual sidebar.

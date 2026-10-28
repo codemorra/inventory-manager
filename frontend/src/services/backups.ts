@@ -1,5 +1,11 @@
 import { apiBaseUrl, request } from "./api";
-import type { CreatedBackup, StoredBackup } from "../types/backup";
+import type {
+  CreatedBackup,
+  StoredBackup,
+  RestorePreview,
+  RestoreReceipt,
+  RestoreStatus,
+} from "../types/backup";
 
 /**
  * Load durable backup filenames and available display metadata.
@@ -48,4 +54,68 @@ export function downloadBackup(filename: string): void {
   document.body.append(link);
   link.click();
   link.remove();
+}
+
+/**
+ * Prepare a checked restoration from a stored archive or a streamed local File.
+ * @param source The generated stored filename or original selected File.
+ * @param signal Optional cancellation before confirmation.
+ * @returns A fully validated, expiring preview of the selected backup.
+ * @throws {ApiError} When the source archive is unavailable or invalid.
+ * @throws {Error} When copying, cancellation or transport fails.
+ */
+export function prepareBackupRestore(
+  source: string | File,
+  signal?: AbortSignal,
+): Promise<RestorePreview> {
+  return request("/backup-restores", {
+    method: "POST",
+    ...(typeof source === "string"
+      ? { body: JSON.stringify({ filename: source }) }
+      : { headers: { "Content-Type": "application/zip" }, body: source }),
+    ...(signal ? { signal } : {}),
+  });
+}
+
+/**
+ * Explicitly confirm the same checked selection, preserving its receipt for response recovery.
+ * @param id The validated preview identity shown in the confirmation.
+ * @returns The completed restoration and its safety backup filename.
+ * @throws {ApiError} When safety backup creation or restoration fails.
+ * @throws {Error} When the result is uncertain; query status before another attempt.
+ */
+export function confirmBackupRestore(id: string): Promise<RestoreReceipt> {
+  return request(`/backup-restores/${encodeURIComponent(id)}/confirm`, {
+    method: "POST",
+  });
+}
+
+/**
+ * Recover the authoritative outcome of the original confirmation.
+ * @param id The original restore selection identity.
+ * @returns The preview, ongoing operation or durable completion receipt.
+ * @throws {Error} When the result cannot be retrieved.
+ */
+export function readBackupRestore(id: string): Promise<RestoreStatus> {
+  return request(`/backup-restores/${encodeURIComponent(id)}`);
+}
+
+/**
+ * Discard a copied archive before restoration starts.
+ * @param id The unused preview identity.
+ * @returns Completion after unused staging has been removed.
+ * @throws {Error} When the selection is active or cannot be discarded.
+ */
+export function discardBackupRestore(id: string): Promise<void> {
+  return request(`/backup-restores/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+/**
+ * Reload the application at its overview after replacing the underlying data.
+ * @returns No value; navigation creates fresh caches and editing sessions.
+ */
+export function reloadAfterRestore(): void {
+  window.location.assign("/");
 }

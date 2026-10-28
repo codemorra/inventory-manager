@@ -24,7 +24,8 @@ export function errorHandler(
           ? 503
           : error.code === "attachment_preview_unavailable"
             ? 415
-            : error.code === "backup_conflict" ||
+            : error.code === "application_data_changed" ||
+                error.code === "backup_conflict" ||
                 error.code === "storage_location_conflict" ||
                 error.code === "application_settings_conflict" ||
                 error.code === "inventory_view_conflict" ||

@@ -5,6 +5,9 @@ import { NavLink } from "react-router-dom";
 
 import { InventoryImportDialog } from "../InventoryImportDialog";
 import { SettingsDialog } from "../SettingsDialog";
+import { Modal } from "../Modal";
+import { dataChangedEvent } from "../../services/api";
+import { reloadAfterRestore } from "../../services/backups";
 import { GroupCreateDialog } from "../GroupCreateDialog";
 import { useTheme } from "../../hooks/useTheme";
 import { Navigation } from "./Navigation";
@@ -37,6 +40,18 @@ export function AppShell({ children }: AppShellProps) {
   useTheme();
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [dataChanged, setDataChanged] = useState(false);
+  useEffect(() => {
+    /**
+     * Block stale editing sessions when a response identifies a replaced data generation.
+     * @returns No value; the user must reload before continuing.
+     */
+    function changed() {
+      setDataChanged(true);
+    }
+    window.addEventListener(dataChangedEvent, changed);
+    return () => window.removeEventListener(dataChangedEvent, changed);
+  }, []);
   const [isGroupCreateOpen, setIsGroupCreateOpen] = useState(false);
   const [contextTarget, setContextTarget] =
     useState<SidebarContextTarget | null>(null);
@@ -243,6 +258,23 @@ export function AppShell({ children }: AppShellProps) {
           </main>
         </div>
       </div>
+      {dataChanged && (
+        <Modal
+          title={t("backups.dataChangedTitle")}
+          size="small"
+          closeDisabled
+          onClose={() => {}}
+        >
+          <p className="text-sm">{t("backups.dataChanged")}</p>
+          <button
+            type="button"
+            onClick={reloadAfterRestore}
+            className="mt-4 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-surface enabled:hover:bg-accent-hover"
+          >
+            {t("backups.reloadApplication")}
+          </button>
+        </Modal>
+      )}
     </TableEditSessionContext.Provider>
   );
 }

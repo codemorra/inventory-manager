@@ -4,6 +4,10 @@ import {
   downloadBackup,
   deleteBackup,
   listBackups,
+  prepareBackupRestore,
+  confirmBackupRestore,
+  readBackupRestore,
+  discardBackupRestore,
 } from "../../src/services/backups";
 
 afterEach(() => {
@@ -57,4 +61,35 @@ test("deletes the selected encoded filename without sending file content", async
     expect.objectContaining({ method: "DELETE" }),
   );
   expect(fetch.mock.calls[0]![1]).not.toHaveProperty("body");
+});
+
+test("prepares stored and external restore sources and retains the exact confirmation identity", async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+  vi.stubGlobal("fetch", fetch);
+  const file = new File(["zip"], "source.zip");
+  const controller = new AbortController();
+  await prepareBackupRestore("stored.zip", controller.signal);
+  await prepareBackupRestore(file, controller.signal);
+  await confirmBackupRestore("token/id");
+  await readBackupRestore("token/id");
+  await discardBackupRestore("token/id");
+  expect(fetch.mock.calls[0]![1]).toMatchObject({
+    body: JSON.stringify({ filename: "stored.zip" }),
+    signal: controller.signal,
+  });
+  expect(fetch.mock.calls[1]![1]).toMatchObject({
+    body: file,
+    signal: controller.signal,
+    headers: { "Content-Type": "application/zip" },
+  });
+  expect(fetch.mock.calls.slice(2).map(([url]) => url)).toEqual([
+    expect.stringMatching(/\/backup-restores\/token%2Fid\/confirm$/),
+    expect.stringMatching(/\/backup-restores\/token%2Fid$/),
+    expect.stringMatching(/\/backup-restores\/token%2Fid$/),
+  ]);
+  expect(fetch.mock.calls[2]![1]).toMatchObject({ method: "POST" });
+  expect(fetch.mock.calls[2]![1]).not.toHaveProperty("signal");
+  expect(fetch.mock.calls[4]![1]).toMatchObject({ method: "DELETE" });
 });

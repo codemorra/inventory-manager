@@ -238,6 +238,16 @@ export function createExportService(
       return entry.artifact;
     },
     /**
+     * Invalidate prepared archives after replacing the application's data.
+     * @returns Completion after all retained export bodies have been disposed.
+     * @throws {Error} When temporary storage cleanup fails; tokens remain invalidated.
+     */
+    async reset() {
+      const entries = [...prepared.values()];
+      prepared.clear();
+      await Promise.all(entries.map((entry) => entry.artifact.dispose()));
+    },
+    /**
      * Remove only stale export workspaces, including leftovers from an interrupted process.
      * @param now The cleanup time; tests use a deterministic expiry boundary.
      */

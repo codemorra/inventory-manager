@@ -24,6 +24,15 @@
                   "title": "Response Get Health Health Get"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           }
         }
@@ -46,6 +55,15 @@
                   },
                   "type": "array",
                   "title": "Response List Inventories Inventories Get"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -76,6 +94,15 @@
                   "$ref": "#/components/schemas/InventoryRead"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "422": {
@@ -88,7 +115,12 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
       }
     },
     "/inventories/{inventory_id}": {
@@ -115,6 +147,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -145,6 +186,9 @@
               "type": "string",
               "title": "Inventory Id"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -164,6 +208,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -194,11 +247,23 @@
               "type": "string",
               "title": "Inventory Id"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "responses": {
           "204": {
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -228,6 +293,9 @@
               "type": "string",
               "title": "Inventory Id"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -247,6 +315,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryItemRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -299,6 +376,15 @@
                   "title": "Response List Items Inventories  Inventory Id  Items Get"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "422": {
@@ -327,6 +413,9 @@
               "type": "string",
               "title": "Inventory Id"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -349,6 +438,15 @@
                   "items": {
                     "$ref": "#/components/schemas/InventoryItemRead"
                   }
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -428,6 +526,15 @@
                   "$ref": "#/components/schemas/InventoryItemRead"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "422": {
@@ -465,6 +572,9 @@
               "type": "string",
               "title": "Item Id"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -484,6 +594,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryItemRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -540,11 +659,23 @@
               "type": "string",
               "title": "Item Id"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "responses": {
           "204": {
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "409": {
             "description": "The item revision is stale; no values, tombstones, or revisions were changed. Reload before explicitly retrying.",
@@ -594,6 +725,9 @@
               "type": "string",
               "title": "Inventory Id"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -613,6 +747,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryFieldRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -656,6 +799,15 @@
                     "$ref": "#/components/schemas/InventoryFieldRead"
                   },
                   "title": "Response List Inventory Fields Inventories  Inventory Id  Fields Get"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -708,6 +860,15 @@
                   "$ref": "#/components/schemas/InventoryFieldRead"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "422": {
@@ -745,6 +906,9 @@
               "type": "string",
               "title": "Field Id"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -764,6 +928,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryFieldRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -803,11 +976,23 @@
               "type": "string",
               "title": "Field Id"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "responses": {
           "204": {
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -860,6 +1045,15 @@
                   "title": "Response List Inventory Field Options Inventories  Inventory Id  Fields  Field Id  Options Get"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "422": {
@@ -896,6 +1090,9 @@
               "type": "string",
               "title": "Field Id"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -915,6 +1112,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryFieldOptionRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -964,6 +1170,9 @@
               "type": "string",
               "title": "Option Id"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -983,6 +1192,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryFieldOptionRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1030,11 +1248,23 @@
               "type": "string",
               "title": "Option Id"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "responses": {
           "204": {
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -1065,6 +1295,15 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           }
         }
@@ -1091,6 +1330,15 @@
                   "$ref": "#/components/schemas/InventoryGroup"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "422": {
@@ -1103,7 +1351,12 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
       }
     },
     "/inventory-groups/{group_id}": {
@@ -1139,6 +1392,15 @@
                   "$ref": "#/components/schemas/InventoryGroup"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "404": {
@@ -1161,14 +1423,28 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
       },
       "delete": {
         "tags": ["inventory-groups"],
         "summary": "Delete a group and preserve its inventories without a group",
         "responses": {
           "204": {
-            "description": "Group deleted; inventories retained"
+            "description": "Group deleted; inventories retained",
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "404": {
             "description": "Successful response",
@@ -1180,7 +1456,12 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
       }
     },
     "/inventories/{inventory_id}/configuration": {
@@ -1198,6 +1479,9 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -1217,6 +1501,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryEditorResult"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1274,6 +1567,15 @@
                   "$ref": "#/components/schemas/InventoryEditorResult"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "404": {
@@ -1306,6 +1608,15 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           }
         }
@@ -1321,6 +1632,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryTemplateRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1368,7 +1688,12 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
       }
     },
     "/inventory-templates/{template_id}": {
@@ -1383,6 +1708,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryTemplateRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1422,6 +1756,15 @@
                   "$ref": "#/components/schemas/InventoryTemplateRead"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "404": {
@@ -1466,6 +1809,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -1485,7 +1831,16 @@
         "operationId": "delete_inventory_template",
         "responses": {
           "204": {
-            "description": "Deleted; blueprint content cleared and tombstone retained."
+            "description": "Deleted; blueprint content cleared and tombstone retained.",
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "404": {
             "description": "Requested active template, source inventory, or destination group not found.",
@@ -1529,6 +1884,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -1557,6 +1915,15 @@
                   "$ref": "#/components/schemas/InventoryEditorResult"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "404": {
@@ -1601,6 +1968,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -1655,6 +2025,9 @@
               "type": "string",
               "default": "application/octet-stream"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -1675,6 +2048,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryAttachmentRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1745,6 +2127,15 @@
                   "$ref": "#/components/schemas/InventoryAttachmentRead"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "404": {
@@ -1788,11 +2179,23 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "responses": {
           "204": {
-            "description": "Stage canceled; metadata cleared, physical deletion scheduled."
+            "description": "Stage canceled; metadata cleared, physical deletion scheduled.",
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "404": {
             "description": "Active inventory, field, attachment, or file content not found.",
@@ -1882,6 +2285,13 @@
                   "type": "string",
                   "const": "no-store"
                 }
+              },
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             }
           },
@@ -1961,6 +2371,13 @@
                 "schema": {
                   "type": "string"
                 }
+              },
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             }
           },
@@ -2004,6 +2421,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "responses": {
@@ -2013,6 +2433,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PreparedInventoryExport"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -2110,6 +2539,13 @@
                   "type": "string",
                   "const": "nosniff"
                 }
+              },
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             }
           },
@@ -2150,11 +2586,23 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "responses": {
           "204": {
-            "description": "Prepared export discarded and temporary archive removed."
+            "description": "Prepared export discarded and temporary archive removed.",
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "404": {
             "description": "Inventory or prepared export missing, expired, consumed or incorrectly scoped.",
@@ -2201,6 +2649,15 @@
                   "$ref": "#/components/schemas/InventoryImportPreview"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "415": {
@@ -2219,7 +2676,12 @@
           "500": {
             "description": "Unexpected storage error; no partial inventory is published."
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
       }
     },
     "/inventory-imports/{import_id}": {
@@ -2244,6 +2706,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryImportPreview"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -2273,11 +2744,23 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "responses": {
           "204": {
-            "description": "Staging/receipt discarded."
+            "description": "Staging/receipt discarded.",
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "404": {
             "description": "Missing or expired import token.",
@@ -2316,6 +2799,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -2335,6 +2821,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -2387,6 +2882,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApplicationSettings"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -2446,6 +2950,15 @@
                   "$ref": "#/components/schemas/ApplicationSettings"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "409": {
@@ -2474,7 +2987,12 @@
           "500": {
             "description": "Settings file write failed; previous contents preserved."
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
       }
     },
     "/inventory-view-preferences": {
@@ -2492,6 +3010,15 @@
                   "items": {
                     "$ref": "#/components/schemas/InventoryViewState"
                   }
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -2523,6 +3050,15 @@
                   "$ref": "#/components/schemas/InventoryViewState"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "404": {
@@ -2550,6 +3086,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
           }
         ],
         "requestBody": {
@@ -2581,6 +3120,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InventoryViewState"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -2626,6 +3174,15 @@
                   "$ref": "#/components/schemas/StorageLocationState"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "503": {
@@ -2645,6 +3202,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StorageLocationState"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -2696,7 +3262,12 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
       },
       "delete": {
         "tags": ["storage"],
@@ -2710,6 +3281,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StorageLocationState"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -2745,7 +3325,12 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
       }
     },
     "/backups": {
@@ -2763,6 +3348,15 @@
                   "$ref": "#/components/schemas/ApplicationBackupRead"
                 }
               }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "409": {
@@ -2774,7 +3368,12 @@
           "500": {
             "description": "Storage or unexpected backup failure. Existing backups and application data are preserved."
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
       },
       "get": {
         "tags": ["backups"],
@@ -2791,6 +3390,15 @@
                   "items": {
                     "$ref": "#/components/schemas/StoredBackup"
                   }
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -2846,6 +3454,13 @@
                   "type": "string",
                   "const": "nosniff"
                 }
+              },
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             },
             "content": {
@@ -2900,6 +3515,13 @@
                   "type": "string",
                   "const": "nosniff"
                 }
+              },
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             }
           },
@@ -2934,7 +3556,16 @@
         "description": "Remove the selected regular archive from the active backup directory. Reject symbolic links, directories and unrelated names. Opening or active downloads and pending deletions reserve their archive until completion. Responses use Cache-Control: no-store.",
         "responses": {
           "204": {
-            "description": "Backup archive deleted."
+            "description": "Backup archive deleted.",
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "404": {
             "description": "backup_not_found: invalid filename, missing archive or nonregular file."
@@ -2945,7 +3576,231 @@
           "500": {
             "description": "Storage access or file removal failed."
           }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
+      }
+    },
+    "/backup-restores": {
+      "post": {
+        "tags": ["backups"],
+        "summary": "Prepare a checked backup restoration",
+        "operationId": "prepare_backup_restore",
+        "description": "Stream an independent private archive copy and fully validate its files, database schema and references. The returned preview expires after 30 minutes. No data replacement occurs before explicit confirmation. Responses use Cache-Control: no-store.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["filename"],
+                "properties": {
+                  "filename": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "application/zip": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Checked restore preview.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupRestorePreview"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "backup_not_found: selected archive unavailable."
+          },
+          "409": {
+            "description": "backup_conflict or application_data_changed."
+          },
+          "415": {
+            "description": "Unsupported request content type."
+          },
+          "422": {
+            "description": "invalid_backup_archive: damaged or incompatible archive/database, or invalid request."
+          },
+          "500": {
+            "description": "Private copy or validation storage failed."
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
+      }
+    },
+    "/backup-restores/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "Original checked preview identity."
         }
+      ],
+      "get": {
+        "tags": ["backups"],
+        "summary": "Read restore status or receipt",
+        "operationId": "read_backup_restore",
+        "responses": {
+          "200": {
+            "description": "Checked preview or durable completed result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/BackupRestorePreview"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BackupRestoreCompleted"
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "backup_restore_not_found: expired, canceled or unknown selection."
+          }
+        }
+      },
+      "delete": {
+        "tags": ["backups"],
+        "summary": "Discard an unused restore preview",
+        "operationId": "discard_backup_restore",
+        "responses": {
+          "204": {
+            "description": "Unused staging removed. Completed receipts remain recoverable.",
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "backup_conflict: confirmation is already running."
+          },
+          "500": {
+            "description": "Temporary storage cleanup failed."
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
+      }
+    },
+    "/backup-restores/{id}/confirm": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "Original checked preview identity."
+        }
+      ],
+      "post": {
+        "tags": ["backups"],
+        "summary": "Confirm the checked restore selection",
+        "operationId": "confirm_backup_restore",
+        "description": "Drain runtime activity, revalidate the original archive selection, create a verified pre-restore safety backup, stage data beside current targets and activate it through a durable recovery journal. Success invalidates old import/export sessions and data generations. Repeating a completed identity returns its original receipt, including after restart for the latest restore. Responses use Cache-Control: no-store.",
+        "responses": {
+          "200": {
+            "description": "Durable confirmation result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupRestoreReceipt"
+                }
+              }
+            },
+            "headers": {
+              "X-Inventory-Generation": {
+                "description": "Current runtime data generation, exposed through CORS.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "backup_restore_not_found: unavailable selection."
+          },
+          "409": {
+            "description": "backup_conflict or application_data_changed."
+          },
+          "422": {
+            "description": "invalid_backup_archive: selected archive or current managed files failed verification."
+          },
+          "500": {
+            "description": "Safety backup, staging or activation failed. Recovery runs before requests resume."
+          },
+          "503": {
+            "description": "Storage could not be safely recovered; further requests are rejected."
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ]
       }
     }
   },
@@ -4660,6 +5515,130 @@
               }
             ]
           }
+        }
+      },
+      "BackupRestoreReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "backup_id", "safety_backup", "completed_at"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "backup_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "safety_backup": {
+            "type": "string"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BackupRestorePreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status",
+          "backup",
+          "counts",
+          "attachment_bytes",
+          "expires_at",
+          "receipt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ready", "restoring"]
+          },
+          "backup": {
+            "type": "object",
+            "required": ["id", "created_at", "kind"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["manual", "automatic", "pre-restore"]
+              }
+            }
+          },
+          "counts": {
+            "type": "object",
+            "required": ["inventories", "items", "attachments"],
+            "additionalProperties": false,
+            "properties": {
+              "inventories": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "attachments": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "attachment_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "receipt": {
+            "type": "null"
+          }
+        }
+      },
+      "BackupRestoreCompleted": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "receipt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "const": "completed"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/BackupRestoreReceipt"
+          }
+        }
+      }
+    },
+    "parameters": {
+      "InventoryGeneration": {
+        "name": "X-Inventory-Generation",
+        "in": "header",
+        "required": false,
+        "description": "Retain the first runtime generation observed in response headers. Older generations are rejected for writes after a restore or backend restart.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
         }
       }
     }

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
-import { lstat, open } from "node:fs/promises";
+import { lstat, mkdir, open } from "node:fs/promises";
 import { join } from "node:path";
 import { Readable, Writable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -129,6 +129,8 @@ export async function writeBackup(
  * Validate archive entries and database/file references before a new backup becomes visible.
  * @param path The completed ZIP archive to verify.
  * @param workspace An existing private directory with room for a new verified.db snapshot.
+ * @param extractAttachments Whether to retain verified attachment bodies for restoration.
+ * @param signal Optional cancellation while validating an unconfirmed restore selection.
  * @returns The validated backup manifest after all file and database checks succeed.
  * @throws {DomainError} When the archive is invalid, damaged or unsupported.
  * @throws {Error} When a system storage failure prevents verification.
@@ -136,10 +138,15 @@ export async function writeBackup(
 export async function verifyBackup(
   path: string,
   workspace: string,
+  extractAttachments = false,
+  signal?: AbortSignal,
 ): Promise<BackupManifest> {
   let zip: ZipReader | undefined;
   const controller = new AbortController();
+  const abort = () => controller.abort(signal?.reason);
+  signal?.addEventListener("abort", abort, { once: true });
   try {
+    signal?.throwIfAborted();
     zip = await openPromise(path, {
       autoClose: false,
       lazyEntries: true,
@@ -151,6 +158,7 @@ export async function verifyBackup(
       throw invalidBackup("Too many backup entries.");
     const entries = new Map<string, Entry>();
     for await (const entry of zip.eachEntry()) {
+      controller.signal.throwIfAborted();
       const type = (entry.externalFileAttributes >>> 16) & 0o170000;
       if (
         !/^(backup\.json|inventory\.db|attachments\/[0-9a-f-]{36}\.blob)$/.test(
@@ -213,6 +221,8 @@ export async function verifyBackup(
     )
       throw invalidBackup("Backup contents do not match the manifest.");
     const databasePath = join(workspace, "verified.db");
+    if (extractAttachments)
+      await mkdir(join(workspace, "attachments"), { mode: 0o700 });
     for (const file of manifest.files) {
       const entry = entries.get(file.path)!;
       if (entry.uncompressedSize !== file.byte_size)
@@ -221,12 +231,21 @@ export async function verifyBackup(
         zip,
         entry,
         () =>
-          file.path === "inventory.db"
-            ? createWriteStream(databasePath, {
-                flags: "wx",
-                mode: 0o600,
-                flush: true,
-              })
+          file.path === "inventory.db" || extractAttachments
+            ? createWriteStream(
+                file.path === "inventory.db"
+                  ? databasePath
+                  : join(
+                      workspace,
+                      "attachments",
+                      file.path.slice("attachments/".length),
+                    ),
+                {
+                  flags: "wx",
+                  mode: 0o600,
+                  flush: true,
+                },
+              )
             : new Writable({
                 write(_chunk, _encoding, done) {
                   done();
@@ -252,8 +271,10 @@ export async function verifyBackup(
           "A backup attachment does not match its database record.",
         );
     }
+    controller.signal.throwIfAborted();
     return manifest;
   } catch (error) {
+    if (signal?.aborted) signal.throwIfAborted();
     if (
       error instanceof Error &&
       "code" in error &&
@@ -264,6 +285,7 @@ export async function verifyBackup(
       "The backup archive is invalid, damaged or unsupported.",
     );
   } finally {
+    signal?.removeEventListener("abort", abort);
     if (zip) {
       const closed = new Promise<void>((resolve) =>
         zip!.once("close", resolve),

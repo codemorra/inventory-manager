@@ -288,6 +288,16 @@ export function createImportService(
       await dispose(entry);
     },
     /**
+     * Invalidate import previews and receipts after replacing the application's data.
+     * @returns Completion after copied preview bodies have been disposed.
+     * @throws {Error} When temporary storage cleanup fails; tokens remain invalidated.
+     */
+    async reset() {
+      const entries = [...sessions.values()];
+      sessions.clear();
+      await Promise.all(entries.map((entry) => dispose(entry)));
+    },
+    /**
      * Expire previews/receipts, retry staging cleanup and remove stale interrupted-process workspaces.
      * @param now The cleanup time; tests use deterministic boundaries.
      */

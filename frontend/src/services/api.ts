@@ -1,6 +1,9 @@
 export const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
+export const dataChangedEvent = "inventory-data-changed";
+let dataGeneration: string | undefined;
+
 /** Define structured API error details. */
 interface ApiErrorDetail {
   code?: string;
@@ -51,9 +54,24 @@ export async function request<T>(
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(dataGeneration ? { "X-Inventory-Generation": dataGeneration } : {}),
       ...options.headers,
     },
   });
+
+  const generation = response.headers?.get("X-Inventory-Generation");
+  if (generation) {
+    if (dataGeneration && generation !== dataGeneration) {
+      if (typeof window !== "undefined")
+        window.dispatchEvent(new Event(dataChangedEvent));
+      throw new ApiError(
+        409,
+        "The application data has changed. Reload before editing.",
+        "application_data_changed",
+      );
+    }
+    dataGeneration = generation;
+  }
 
   if (!response.ok) {
     const errorResponse = (await response.json()) as ApiErrorResponse;

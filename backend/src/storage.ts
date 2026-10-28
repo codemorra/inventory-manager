@@ -6,6 +6,7 @@ import {
   validateStorageConfig,
 } from "./storage-layout.js";
 import { completeStorageRelocation } from "./storage-relocation.js";
+import { recoverRestore } from "./backups/restore-storage.js";
 
 /**
  * Initialize runtime directories without replacing existing settings or data.
@@ -48,6 +49,12 @@ export async function prepareStorage(
   onMoveFailure?: (error: unknown) => void,
 ): Promise<AppConfig> {
   await initializeSettings(base);
+  const beforeRelocation = resolveStorageConfig(
+    base,
+    await createSettingsService(base.settingsPath).readStorage(),
+  );
+  await validateStorageConfig(beforeRelocation);
+  await recoverRestore(beforeRelocation, onMoveFailure);
   await completeStorageRelocation(base, onMoveFailure);
   const locations = await createSettingsService(
     base.settingsPath,
