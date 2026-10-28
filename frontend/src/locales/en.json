@@ -277,7 +277,7 @@
   "settings": {
     "title": "Settings",
     "description": "Choose your language, appearance, and accent color.",
-    "savedAutomatically": "Changes are saved automatically in this browser."
+    "savedAutomatically": "Application preferences are saved automatically."
   },
   "table": {
     "search": {
@@ -485,5 +485,32 @@
     "refreshFailed": "Saved preferences could not be refreshed. The last loaded values remain active.",
     "reload": "Load saved values",
     "unsaved": "Some changes have not been saved."
+  },
+  "storage": {
+    "title": "Storage locations",
+    "description": "Choose where your data and backups are stored. Existing files are moved automatically. The destination folder must be empty.",
+    "dataDirectory": "Data folder (database and attachments)",
+    "backupsDirectory": "Backup folder",
+    "current": "Current: {{path}}",
+    "loading": "Loading storage locations…",
+    "loadFailed": "Storage locations could not be loaded.",
+    "reload": "Reload locations",
+    "schedule": "Change storage locations",
+    "saving": "Changing storage locations…",
+    "pending": "A storage change has not finished yet.",
+    "cancel": "Cancel scheduled change",
+    "moveFailed": "The storage change failed. The original locations remain in use. Check the destination folders and available disk space, then try again.",
+    "cleanupPending": "The new locations are active. Some previous files could not be removed. The application will try again at the next start.",
+    "fixedPaths": "Other application paths",
+    "settingsPath": "Settings file",
+    "logsDirectory": "Logs",
+    "tempDirectory": "Temporary files",
+    "overridden": "The data folder is specified at startup and cannot be changed here.",
+    "conflict": "Settings or storage locations have changed. Reload the locations before trying again.",
+    "invalid": "Choose separate, empty destination folders using absolute paths.",
+    "saveFailed": "Storage locations could not be changed. Reload them to check the current state.",
+    "changed": "Storage locations have been changed.",
+    "default": "Use default",
+    "defaultLabel": "Use default: {{folder}}"
   }
 }

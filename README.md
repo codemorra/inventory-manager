@@ -127,7 +127,7 @@ InventoryData/
 └── temp/
 ```
 
-This storage root is excluded from version control and initialized at startup. Running from the repository keeps runtime files here; data and attachments are separate from backup storage, logs and temporary archive files. The interface loads versioned preferences before editing is available and reports failed saves or conflicting changes with retry/reload actions. The settings file can select separate data and backup directories; see the [backend storage configuration](backend/README.md#stored-locations).
+This storage root is excluded from version control and initialized at startup. Running from the repository keeps runtime files here; data and attachments are separate from backup storage, logs and temporary archive files. The interface loads versioned preferences before editing is available and reports failed saves or conflicting changes with retry/reload actions. Settings > Storage locations lets you choose data and backup folders or restore their defaults. Existing files move after confirmation, without restarting the application. See the [backend storage configuration](backend/README.md#stored-locations).
 
 See [backend documentation](backend/README.md) for migration commands and API behavior.
 

@@ -4,6 +4,8 @@ export class DomainError extends Error {
     public readonly code:
       | "application_settings_unavailable"
       | "application_settings_conflict"
+      | "storage_location_invalid"
+      | "storage_location_conflict"
       | "inventory_view_conflict"
       | "inventory_import_not_found"
       | "inventory_import_conflict"

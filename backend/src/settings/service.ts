@@ -8,6 +8,7 @@ import {
   settingsDocumentSchema,
   settingsUpdateSchema,
   type SettingsDocument,
+  type StorageLocations,
 } from "./validation.js";
 
 // Serialize all callers for a path, including independently composed services within one backend process.
@@ -105,6 +106,31 @@ export function createSettingsService(settingsPath: string) {
     return document.revision + 1;
   }
   return {
+    async readStorageState() {
+      const document = await readDocument();
+      return { revision: document.revision, storage: document.storage ?? {} };
+    },
+    /** Serialize internal storage changes with ordinary preference writes. */
+    async updateStorage(
+      revision: number,
+      operation: (storage: StorageLocations) => Promise<StorageLocations>,
+    ) {
+      return serialize(async () => {
+        const current = await readDocument();
+        if (current.revision !== revision)
+          throw new DomainError(
+            "application_settings_conflict",
+            "The application settings have changed. Reload them before saving again.",
+          );
+        const next = {
+          ...current,
+          revision: nextRevision(current),
+          storage: await operation(current.storage ?? {}),
+        };
+        await write(settingsDocumentSchema.parse(next));
+        return { revision: next.revision, storage: next.storage };
+      });
+    },
     /** Read startup locations without exposing filesystem paths through preference responses. */
     async readStorage() {
       return (await readDocument()).storage ?? {};

@@ -44,10 +44,15 @@ interface ImportSession extends Validated {
 export function createImportService(
   db: AppDatabase,
   attachments: ReturnType<typeof createAttachmentService>,
-  directory: string,
-  tempDirectory = join(directory, ".exchange"),
+  directory: string | (() => string),
+  tempDirectory = join(
+    typeof directory === "function" ? directory() : directory,
+    ".exchange",
+  ),
 ) {
-  if (!isAbsolute(directory))
+  const managedDirectory = () =>
+    typeof directory === "function" ? directory() : directory;
+  if (!isAbsolute(managedDirectory()))
     throw new Error("Attachment directory must be absolute.");
   if (!isAbsolute(tempDirectory))
     throw new Error("Temporary directory must be absolute.");
@@ -128,8 +133,8 @@ export function createImportService(
               "A staged attachment is unavailable or has changed. Select the archive again.",
             );
           const id = ids.get(file.key)!;
-          const temporary = join(directory, `${id}.upload`);
-          const destination = join(directory, `${id}.blob`);
+          const temporary = join(managedDirectory(), `${id}.upload`);
+          const destination = join(managedDirectory(), `${id}.blob`);
           created.push(temporary, destination);
           const hash = createHash("sha256");
           let size = 0;
