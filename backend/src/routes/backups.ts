@@ -4,7 +4,7 @@ import { Router } from "express";
 import type { Services } from "../services.js";
 
 /**
- * Expose durable backup metadata, creation and repeatable native ZIP downloads.
+ * Expose durable backup metadata, creation, deletion and repeatable native ZIP downloads.
  * @param services Domain services with optional managed backup storage.
  * @param create The runtime operation coordinating consistent backup creation.
  * @returns Backup routes available in the configured runtime.
@@ -25,6 +25,10 @@ export function backupRoutes(
   if (!backups) return router;
   router.get("/", async (_request, response) => {
     response.json(await backups.list());
+  });
+  router.delete("/:filename", async (request, response) => {
+    await backups.remove(request.params.filename);
+    response.status(204).end();
   });
   router.get("/:filename/download", async (request, response) => {
     const backup = await backups.download(request.params.filename);

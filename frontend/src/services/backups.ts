@@ -23,6 +23,19 @@ export function createBackup(): Promise<CreatedBackup> {
 }
 
 /**
+ * Delete the archive explicitly selected in the confirmation dialog.
+ * @param filename The generated basename of the selected backup.
+ * @returns Completion after the backend confirms deletion.
+ * @throws {ApiError} When the backup is unavailable, in use or cannot be deleted.
+ * @throws {Error} When the response is lost; refresh the list before retrying.
+ */
+export function deleteBackup(filename: string): Promise<void> {
+  return request(`/backups/${encodeURIComponent(filename)}`, {
+    method: "DELETE",
+  });
+}
+
+/**
  * Hand an existing archive to the browser's native downloader.
  * @param filename The generated basename returned by the backend.
  * @returns No value; the browser owns download progress and file saving.

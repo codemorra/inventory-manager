@@ -1,5 +1,5 @@
 import { constants } from "node:fs";
-import { lstat, open, readdir } from "node:fs/promises";
+import { lstat, open, readdir, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { Writable } from "node:stream";
 import { openPromise, type Entry, type ZipFile } from "yauzl";
@@ -23,13 +23,24 @@ export interface StoredBackup {
 }
 
 /**
- * Create the stable error used for unavailable or invalid download selections.
+ * Create the stable error used for unavailable or invalid backup selections.
  * @returns A backup_not_found domain error for the caller to throw.
  */
 function missingBackup() {
   return new DomainError(
     "backup_not_found",
     "The backup is no longer available. Reload the backup list.",
+  );
+}
+
+/**
+ * Report a conflicting download or deletion of the selected archive.
+ * @returns A backup_conflict domain error for the caller to throw.
+ */
+function backupInUse() {
+  return new DomainError(
+    "backup_conflict",
+    "The backup is in use. Wait for the current operation to finish and try again.",
   );
 }
 
@@ -105,6 +116,8 @@ async function readMetadata(path: string): Promise<Metadata> {
  * @returns Operations for listing and downloading durable backup artifacts.
  */
 export function createBackupCatalog(config: AppConfig) {
+  const downloads = new Map<string, number>();
+  const deleting = new Set<string>();
   return {
     /**
      * List regular application-named archives, retaining entries with unreadable metadata.
@@ -138,10 +151,25 @@ export function createBackupCatalog(config: AppConfig) {
      * @param filename An application-generated basename returned by the backup list.
      * @returns A readable stream and exact download size; its consumer owns stream disposal.
      * @throws {DomainError} When the name is invalid or its regular file is unavailable.
+     * @throws {DomainError} When the selected archive is being deleted.
      * @throws {Error} When storage access fails for another reason.
      */
     async download(filename: string) {
       if (!backupFilename.test(filename)) throw missingBackup();
+      if (deleting.has(filename)) throw backupInUse();
+      downloads.set(filename, (downloads.get(filename) ?? 0) + 1);
+      let released = false;
+      /**
+       * Release the download reservation after failure or closing its file stream.
+       * @returns No value; the archive becomes removable after its last download closes.
+       */
+      function release() {
+        if (released) return;
+        released = true;
+        const remaining = downloads.get(filename)! - 1;
+        if (remaining) downloads.set(filename, remaining);
+        else downloads.delete(filename);
+      }
       let file;
       try {
         const path = join(config.backupsDirectory, filename);
@@ -152,13 +180,19 @@ export function createBackupCatalog(config: AppConfig) {
         );
         const details = await file.stat();
         if (!details.isFile()) throw missingBackup();
+        const stream = file.createReadStream();
+        stream.once("close", release);
         return {
           filename,
           byte_size: details.size,
-          stream: file.createReadStream(),
+          stream,
         };
       } catch (error) {
-        await file?.close();
+        try {
+          await file?.close();
+        } finally {
+          release();
+        }
         if (
           /^(ENOENT|ELOOP|EISDIR)$/.test(
             (error as NodeJS.ErrnoException).code ?? "",
@@ -166,6 +200,30 @@ export function createBackupCatalog(config: AppConfig) {
         )
           throw missingBackup();
         throw error;
+      }
+    },
+    /**
+     * Remove one selected regular archive from the active backup directory.
+     * @param filename The generated basename explicitly selected for deletion.
+     * @returns Completion after the archive has been unlinked.
+     * @throws {DomainError} When the selection is invalid, unavailable or in use.
+     * @throws {Error} When storage permissions or another filesystem error prevent deletion.
+     */
+    async remove(filename: string): Promise<void> {
+      if (!backupFilename.test(filename)) throw missingBackup();
+      if (downloads.has(filename) || deleting.has(filename))
+        throw backupInUse();
+      deleting.add(filename);
+      try {
+        const path = join(config.backupsDirectory, filename);
+        if (!(await lstat(path)).isFile()) throw missingBackup();
+        await unlink(path);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT")
+          throw missingBackup();
+        throw error;
+      } finally {
+        deleting.delete(filename);
       }
     },
   };

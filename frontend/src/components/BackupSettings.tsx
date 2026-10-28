@@ -1,14 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ApiError } from "../services/api";
-import { createBackup, downloadBackup, listBackups } from "../services/backups";
+import {
+  createBackup,
+  deleteBackup,
+  downloadBackup,
+  listBackups,
+} from "../services/backups";
 import type { StoredBackup } from "../types/backup";
 import { archiveSize } from "./archiveMessages";
+import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 
 /**
  * Manage durable data backups within the application settings.
- * @param onBusyChange Notify the parent while a consistent backup is being created.
- * @returns Backup creation, status and native download controls.
+ * @param onBusyChange Notify the parent while a backup operation is awaiting its result.
+ * @returns Backup creation, confirmed deletion, status and native download controls.
  */
 export function BackupSettings({
   onBusyChange,
@@ -20,11 +26,24 @@ export function BackupSettings({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [success, setSuccess] = useState<"created" | "deleted" | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<StoredBackup | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [needsReload, setNeedsReload] = useState(false);
   const [reload, setReload] = useState(0);
   const working = useRef(false);
+  const refreshButton = useRef<HTMLButtonElement>(null);
+  const focusRefresh = useRef(false);
   const locale = i18n.resolvedLanguage ?? "en";
+  const blocked = busy || deleting || Boolean(deleteTarget);
+
+  useEffect(() => {
+    if (!deleteTarget && !deleting && !loading && focusRefresh.current) {
+      focusRefresh.current = false;
+      refreshButton.current?.focus();
+    }
+  }, [deleteTarget, deleting, loading]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -54,7 +73,7 @@ export function BackupSettings({
     setBusy(true);
     onBusyChange(true);
     setError("");
-    setSaved(false);
+    setSuccess(null);
     try {
       const created = await createBackup();
       setBackups((previous) => [
@@ -71,7 +90,7 @@ export function BackupSettings({
           (entry) => entry.filename !== created.filename,
         ),
       ]);
-      setSaved(true);
+      setSuccess("created");
       try {
         setBackups(await listBackups());
       } catch {
@@ -94,13 +113,61 @@ export function BackupSettings({
     }
   }
 
+  /**
+   * Delete the confirmed archive once and preserve the target when the request fails.
+   * @returns Completion after deletion settles; uncertain results require a list refresh.
+   */
+  async function remove() {
+    if (!deleteTarget || working.current || needsReload) return;
+    const filename = deleteTarget.filename;
+    working.current = true;
+    setDeleting(true);
+    onBusyChange(true);
+    setDeleteError(null);
+    setError("");
+    setSuccess(null);
+    try {
+      await deleteBackup(filename);
+      setBackups((previous) =>
+        previous?.filter((entry) => entry.filename !== filename),
+      );
+      setDeleteTarget(null);
+      setSuccess("deleted");
+      focusRefresh.current = true;
+    } catch (failure) {
+      if (failure instanceof ApiError && failure.code === "backup_not_found") {
+        setBackups((previous) =>
+          previous?.filter((entry) => entry.filename !== filename),
+        );
+        setDeleteTarget(null);
+        setError("backups.missing");
+        focusRefresh.current = true;
+      } else {
+        const uncertain =
+          !(failure instanceof ApiError) || failure.status >= 500;
+        setNeedsReload(uncertain);
+        setDeleteError(
+          uncertain
+            ? "backups.deleteUncertain"
+            : failure.code === "backup_conflict"
+              ? "backups.inUse"
+              : "backups.deleteFailed",
+        );
+      }
+    } finally {
+      working.current = false;
+      setDeleting(false);
+      onBusyChange(false);
+    }
+  }
+
   return (
     <div className="mt-3 space-y-3">
       <p className="text-sm text-muted">{t("backups.description")}</p>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={busy || loading || needsReload}
+          disabled={blocked || loading || needsReload}
           onClick={() => void save()}
           className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-surface enabled:hover:bg-accent-hover disabled:opacity-50"
         >
@@ -108,7 +175,8 @@ export function BackupSettings({
         </button>
         <button
           type="button"
-          disabled={busy || loading}
+          ref={refreshButton}
+          disabled={blocked || loading}
           onClick={() => {
             setLoading(true);
             setReload((value) => value + 1);
@@ -123,9 +191,9 @@ export function BackupSettings({
           {t("backups.creatingHelp")}
         </p>
       )}
-      {saved && (
+      {success && (
         <p role="status" className="text-sm text-success">
-          {t("backups.created")}
+          {t(`backups.${success}`)}
         </p>
       )}
       {error && (
@@ -181,7 +249,7 @@ export function BackupSettings({
                 <div className="flex shrink-0 items-center gap-1">
                   <button
                     type="button"
-                    disabled={busy}
+                    disabled={blocked || loading}
                     title={t("backups.download")}
                     aria-label={t("backups.downloadLabel", {
                       filename: backup.filename,
@@ -202,11 +270,72 @@ export function BackupSettings({
                       <path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5" />
                     </svg>
                   </button>
+                  <button
+                    type="button"
+                    disabled={blocked || loading || needsReload}
+                    title={t("common.actions.delete")}
+                    aria-label={t("backups.deleteLabel", {
+                      filename: backup.filename,
+                    })}
+                    onClick={() => {
+                      setDeleteTarget(backup);
+                      setDeleteError(null);
+                    }}
+                    className="rounded-md border border-shell p-1.5 text-danger enabled:hover:bg-danger-soft focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      className="size-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </li>
           ))}
         </ul>
+      )}
+      {deleteTarget && (
+        <DeleteConfirmationDialog
+          title={t("backups.deleteTitle")}
+          message={t("backups.confirmDelete", {
+            filename: deleteTarget.filename,
+          })}
+          isPending={deleting}
+          confirmDisabled={needsReload}
+          error={deleteError ? t(deleteError) : null}
+          onConfirm={() => void remove()}
+          onClose={() => {
+            if (!working.current) {
+              setDeleteTarget(null);
+              setDeleteError(null);
+            }
+          }}
+        >
+          {needsReload && (
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => {
+                setDeleteTarget(null);
+                setDeleteError(null);
+                focusRefresh.current = true;
+                setLoading(true);
+                setReload((value) => value + 1);
+              }}
+              className="rounded-md border border-shell px-3 py-2 text-sm enabled:hover:bg-control-hover disabled:opacity-50"
+            >
+              {t("backups.refresh")}
+            </button>
+          )}
+        </DeleteConfirmationDialog>
       )}
     </div>
   );

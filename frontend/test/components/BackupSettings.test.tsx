@@ -1,4 +1,11 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { BackupSettings } from "../../src/components/BackupSettings";
@@ -13,6 +20,7 @@ vi.mock("../../src/services/backups", () => ({
   listBackups: vi.fn(),
   createBackup: vi.fn(),
   downloadBackup: vi.fn(),
+  deleteBackup: vi.fn(),
 }));
 const created: CreatedBackup = {
   id: "backup-id",
@@ -33,6 +41,7 @@ const stored: StoredBackup = {
 beforeEach(() => {
   vi.mocked(api.listBackups).mockResolvedValue([]);
   vi.mocked(api.createBackup).mockResolvedValue(created);
+  vi.mocked(api.deleteBackup).mockResolvedValue(undefined);
 });
 afterEach(() => {
   cleanup();
@@ -165,4 +174,107 @@ test("renders backup controls in German", async () => {
   expect(
     screen.getByRole("button", { name: "Backup erstellen" }),
   ).toBeEnabled();
+});
+
+test("requires explicit confirmation and restores focus after canceling deletion", async () => {
+  vi.mocked(api.listBackups).mockResolvedValue([stored]);
+  render(<BackupSettings onBusyChange={() => {}} />);
+  const action = await screen.findByRole("button", {
+    name: "Delete backup.zip",
+  });
+  await userEvent.click(action);
+  expect(
+    screen.getByRole("dialog", { name: "Delete backup" }),
+  ).toHaveTextContent("backup.zip");
+  expect(api.deleteBackup).not.toHaveBeenCalled();
+  await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(action).toHaveFocus();
+  expect(api.deleteBackup).not.toHaveBeenCalled();
+});
+
+test("deletes only the confirmed entry once and protects the pending confirmation from dismissal", async () => {
+  const pending = deferred<void>();
+  const busy = vi.fn();
+  vi.mocked(api.listBackups).mockResolvedValue([
+    stored,
+    { ...stored, filename: "keep.zip" },
+  ]);
+  vi.mocked(api.deleteBackup).mockReturnValue(pending.promise);
+  render(<BackupSettings onBusyChange={busy} />);
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Delete backup.zip" }),
+  );
+  await userEvent.dblClick(screen.getByRole("button", { name: "Delete" }));
+  expect(api.deleteBackup).toHaveBeenCalledExactlyOnceWith("backup.zip");
+  expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+  await userEvent.keyboard("{Escape}");
+  expect(screen.getByRole("dialog")).toBeVisible();
+  await act(async () => pending.resolve());
+  expect(await screen.findByText("Backup deleted.")).toBeVisible();
+  expect(screen.queryByText("backup.zip")).not.toBeInTheDocument();
+  expect(screen.getByText("keep.zip")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Refresh list" })).toHaveFocus();
+  expect(busy.mock.calls).toEqual([[true], [false]]);
+});
+
+test("keeps an in-use backup selected for an explicit retry", async () => {
+  vi.mocked(api.listBackups).mockResolvedValue([stored]);
+  vi.mocked(api.deleteBackup).mockRejectedValueOnce(
+    new ApiError(409, "In use", "backup_conflict"),
+  );
+  render(<BackupSettings onBusyChange={() => {}} />);
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Delete backup.zip" }),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "backup is in use",
+  );
+  expect(screen.getByRole("dialog")).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+  expect(await screen.findByText("Backup deleted.")).toBeVisible();
+  expect(api.deleteBackup).toHaveBeenCalledTimes(2);
+});
+
+test("refreshes an uncertain deletion result without silently repeating the deletion", async () => {
+  vi.mocked(api.listBackups).mockResolvedValue([stored]);
+  vi.mocked(api.deleteBackup).mockRejectedValueOnce(
+    new TypeError("Lost response"),
+  );
+  render(<BackupSettings onBusyChange={() => {}} />);
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Delete backup.zip" }),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "deletion result could not be confirmed",
+  );
+  expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
+  vi.mocked(api.listBackups).mockResolvedValue([]);
+  const dialog = screen.getByRole("dialog");
+  await userEvent.click(
+    within(dialog).getByRole("button", { name: "Refresh list" }),
+  );
+  expect(await screen.findByText("No backups yet.")).toBeVisible();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(api.deleteBackup).toHaveBeenCalledOnce();
+});
+
+test("removes an unavailable selection from the list and reports its changed state", async () => {
+  vi.mocked(api.listBackups).mockResolvedValue([stored]);
+  vi.mocked(api.deleteBackup).mockRejectedValueOnce(
+    new ApiError(404, "Missing", "backup_not_found"),
+  );
+  render(<BackupSettings onBusyChange={() => {}} />);
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Delete backup.zip" }),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "no longer available",
+  );
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.queryByText("backup.zip")).not.toBeInTheDocument();
+  expect(screen.getByText("No backups yet.")).toBeVisible();
 });

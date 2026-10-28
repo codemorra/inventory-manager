@@ -13,6 +13,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
+import { finished } from "node:stream/promises";
 import test, { type TestContext } from "node:test";
 import Database from "better-sqlite3";
 import { openPromise } from "yauzl";
@@ -380,10 +381,14 @@ test("lists durable backups with bounded metadata and retains unreadable archive
     "unrelated.zip",
     linked,
     directory,
-  ])
+  ]) {
     await assert.rejects(catalog.download(filename), {
       code: "backup_not_found",
     });
+    await assert.rejects(catalog.remove(filename), {
+      code: "backup_not_found",
+    });
+  }
   for (let attempt = 0; attempt < 2; attempt++) {
     const download = await catalog.download(backup.filename);
     const chunks: Buffer[] = [];
@@ -394,6 +399,46 @@ test("lists durable backups with bounded metadata and retains unreadable archive
     );
   }
   assert.deepEqual(await readdir(f.config.tempDirectory), []);
+});
+
+test("deletes only the selected backup after all downloads close and excludes concurrent operations", async (context) => {
+  const f = await fixture(context);
+  const backup = await createBackup(f.config, f.connection);
+  const keep = await createBackup(f.config, f.connection);
+  const catalog = createBackupCatalog(f.config);
+  const first = await catalog.download(backup.filename);
+  const second = await catalog.download(backup.filename);
+  await assert.rejects(catalog.remove(backup.filename), {
+    code: "backup_conflict",
+  });
+  const closed = finished(first.stream).catch(() => {});
+  first.stream.destroy();
+  await closed;
+  await assert.rejects(catalog.remove(backup.filename), {
+    code: "backup_conflict",
+  });
+  for await (const chunk of second.stream) assert.ok(chunk.length > 0);
+  const removal = catalog.remove(backup.filename);
+  await assert.rejects(catalog.download(backup.filename), {
+    code: "backup_conflict",
+  });
+  await assert.rejects(catalog.remove(backup.filename), {
+    code: "backup_conflict",
+  });
+  await removal;
+  await assert.rejects(catalog.remove(backup.filename), {
+    code: "backup_not_found",
+  });
+  assert.deepEqual(
+    (await catalog.list()).map((entry) => entry.filename),
+    [keep.filename],
+  );
+  assert.equal(f.services.inventories.get(f.inventory.id).id, f.inventory.id);
+  const broken =
+    "backup-9999-01-01T00-00-00-000Z-00000000-0000-4000-8000-000000000000.zip";
+  await writeFile(join(f.config.backupsDirectory, broken), "damaged");
+  await catalog.remove(broken);
+  assert.deepEqual(await readdir(f.config.backupsDirectory), [keep.filename]);
 });
 
 test("serves manual backups from the runtime, survives errors and follows relocated storage", async () => {
@@ -479,6 +524,20 @@ test("serves manual backups from the runtime, survives errors and follows reloca
       (await readdir(target)).sort(),
       [backup.body.filename, next.body.filename].sort(),
     );
+    const deleted = await api
+      .delete(`/backups/${backup.body.filename}`)
+      .expect(204);
+    assert.equal(deleted.headers["cache-control"], "no-store");
+    await api.get(url).expect(404);
+    await api.delete(`/backups/${backup.body.filename}`).expect(404);
+    await api.delete("/backups/not-a-backup").expect(404);
+    assert.deepEqual(
+      (await api.get("/backups").expect(200)).body.map(
+        (entry: { filename: string }) => entry.filename,
+      ),
+      [next.body.filename],
+    );
+    assert.deepEqual(await readdir(target), [next.body.filename]);
     await api.get("/inventories").expect(200);
     assert.deepEqual(await readdir(runtime.config.tempDirectory), []);
   } finally {
