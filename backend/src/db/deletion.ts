@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, sql, type SQLWrapper } from "drizzle-orm";
 import { advanceItemRevisions } from "./item-revisions.js";
 import { tombstoneAttachments } from "../attachments/metadata.js";
 import {
+  inventoryViews,
   inventoryFieldOptions,
   inventoryFields,
   inventoryItems,
@@ -89,6 +90,9 @@ export function tombstoneInventoryContents(
   inventoryId: string,
   deletedAt: string,
 ) {
+  db.delete(inventoryViews)
+    .where(eq(inventoryViews.inventoryId, inventoryId))
+    .run();
   // Include previously deleted parents so their still-active descendants cannot become orphaned content.
   const fieldIds = db
     .select({ id: inventoryFields.id })

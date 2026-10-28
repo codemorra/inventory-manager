@@ -1,3 +1,5 @@
+import { settingsRoutes } from "./routes/settings.js";
+import { viewRoutes } from "./routes/views.js";
 import cors from "cors";
 import express from "express";
 import type { Logger } from "./logging.js";
@@ -50,6 +52,8 @@ export function createApp(logger: Pick<Logger, "error">, services: Services) {
     response.json({ status: "ok" });
   });
   app.use(docsRoutes());
+  app.use("/application-settings", settingsRoutes(services));
+  app.use(viewRoutes(services));
   app.use("/inventory-groups", groupRoutes(services));
   app.use("/inventory-templates", templateRoutes(services));
   app.use("/inventory-imports", importRoutes(services));

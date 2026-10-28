@@ -29,7 +29,9 @@ export async function startServer(config: AppConfig) {
     const services = createServices(connection.db, {
       directory: config.attachmentsDirectory,
       tempDirectory: config.tempDirectory,
+      settingsPath: config.settingsPath,
     });
+    await services.settings!.read();
     attachmentService = services.attachments;
     exportService = services.exports;
     importService = services.imports;

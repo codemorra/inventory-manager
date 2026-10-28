@@ -2374,6 +2374,363 @@
           }
         }
       }
+    },
+    "/application-settings": {
+      "get": {
+        "tags": ["preferences"],
+        "summary": "Read file-backed application settings",
+        "operationId": "read_application_settings",
+        "responses": {
+          "200": {
+            "description": "Effective versioned preferences with current revision; no filesystem paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationSettings"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "application_settings_unavailable: invalid/unreadable/unsupported settings file, preserved without reset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["preferences"],
+        "summary": "Update application preferences at an expected revision",
+        "operationId": "update_application_settings",
+        "description": "Atomically replaces config/settings.json using a private synced sibling file. Merges only supplied preference keys. Preserves the file on invalid input, storage failure or conflict. Language system follows the client locale; file warnings remain advisory.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["expected_revision", "preferences"],
+                "properties": {
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "preferences": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/ApplicationPreferences"
+                      },
+                      {
+                        "minProperties": 1
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Effective versioned preferences with current revision; no filesystem paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationSettings"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "application_settings_conflict: stale or exhausted revision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid preference values, unknown properties or missing revision."
+          },
+          "503": {
+            "description": "application_settings_unavailable: invalid/unreadable/unsupported settings file, preserved without reset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Settings file write failed; previous contents preserved."
+          }
+        }
+      }
+    },
+    "/application-settings/migrate": {
+      "post": {
+        "tags": ["preferences"],
+        "summary": "Import legacy browser application preferences once",
+        "operationId": "migrate_application_settings",
+        "description": "Fills only previously unconfigured file keys. Once browser_migration_completed is true, repeated calls return existing settings unchanged. The browser must clear legacy keys only after an acknowledged success.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["preferences"],
+                "properties": {
+                  "preferences": {
+                    "$ref": "#/components/schemas/ApplicationPreferences"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Effective versioned preferences with current revision; no filesystem paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationSettings"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Settings revision exhausted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid legacy preference values."
+          },
+          "503": {
+            "description": "application_settings_unavailable: invalid/unreadable/unsupported settings file, preserved without reset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Storage failure; migration can safely be retried."
+          }
+        }
+      }
+    },
+    "/inventory-view-preferences": {
+      "get": {
+        "tags": ["preferences"],
+        "summary": "List stored views for active inventories",
+        "operationId": "list_inventory_views",
+        "responses": {
+          "200": {
+            "description": "Stored active inventory views only; defaults are omitted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryViewState"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}/view-preferences": {
+      "get": {
+        "tags": ["preferences"],
+        "summary": "Read an inventory view with safe defaults",
+        "operationId": "read_inventory_view",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Normalized complete view; revision 0 means no persisted row.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryViewState"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Active inventory not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["preferences"],
+        "summary": "Save an inventory view at its expected revision",
+        "operationId": "update_inventory_view",
+        "description": "Stores manual column base widths only, never visual surplus or a separate Auto flag. Normalizes field references and visibility. Does not advance item/configuration revisions or affect inventory archives.",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["expected_revision", "preferences"],
+                "properties": {
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "preferences": {
+                    "$ref": "#/components/schemas/InventoryViewPreferences"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Normalized complete view; revision 0 means no persisted row.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryViewState"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Active inventory not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "inventory_view_conflict: stale/exhausted view revision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid view schema, width bounds or expected revision."
+          }
+        }
+      }
+    },
+    "/inventories/{inventory_id}/view-preferences/migrate": {
+      "post": {
+        "tags": ["preferences"],
+        "summary": "Import a legacy browser view if none is stored",
+        "operationId": "migrate_inventory_view",
+        "description": "Sanitizes malformed/unsupported/stale legacy properties against current fields. Existing file-independent database views are returned unchanged. Safe to retry before clearing browser keys.",
+        "parameters": [
+          {
+            "name": "inventory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["preferences"],
+                "properties": {
+                  "preferences": {}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Normalized complete view; revision 0 means no persisted row.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryViewState"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Active inventory not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid migration envelope."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3794,6 +4151,146 @@
           "group_id": {
             "type": ["string", "null"],
             "minLength": 1
+          }
+        }
+      },
+      "ApplicationPreferences": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "language": {
+            "type": "string",
+            "enum": ["system", "de", "en"]
+          },
+          "theme": {
+            "type": "string",
+            "enum": ["system", "light", "dark"]
+          },
+          "accent": {
+            "type": "string",
+            "enum": ["teal", "blue", "purple", "orange"]
+          },
+          "attachmentWarnings": {
+            "type": "string",
+            "enum": ["show", "hide"]
+          }
+        }
+      },
+      "ApplicationSettings": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "revision",
+          "preferences",
+          "browser_migration_completed"
+        ],
+        "properties": {
+          "version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "preferences": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationPreferences"
+              },
+              {
+                "required": [
+                  "language",
+                  "theme",
+                  "accent",
+                  "attachmentWarnings"
+                ]
+              }
+            ]
+          },
+          "browser_migration_completed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "InventoryViewPreferences": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "sort",
+          "hiddenFieldIds",
+          "wrapText",
+          "attachmentPreviews",
+          "columnWidths"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1
+          },
+          "sort": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["fieldId", "direction"],
+                "properties": {
+                  "fieldId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "direction": {
+                    "type": "string",
+                    "enum": ["ascending", "descending"]
+                  }
+                }
+              }
+            ]
+          },
+          "hiddenFieldIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "wrapText": {
+            "type": "boolean"
+          },
+          "attachmentPreviews": {
+            "type": "boolean"
+          },
+          "columnWidths": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 48,
+              "maximum": 32768
+            }
+          }
+        }
+      },
+      "InventoryViewState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["inventory_id", "revision", "preferences"],
+        "properties": {
+          "inventory_id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/InventoryViewPreferences"
           }
         }
       }

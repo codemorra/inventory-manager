@@ -290,7 +290,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     assert.deepEqual(db.select().from(table).all(), []);
   assert.deepEqual(
     sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get(),
-    { count: 8 },
+    { count: 9 },
   );
 
   const inventory = db
@@ -351,7 +351,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     reopened.sqlite
       .prepare("SELECT count(*) AS count FROM __drizzle_migrations")
       .get(),
-    { count: 8 },
+    { count: 9 },
   );
 });
 

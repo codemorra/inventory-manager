@@ -1,3 +1,5 @@
+import { createSettingsService } from "./settings/service.js";
+import { createViewService } from "./views/service.js";
 import { join } from "node:path";
 import { createImportService } from "./exchange/import-service.js";
 import { createExportService } from "./exchange/export-service.js";
@@ -17,6 +19,7 @@ import {
 export interface ServiceStorageOptions extends AttachmentStorageOptions {
   // Production always supplies the root-level temp directory; isolated storage-only callers may omit it.
   tempDirectory?: string;
+  settingsPath?: string;
 }
 
 /**
@@ -41,6 +44,10 @@ export function createServices(
     : null;
   return {
     inventories,
+    views: createViewService(db),
+    settings: attachmentStorage?.settingsPath
+      ? createSettingsService(attachmentStorage.settingsPath)
+      : null,
     fields,
     options,
     items,
