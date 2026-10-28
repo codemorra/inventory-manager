@@ -37,6 +37,8 @@ Click a column heading to cycle through ascending, descending, and original orde
 
 Open **Settings** at the bottom of the sidebar to change language, appearance, and accent color. **Templates** directly above it lets you edit or delete saved structures.
 
+Use **Settings > Backups** to create a ZIP backup of your inventories, templates, table views and attached files. Saved backups show their date, kind and size and can be downloaded individually.
+
 ## Fields and item values
 
 | Field type      | Purpose                                                           |

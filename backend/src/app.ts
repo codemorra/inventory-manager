@@ -1,6 +1,7 @@
 import type { ServerResponse } from "node:http";
 import { settingsRoutes } from "./routes/settings.js";
 import { storageRoutes } from "./routes/storage.js";
+import { backupRoutes } from "./routes/backups.js";
 import { viewRoutes } from "./routes/views.js";
 import cors from "cors";
 import express from "express";
@@ -66,11 +67,7 @@ export function createApp(
   app.use(docsRoutes());
   app.use("/application-settings", settingsRoutes(services));
   app.use("/storage-locations", storageRoutes(services, options.relocate));
-  if (options.backup)
-    app.post("/backups", async (_request, response) => {
-      response.set("Cache-Control", "no-store");
-      response.status(201).json(await options.backup!(response));
-    });
+  app.use("/backups", backupRoutes(services, options.backup));
   app.use(viewRoutes(services));
   app.use("/inventory-groups", groupRoutes(services));
   app.use("/inventory-templates", templateRoutes(services));

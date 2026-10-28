@@ -18,4 +18,12 @@ Only a successfully verified ZIP is atomically renamed to a generated timestamp/
 
 Metadata is bounded to 64 MiB and archives to 524,290 entries, matching the existing archive processing bounds. These bounds do not impose a per-attachment or total ZIP byte-size limit. Additional disk space is required for the SQLite snapshot, its verification copy and the compressed backup. New requests remain queued during backup creation and verification.
 
-Validation failures return 422 `invalid_backup_archive`; an unavailable exclusive operation returns 409 `backup_conflict`. Unexpected storage failures return 500. Waiting requests resume after either success or failure. Listing, downloading, restoring and scheduling backups are not exposed by this initial endpoint.
+Validation failures return 422 `invalid_backup_archive`; an unavailable exclusive operation returns 409 `backup_conflict`. Unexpected storage failures return 500. Waiting requests resume after either success or failure.
+
+## Listing and download
+
+`GET /backups` lists regular files matching the application's timestamp/UUID backup naming convention in the active backup directory, ordered by filename from newest to oldest. Each entry contains `filename`, compressed `byte_size` and `metadata` with `id`, `created_at` and `kind`. Listing reads and validates bounded manifest metadata without decompressing the database or attachment bodies. An unreadable manifest produces `metadata: null` for that entry, preserving access to other backups. Private publication directories, symbolic links, directories and unrelated filenames are ignored. API responses expose archive basenames rather than local filesystem paths.
+
+`GET /backups/{filename}/download` streams the selected regular archive as `application/zip`, with attachment disposition, exact `Content-Length`, `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`. `HEAD` returns the download headers without transmitting the body. Downloads are repeatable and preserve the archive. Invalid names, missing files and symbolic links return 404 `backup_not_found`. Requests and download streams participate in the existing runtime activity tracking, so storage relocation waits for active downloads to finish.
+
+Settings > Backups loads the list when expanded and offers manual creation, refresh and native browser downloads. Creation temporarily disables competing settings operations and dialog dismissal while awaiting its result. A successful creation remains visible if a subsequent list refresh fails. An uncertain creation response requires refreshing the catalog before another creation attempt.

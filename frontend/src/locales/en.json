@@ -512,5 +512,29 @@
     "changed": "Storage locations have been changed.",
     "default": "Use default",
     "defaultLabel": "Use default: {{folder}}"
+  },
+  "backups": {
+    "title": "Backups",
+    "description": "Save your inventories, templates, table views and attached files in a ZIP archive.",
+    "create": "Create backup",
+    "creating": "Creating backup…",
+    "creatingHelp": "Your data is being saved and checked. Please wait.",
+    "created": "Backup saved.",
+    "refresh": "Refresh list",
+    "loading": "Loading backups…",
+    "empty": "No backups yet.",
+    "list": "Saved backups",
+    "download": "Download",
+    "downloadLabel": "Download {{filename}}",
+    "unreadable": "Metadata could not be read",
+    "loadFailed": "The backup list could not be loaded. Refresh the list to try again.",
+    "createFailed": "The backup could not be created. Check the files and available storage, then try again.",
+    "conflict": "Another storage operation is running. Please try again afterward.",
+    "uncertain": "The backup result could not be confirmed. Refresh the list before creating another backup.",
+    "kinds": {
+      "manual": "Manual",
+      "automatic": "Automatic",
+      "pre-restore": "Before restore"
+    }
   }
 }

@@ -2775,6 +2775,138 @@
             "description": "Storage or unexpected backup failure. Existing backups and application data are preserved."
           }
         }
+      },
+      "get": {
+        "tags": ["backups"],
+        "summary": "List saved data backups",
+        "operationId": "list_application_backups",
+        "description": "List regular application-named ZIP files in the current backup directory, newest filename first. Read bounded manifest metadata without decompressing database or attachment bodies. Unreadable metadata is null; other backups remain available. Responses use Cache-Control: no-store.",
+        "responses": {
+          "200": {
+            "description": "Saved backup list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StoredBackup"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Backup storage could not be enumerated."
+          }
+        }
+      }
+    },
+    "/backups/{filename}/download": {
+      "parameters": [
+        {
+          "name": "filename",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Generated archive basename returned by GET /backups."
+        }
+      ],
+      "get": {
+        "tags": ["backups"],
+        "summary": "Download a saved data backup",
+        "operationId": "download_application_backup",
+        "description": "Stream the regular archive directly, without following symbolic links. Runtime coordination drains the response and file stream before switching storage.",
+        "responses": {
+          "200": {
+            "description": "Saved archive; downloading does not consume or delete it.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Attachment filename."
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Exact compressed archive size."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string",
+                  "const": "nosniff"
+                }
+              }
+            },
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "backup_not_found: invalid name, missing archive or nonregular file."
+          },
+          "500": {
+            "description": "Backup storage access failed."
+          }
+        }
+      },
+      "head": {
+        "tags": ["backups"],
+        "summary": "Read backup download headers",
+        "operationId": "head_application_backup",
+        "responses": {
+          "200": {
+            "description": "Download headers without a body.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Attachment filename."
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Exact compressed archive size."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string",
+                  "const": "nosniff"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "backup_not_found: invalid name, missing archive or nonregular file."
+          },
+          "500": {
+            "description": "Backup storage access failed."
+          }
+        }
       }
     }
   },
@@ -4448,6 +4580,46 @@
           "byte_size": {
             "type": "integer",
             "minimum": 0
+          }
+        }
+      },
+      "StoredBackup": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["filename", "byte_size", "metadata"],
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "byte_size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "created_at", "kind"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": ["manual", "automatic", "pre-restore"]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       }
