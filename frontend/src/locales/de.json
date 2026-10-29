@@ -5,10 +5,12 @@
   "common": {
     "accent": {
       "label": "Akzentfarbe",
-      "teal": "Türkis",
+      "brand": "Grün",
       "blue": "Blau",
       "purple": "Violett",
-      "orange": "Orange"
+      "orange": "Orange",
+      "cyan": "Cyan",
+      "slate": "Graphit"
     },
     "actions": {
       "increase": "{{field}} erhöhen",

@@ -95,7 +95,7 @@ export function InventoryItemFieldInput({
     <>
       {field.name}
       {field.is_required && (
-        <span aria-hidden="true" className="ml-1 text-accent">
+        <span aria-hidden="true" className="ml-1 text-accent-text">
           *
         </span>
       )}

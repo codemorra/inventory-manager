@@ -344,7 +344,7 @@ export function InventoryTableControls({
                     close();
                   }}
                 >
-                  <span aria-hidden="true" className="w-4 text-accent">
+                  <span aria-hidden="true" className="w-4 text-accent-text">
                     {wrapText ? "✓" : ""}
                   </span>
                   {t("table.menu.wrapText")}
@@ -365,7 +365,7 @@ export function InventoryTableControls({
                     close();
                   }}
                 >
-                  <span aria-hidden="true" className="w-4 text-accent">
+                  <span aria-hidden="true" className="w-4 text-accent-text">
                     {attachmentPreviews ? "✓" : ""}
                   </span>
                   {t("attachments.showPreviews")}
@@ -424,7 +424,10 @@ export function InventoryTableControls({
                     close();
                   }}
                 >
-                  <span aria-hidden="true" className="w-4 shrink-0 text-accent">
+                  <span
+                    aria-hidden="true"
+                    className="w-4 shrink-0 text-accent-text"
+                  >
                     {allColumnsAutomatic ? "✓" : ""}
                   </span>
                   {t("table.menu.automaticWidths")}
@@ -458,7 +461,7 @@ export function InventoryTableControls({
                   >
                     <span
                       aria-hidden="true"
-                      className="w-4 shrink-0 text-accent"
+                      className="w-4 shrink-0 text-accent-text"
                     >
                       {column.visible ? "✓" : ""}
                     </span>

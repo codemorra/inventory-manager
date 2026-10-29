@@ -126,7 +126,7 @@ function formatValue(
         target="_blank"
         rel="noopener noreferrer"
         title={value.url}
-        className="cursor-pointer break-all text-accent underline decoration-accent/40 underline-offset-2 transition hover:text-accent-hover hover:decoration-current focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="cursor-pointer break-all text-accent-text underline decoration-accent/40 underline-offset-2 transition hover:text-accent-hover hover:decoration-current focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {text}
       </a>
@@ -763,7 +763,7 @@ export function InventoryItemList({
                   items.length === 0 ||
                   !fields.some((field) => field.field_type !== "id")
                 }
-                className="flex size-8 cursor-pointer items-center justify-center rounded-sm text-muted transition enabled:hover:bg-control-hover enabled:hover:text-accent focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex size-8 cursor-pointer items-center justify-center rounded-sm text-muted transition enabled:hover:bg-control-hover enabled:hover:text-accent-text focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => {
                   setColumnMenu(null);
                   beginTableEditing();
@@ -860,7 +860,7 @@ export function InventoryItemList({
                   >
                     {field.is_sortable ? (
                       <button
-                        className={`relative block w-full cursor-pointer py-3 pr-7 pl-3 text-left font-semibold transition-colors enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sortField?.id === field.id ? "bg-accent-soft text-accent" : ""}`}
+                        className={`relative block w-full cursor-pointer py-3 pr-7 pl-3 text-left font-semibold transition-colors enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sortField?.id === field.id ? "bg-accent-soft text-accent-text" : ""}`}
                         onClick={() => toggleSort(field.id)}
                         disabled={tableEdit.active}
                         type="button"

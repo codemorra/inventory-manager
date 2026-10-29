@@ -26,7 +26,7 @@ export function AboutSettings() {
             href="https://github.com/codemorra/inventory-manager"
             target="_blank"
             rel="noopener noreferrer"
-            className="break-all text-accent underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-accent"
+            className="break-all text-accent-text underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-accent"
           >
             github.com/codemorra/inventory-manager
           </a>
@@ -36,7 +36,7 @@ export function AboutSettings() {
           <button
             type="button"
             onClick={() => setLicenseOpen(true)}
-            className="text-accent underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-accent"
+            className="text-accent-text underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-accent"
           >
             MIT
           </button>

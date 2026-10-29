@@ -76,7 +76,7 @@ export function AttachmentFieldInput({
       <label htmlFor={id} className="block text-sm font-medium">
         {field.name}
         {field.is_required && (
-          <span aria-hidden="true" className="ml-1 text-accent">
+          <span aria-hidden="true" className="ml-1 text-accent-text">
             *
           </span>
         )}
@@ -101,7 +101,7 @@ export function AttachmentFieldInput({
                     downloadAttachment(file);
                   }}
                   title={name}
-                  className="min-w-0 flex-1 truncate text-accent underline"
+                  className="min-w-0 flex-1 truncate text-accent-text underline"
                 >
                   {name}
                 </a>

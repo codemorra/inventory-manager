@@ -262,7 +262,7 @@ export function InventoryFieldsPanel({ title }: { title?: string } = {}) {
                 title={t("fields.reorderHint")}
                 disabled={!enabled}
                 draggable={enabled}
-                className="ml-2 flex size-7 shrink-0 self-center items-center justify-center rounded-sm text-muted transition-colors duration-150 motion-reduce:transition-none enabled:cursor-grab enabled:hover:bg-control-hover enabled:hover:text-accent enabled:active:cursor-grabbing disabled:cursor-default disabled:opacity-40"
+                className="ml-2 flex size-7 shrink-0 self-center items-center justify-center rounded-sm text-muted transition-colors duration-150 motion-reduce:transition-none enabled:cursor-grab enabled:hover:bg-control-hover enabled:hover:text-accent-text enabled:active:cursor-grabbing disabled:cursor-default disabled:opacity-40"
                 onDragStart={(event) => {
                   if (!enabled) {
                     event.preventDefault();

@@ -80,7 +80,7 @@ export function UpdateSettings() {
             href={result.release_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-accent underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-accent"
+            className="text-accent-text underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-accent"
           >
             {t("updates.openRelease")}
           </a>
@@ -88,7 +88,7 @@ export function UpdateSettings() {
             href="https://github.com/codemorra/inventory-manager#updates"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-accent underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-accent"
+            className="text-accent-text underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-accent"
           >
             {t("updates.instructions")}
           </a>

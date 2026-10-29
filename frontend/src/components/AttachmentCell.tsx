@@ -141,7 +141,7 @@ export function AttachmentCell({
                   event.stopPropagation();
                   downloadAttachment(file);
                 }}
-                className={`max-w-full cursor-pointer items-center rounded-sm border border-shell bg-surface text-accent hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent ${previews ? "flex w-28 flex-col gap-1 p-1.5 text-xs" : "inline-flex gap-1.5 px-2 py-1 text-sm"}`}
+                className={`max-w-full cursor-pointer items-center rounded-sm border border-shell bg-surface text-accent-text hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent ${previews ? "flex w-28 flex-col gap-1 p-1.5 text-xs" : "inline-flex gap-1.5 px-2 py-1 text-sm"}`}
                 onContextMenu={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -183,7 +183,7 @@ export function AttachmentCell({
           ref={moreTrigger}
           type="button"
           onClick={() => setExpanded(true)}
-          className="mt-1 text-xs text-accent underline"
+          className="mt-1 text-xs text-accent-text underline"
         >
           {t("attachments.more", {
             count: ordered.length - (previews ? columns * 2 : 3),

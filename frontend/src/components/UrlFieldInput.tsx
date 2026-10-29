@@ -39,7 +39,7 @@ export function UrlFieldInput({
       <legend className="text-sm font-medium text-foreground">
         {label}
         {required && (
-          <span aria-hidden="true" className="ml-1 text-accent">
+          <span aria-hidden="true" className="ml-1 text-accent-text">
             *
           </span>
         )}

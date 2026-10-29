@@ -86,7 +86,7 @@ export function AppShell({ children }: AppShellProps) {
       >
         <AppLogo />
         <div>
-          <p className="whitespace-nowrap text-lg font-semibold tracking-tight text-accent">
+          <p className="whitespace-nowrap text-lg font-semibold tracking-tight text-accent-text">
             {t("app.name")}
           </p>
         </div>
@@ -108,7 +108,7 @@ export function AppShell({ children }: AppShellProps) {
           to="/settings"
           onClick={() => setIsNavigationOpen(false)}
           className={({ isActive }) =>
-            `flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-accent ${isActive ? "bg-accent-soft text-accent" : "text-muted hover:bg-control-hover hover:text-foreground"}`
+            `flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-accent ${isActive ? "bg-accent-soft text-accent-text" : "text-muted hover:bg-control-hover hover:text-foreground"}`
           }
         >
           <svg

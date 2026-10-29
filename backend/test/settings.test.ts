@@ -150,6 +150,9 @@ test("validates public settings writes and returns structured conflicts and no-s
     { preferences: { theme: "dark" } },
     { expected_revision: false, preferences: { theme: "dark" } },
     { expected_revision: 0, preferences: { accent: "pink" } },
+    { expected_revision: 0, preferences: { accent: "rose" } },
+    { expected_revision: 0, preferences: { accent: "green" } },
+    { expected_revision: 0, preferences: { accent: "teal" } },
     { expected_revision: 0, preferences: {} },
     { expected_revision: 0, preferences: { theme: "dark" }, path: "/other" },
   ])
@@ -197,4 +200,49 @@ test("refuses to listen with an invalid settings file and preserves its contents
     code("application_settings_unavailable"),
   );
   assert.equal(await readFile(f.config.settingsPath, "utf8"), '{"version":42}');
+});
+
+test("persists all supported accent palettes through HTTP and settings reconstruction", async (context) => {
+  const f = await fixture(context);
+  const accents = ["brand", "cyan", "blue", "purple", "orange", "slate"];
+  let revision = 0;
+  for (const accent of accents) {
+    const saved = await f.api
+      .patch("/application-settings")
+      .send({
+        expected_revision: revision,
+        preferences: { accent },
+      })
+      .expect(200);
+    revision = saved.body.revision;
+    assert.equal(saved.body.preferences.accent, accent);
+    const reconstructed = await createSettingsService(
+      f.config.settingsPath,
+    ).read();
+    assert.equal(reconstructed.preferences.accent, accent);
+    assert.equal(reconstructed.revision, revision);
+  }
+  assert.deepEqual(f.errors, []);
+});
+
+test("defaults missing and retired accents to the original palette without rewriting existing settings", async (context) => {
+  const f = await fixture(context);
+  for (const accent of [undefined, "rose", "green", "teal"]) {
+    const bytes = JSON.stringify({
+      version: 1,
+      revision: 4,
+      preferences: {
+        language: "de",
+        theme: "dark",
+        ...(accent ? { accent } : {}),
+      },
+    });
+    await writeFile(f.config.settingsPath, bytes);
+    const settings = await f.settings.read();
+    assert.equal(settings.preferences.accent, "brand");
+    assert.equal(settings.preferences.language, "de");
+    assert.equal(settings.preferences.theme, "dark");
+    assert.equal(settings.revision, 4);
+    assert.equal(await readFile(f.config.settingsPath, "utf8"), bytes);
+  }
 });

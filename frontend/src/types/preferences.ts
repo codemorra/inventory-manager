@@ -3,7 +3,7 @@ import type { InventoryViewPreferences } from "./inventoryView";
 export interface ApplicationPreferences {
   language: "system" | "de" | "en";
   theme: "system" | "light" | "dark";
-  accent: "teal" | "blue" | "purple" | "orange";
+  accent: "brand" | "cyan" | "blue" | "purple" | "orange" | "slate";
   attachmentWarnings: "show" | "hide";
 }
 export interface ApplicationSettings {

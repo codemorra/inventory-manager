@@ -13,7 +13,7 @@ export function InventoryOverviewPage() {
     <div>
       <div className="min-w-0 w-full">
         <header className="mb-8">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent-text">
             {t("app.name")}
           </p>
           <h1 className="text-3xl font-semibold tracking-tight text-heading sm:text-4xl">
@@ -46,7 +46,7 @@ export function InventoryOverviewPage() {
 
         {!isPending && !isError && inventories?.length === 0 && (
           <section className="rounded-2xl border border-dashed border-shell bg-surface/70 px-6 py-14 text-center shadow-soft">
-            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent-soft text-accent">
+            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent-soft text-accent-text">
               <svg
                 aria-hidden="true"
                 className="size-7"

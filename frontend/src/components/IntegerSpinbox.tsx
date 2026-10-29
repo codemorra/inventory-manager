@@ -214,7 +214,7 @@ export function IntegerSpinbox({
                     ? Number(value) >= max
                     : Number(value) <= min))
               }
-              className={`flex items-center justify-center text-muted transition enabled:hover:bg-control-hover enabled:hover:text-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent disabled:cursor-default disabled:opacity-40 ${direction === -1 ? "border-t border-shell" : ""}`}
+              className={`flex items-center justify-center text-muted transition enabled:hover:bg-control-hover enabled:hover:text-accent-text focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent disabled:cursor-default disabled:opacity-40 ${direction === -1 ? "border-t border-shell" : ""}`}
               onMouseDown={(event) => event.preventDefault()}
               onPointerDown={(event) => {
                 if (event.button !== 0 || !event.isPrimary) return;

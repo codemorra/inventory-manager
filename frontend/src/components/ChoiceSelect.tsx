@@ -243,7 +243,7 @@ export function ChoiceSelect(props: ChoiceSelectProps) {
             id={`${id}-option-${index}`}
             aria-selected={selectedValues.includes(option.value)}
             tabIndex={-1}
-            className={`flex w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-left ${index === activeIndex ? "bg-control-hover" : "hover:bg-control-hover"} ${selectedValues.includes(option.value) ? "font-semibold text-accent" : "text-foreground"}`}
+            className={`flex w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-left ${index === activeIndex ? "bg-control-hover" : "hover:bg-control-hover"} ${selectedValues.includes(option.value) ? "font-semibold text-accent-text" : "text-foreground"}`}
             onMouseDown={(event) => event.preventDefault()}
             onPointerMove={() => setActive(index)}
             onClick={() => choose(index)}
@@ -284,7 +284,7 @@ export function ChoiceSelect(props: ChoiceSelectProps) {
       >
         {label}
         {required && (
-          <span aria-hidden="true" className="ml-1 text-accent">
+          <span aria-hidden="true" className="ml-1 text-accent-text">
             *
           </span>
         )}

@@ -275,7 +275,7 @@ function InventoryEditorSession({
               type="button"
               aria-current={section === entry ? "page" : undefined}
               disabled={busy || pendingEditors.length > 0}
-              className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50 ${section === entry ? "border-accent bg-accent-soft text-accent" : "border-transparent text-muted enabled:hover:bg-control-hover enabled:hover:border-accent/50 hover:text-foreground"}`}
+              className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50 ${section === entry ? "border-accent bg-accent-soft text-accent-text" : "border-transparent text-muted enabled:hover:bg-control-hover enabled:hover:border-accent/50 hover:text-foreground"}`}
               onClick={() => setSection(entry)}
             >
               {t(
