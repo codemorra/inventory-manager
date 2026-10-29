@@ -95,11 +95,12 @@ test.each([
       await user.click(
         within(
           screen.getByRole("dialog", { name: "Mobile navigation" }),
-        ).getByRole("button", { name: "New inventory" }),
+        ).getByRole("button", { name: "New" }),
       );
     } else {
-      await user.click(screen.getByRole("button", { name: "New inventory" }));
+      await user.click(screen.getByRole("button", { name: "New" }));
     }
+    await user.click(screen.getByRole("menuitem", { name: "New inventory" }));
     await user.type(screen.getByLabelText("Name"), "Games");
     await user.click(screen.getByRole("button", { name: "Create inventory" }));
 

@@ -54,15 +54,19 @@ vi.mock("../../src/services/inventoryGroups", () => ({
 
 afterEach(cleanup);
 
-// Render the application shell within an in-memory router.
-function renderAppShell() {
+/**
+ * Render the application shell with isolated data and an initial route.
+ * @param initialPath The route shown before navigation.
+ * @returns The rendered application shell.
+ */
+function renderAppShell(initialPath = "/") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialPath]}>
         <AppShell>
           <h1>Page content</h1>
         </AppShell>
@@ -70,6 +74,37 @@ function renderAppShell() {
     </QueryClientProvider>,
   );
 }
+
+test.each([false, true])(
+  "opens the overview through the application header (mobile: %s)",
+  async (mobile) => {
+    const user = userEvent.setup();
+    mockedGetInventories.mockResolvedValue([]);
+    renderAppShell("/templates");
+    if (mobile)
+      await user.click(screen.getByRole("button", { name: "Open menu" }));
+    const scope = mobile
+      ? within(screen.getByRole("dialog", { name: "Mobile navigation" }))
+      : screen;
+    const header = scope.getByRole("link", {
+      name: "Inventory Manager – Go to overview",
+    });
+    expect(header).toHaveAttribute("href", "/");
+    expect(header).toHaveAttribute("title", "Go to overview");
+    expect(header).not.toHaveAttribute("aria-current");
+    if (mobile) await user.click(header);
+    else {
+      header.focus();
+      await user.keyboard("{Enter}");
+    }
+    expect(
+      screen.queryByRole("dialog", { name: "Mobile navigation" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Inventory Manager – Go to overview" }),
+    ).toHaveAttribute("aria-current", "page");
+  },
+);
 
 test("requires a reload after another session replaces the application data", async () => {
   mockedGetInventories.mockResolvedValue([]);
@@ -136,9 +171,8 @@ describe("AppShell", () => {
     const navigation = screen.getByRole("dialog", {
       name: "Mobile navigation",
     });
-    await user.click(
-      within(navigation).getByRole("button", { name: "New group" }),
-    );
+    await user.click(within(navigation).getByRole("button", { name: "New" }));
+    await user.click(screen.getByRole("menuitem", { name: "New group" }));
     expect(
       screen.queryByRole("dialog", { name: "Mobile navigation" }),
     ).not.toBeInTheDocument();
@@ -279,15 +313,14 @@ test.each([false, true])(
 );
 
 // Import is shell-owned so dismissing mobile navigation does not unmount the import dialog.
-test("opens import beside inventory creation and replaces mobile navigation", async () => {
+test("opens import from the creation menu and replaces mobile navigation", async () => {
   const user = userEvent.setup();
   mockedGetInventories.mockResolvedValue([]);
   renderAppShell();
   await user.click(screen.getByRole("button", { name: "Open menu" }));
   const mobile = screen.getByRole("dialog", { name: "Mobile navigation" });
-  await user.click(
-    within(mobile).getByRole("button", { name: "Import inventory" }),
-  );
+  await user.click(within(mobile).getByRole("button", { name: "New" }));
+  await user.click(screen.getByRole("menuitem", { name: "Import inventory" }));
   expect(
     screen.queryByRole("dialog", { name: "Mobile navigation" }),
   ).not.toBeInTheDocument();
@@ -315,12 +348,14 @@ test("disables archive actions while inventory settings have unsaved changes", a
   fireEvent.contextMenu(link, { clientX: 100, clientY: 200 });
   await user.click(screen.getByRole("menuitem", { name: "Edit" }));
   await user.type(await screen.findByLabelText("Name"), " changed");
+  await user.click(screen.getByRole("button", { name: "New" }));
   expect(
-    screen.getByRole("button", { name: "Import inventory" }),
+    screen.getByRole("menuitem", { name: "Import inventory" }),
   ).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Cancel" }));
+  await user.click(screen.getByRole("button", { name: "New" }));
   expect(
-    screen.getByRole("button", { name: "Import inventory" }),
+    screen.getByRole("menuitem", { name: "Import inventory" }),
   ).toBeEnabled();
 });
 

@@ -14,7 +14,7 @@ import { MemoryRouter, useLocation } from "react-router-dom";
 
 import { ApiError } from "../../src/services/api";
 import { createInventory } from "../../src/services/inventories";
-import { InventoryCreateForm } from "../../src/components/InventoryCreateForm";
+import { SidebarCreateActions } from "../../src/components/layout/SidebarCreateActions";
 import {
   getInventoryTemplates,
   instantiateInventoryTemplate,
@@ -90,7 +90,11 @@ function renderInventoryCreateForm() {
   const view = render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={["/inventories/existing/items"]}>
-        <InventoryCreateForm />
+        <SidebarCreateActions
+          onCreated={undefined}
+          onCreateGroup={undefined}
+          onImport={undefined}
+        />
         <Location />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -102,6 +106,16 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
+
+/**
+ * Open the creation dialog through the application's sidebar menu.
+ * @param user The current interaction session.
+ * @returns Completion after selecting the creation action.
+ */
+async function openInventoryCreation(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "New" }));
+  await user.click(screen.getByRole("menuitem", { name: "New inventory" }));
+}
 
 /**
  * Choose an option through the application's themed dropdown.
@@ -135,7 +149,7 @@ test("creates from a selected template in a chosen group without copying templat
   const result = { inventory: { ...created, group_id: "group" }, fields: [] };
   vi.mocked(instantiateInventoryTemplate).mockResolvedValue(result);
   const { queryClient } = renderInventoryCreateForm();
-  await user.click(screen.getByRole("button", { name: "New inventory" }));
+  await openInventoryCreation(user);
   await choose(user, "Template", template.name);
   expect(screen.getByText("Reusable columns")).toBeInTheDocument();
   const fields = screen.getByRole("list", { name: "1 field:" });
@@ -180,7 +194,7 @@ test("retains a stale selection and inputs until its revision is explicitly relo
     )
     .mockResolvedValue({ inventory: created, fields: [] });
   const { queryClient } = renderInventoryCreateForm();
-  await user.click(screen.getByRole("button", { name: "New inventory" }));
+  await openInventoryCreation(user);
   await choose(user, "Template", template.name);
   await user.type(screen.getByLabelText("Name"), "New cables");
   await user.type(screen.getByLabelText("Description"), "Keep my notes");
@@ -230,7 +244,7 @@ test("keeps missing templates blocked after reload and allows explicitly choosin
   );
   mockedCreateInventory.mockResolvedValue(created);
   renderInventoryCreateForm();
-  await user.click(screen.getByRole("button", { name: "New inventory" }));
+  await openInventoryCreation(user);
   await choose(user, "Template", template.name);
   await user.type(screen.getByLabelText("Name"), "New cables");
   await user.click(screen.getByRole("button", { name: "Create inventory" }));
@@ -278,7 +292,7 @@ test("keeps a pending template request mounted and sends it only once", async ()
       }),
   );
   renderInventoryCreateForm();
-  await user.click(screen.getByRole("button", { name: "New inventory" }));
+  await openInventoryCreation(user);
   await choose(user, "Template", template.name);
   await user.type(screen.getByLabelText("Name"), "New cables");
   const form = screen.getByLabelText("Name").closest("form")!;
@@ -305,7 +319,7 @@ test("allows empty creation after template loading fails", async () => {
   vi.mocked(getInventoryTemplates).mockRejectedValue(new Error("Offline"));
   mockedCreateInventory.mockResolvedValue(created);
   renderInventoryCreateForm();
-  await user.click(screen.getByRole("button", { name: "New inventory" }));
+  await openInventoryCreation(user);
   await screen.findByText(/Templates could not be loaded/);
   await user.type(screen.getByLabelText("Name"), "Empty");
   await user.click(screen.getByRole("button", { name: "Create inventory" }));
@@ -332,7 +346,7 @@ describe("InventoryCreateForm", () => {
 
     renderInventoryCreateForm();
 
-    await user.click(screen.getByRole("button", { name: "New inventory" }));
+    await openInventoryCreation(user);
 
     await user.type(screen.getByLabelText("Name"), "Cables");
     await user.type(
@@ -368,7 +382,7 @@ describe("InventoryCreateForm", () => {
 
     renderInventoryCreateForm();
 
-    await user.click(screen.getByRole("button", { name: "New inventory" }));
+    await openInventoryCreation(user);
 
     const nameInput = screen.getByLabelText("Name");
     const descriptionInput = screen.getByLabelText("Description");
@@ -380,7 +394,7 @@ describe("InventoryCreateForm", () => {
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
-    await user.click(screen.getByRole("button", { name: "New inventory" }));
+    await openInventoryCreation(user);
 
     expect(screen.getByLabelText("Name")).toHaveValue("");
     expect(screen.getByLabelText("Description")).toHaveValue("");
@@ -395,7 +409,7 @@ describe("InventoryCreateForm", () => {
 
     renderInventoryCreateForm();
 
-    await user.click(screen.getByRole("button", { name: "New inventory" }));
+    await openInventoryCreation(user);
 
     await user.type(screen.getByLabelText("Name"), "Cables");
     await user.click(screen.getByRole("button", { name: "Create inventory" }));
@@ -418,7 +432,7 @@ describe("InventoryCreateForm", () => {
 
     renderInventoryCreateForm();
 
-    await user.click(screen.getByRole("button", { name: "New inventory" }));
+    await openInventoryCreation(user);
 
     await user.type(screen.getByLabelText("Name"), "Cables");
     await user.click(screen.getByRole("button", { name: "Create inventory" }));
@@ -438,7 +452,7 @@ test("keeps template creation inputs after an ordinary error without retrying au
     .mockRejectedValueOnce(new Error("Offline"))
     .mockResolvedValue({ inventory: created, fields: [] });
   renderInventoryCreateForm();
-  await user.click(screen.getByRole("button", { name: "New inventory" }));
+  await openInventoryCreation(user);
   await choose(user, "Template", template.name);
   await user.type(screen.getByLabelText("Name"), "New cables");
   await user.type(screen.getByLabelText("Description"), "Keep notes");
@@ -486,7 +500,7 @@ test("starts with every field selected, toggles individual fields, and submits o
     fields: [],
   });
   renderInventoryCreateForm();
-  await user.click(screen.getByRole("button", { name: "New inventory" }));
+  await openInventoryCreation(user);
   await choose(user, "Template", blueprint.name);
   const cable = screen.getByRole("button", { name: "Cable (Text)" });
   const quantity = screen.getByRole("button", { name: "Quantity (Number)" });
@@ -523,7 +537,7 @@ test("resets field choices on template load and allows omitting every field", as
     )
     .mockResolvedValue({ inventory: created, fields: [] });
   renderInventoryCreateForm();
-  await user.click(screen.getByRole("button", { name: "New inventory" }));
+  await openInventoryCreation(user);
   await choose(user, "Template", template.name);
   await user.click(screen.getByRole("button", { name: "Cable (Text)" }));
   await choose(user, "Template", "Empty inventory");

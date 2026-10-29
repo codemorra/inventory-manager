@@ -77,7 +77,14 @@ export function AppShell({ children }: AppShellProps) {
 
   const sidebarContent = (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 items-center gap-3 px-5 pb-1 pt-5">
+      <NavLink
+        to="/"
+        end
+        title={t("navigation.goToOverview")}
+        aria-label={`${t("app.name")} – ${t("navigation.goToOverview")}`}
+        onClick={() => setIsNavigationOpen(false)}
+        className="mx-3 mt-3 flex shrink-0 items-center gap-3 rounded-md px-2 py-2 transition hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-accent"
+      >
         <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-surface">
           <svg
             aria-hidden="true"
@@ -99,7 +106,7 @@ export function AppShell({ children }: AppShellProps) {
           </p>
           <p className="text-xs text-muted">{t("app.tagline")}</p>
         </div>
-      </div>
+      </NavLink>
       <Navigation
         onContext={setContextTarget}
         onNavigate={() => setIsNavigationOpen(false)}
@@ -112,17 +119,17 @@ export function AppShell({ children }: AppShellProps) {
           setIsGroupCreateOpen(true);
         }}
       />
-      <div className="mt-auto grid shrink-0 gap-3 border-t border-shell bg-surface-muted p-4 shadow-[0_-2px_6px_rgb(0_0_0/0.06)]">
+      <div className="mt-auto grid shrink-0 gap-1 border-t border-shell px-3 py-3">
         <NavLink
           to="/templates"
           onClick={() => setIsNavigationOpen(false)}
           className={({ isActive }) =>
-            `flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-accent ${isActive ? "border-accent/40 bg-accent-soft text-accent" : "border-shell bg-surface hover:bg-control-hover hover:border-accent/50"}`
+            `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-accent ${isActive ? "bg-accent-soft text-accent" : "text-muted hover:bg-control-hover hover:text-foreground"}`
           }
         >
           <svg
             aria-hidden="true"
-            className="size-4 text-accent"
+            className="size-4 shrink-0"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.7"
@@ -135,7 +142,7 @@ export function AppShell({ children }: AppShellProps) {
           {t("templates.title")}
         </NavLink>
         <button
-          className="flex items-center gap-2 rounded-md border border-shell bg-surface px-3 py-2 text-sm font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent"
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium text-muted transition enabled:hover:bg-control-hover enabled:hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
           onClick={() => {
             setIsNavigationOpen(false);
             setIsSettingsOpen(true);
@@ -144,14 +151,18 @@ export function AppShell({ children }: AppShellProps) {
         >
           <svg
             aria-hidden="true"
-            className="size-4 text-accent"
+            className="size-4 shrink-0"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.7"
             viewBox="0 0 24 24"
           >
-            <path d="M4 6h16M4 12h16M4 18h16" />
-            <path d="M8 3v6m8 0v6M10 15v6" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19.47 10.14 21.90 10.61 21.90 13.39 19.47 13.86 18.60 15.97 19.99 18.02 18.02 19.99 15.97 18.60 13.86 19.47 13.39 21.90 10.61 21.90 10.14 19.47 8.03 18.60 5.98 19.99 4.01 18.02 5.40 15.97 4.53 13.86 2.10 13.39 2.10 10.61 4.53 10.14 5.40 8.03 4.01 5.98 5.98 4.01 8.03 5.40 10.14 4.53 10.61 2.10 13.39 2.10 13.86 4.53 15.97 5.40 18.02 4.01 19.99 5.98 18.60 8.03Z"
+            />
+            <circle cx="12" cy="12" r="3.2" />
           </svg>
           {t("settings.title")}
         </button>
