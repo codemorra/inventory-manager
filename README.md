@@ -80,6 +80,8 @@ npm --prefix backend ci
 npm --prefix frontend ci
 ```
 
+The root `package.json` defines the application version. Development, typecheck, test and build commands generate version modules for the relevant package; see [application versioning](docs/app-versioning.md).
+
 The packages retain independent lockfiles. `better-sqlite3` is a native dependency; its installation must complete successfully before running the backend. See [backend documentation](backend/README.md).
 
 Start the backend and frontend in separate terminals:

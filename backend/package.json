@@ -1,17 +1,20 @@
 {
   "name": "inventory-manager-backend",
-  "version": "0.1.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
+    "predev": "node ../scripts/generate-app-version.mjs backend",
     "dev": "node --env-file-if-exists=.env --import tsx --watch src/index.ts",
     "start": "node --env-file-if-exists=.env dist/index.js",
+    "pretypecheck": "node ../scripts/generate-app-version.mjs backend",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.tools.json && tsc -p test/tsconfig.json",
     "lint": "eslint .",
+    "pretest": "node ../scripts/generate-app-version.mjs backend",
     "test": "node --import tsx --test test/*.test.ts",
+    "prebuild": "node ../scripts/generate-app-version.mjs backend",
     "build": "tsc",
     "format:check": "prettier --check .",
     "db:generate": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs generate",

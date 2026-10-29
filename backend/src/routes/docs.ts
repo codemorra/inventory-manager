@@ -1,14 +1,20 @@
+import { APP_VERSION } from "../generated/app-version.js";
 import { Router } from "express";
 import specification from "../openapi.json" with { type: "json" };
 
-/** Serve the established API documentation without another runtime dependency. */
+/**
+ * Serve the API documentation with the application version captured at build time.
+ * @returns The documentation router.
+ */
 export function docsRoutes() {
   const router = Router();
+  const document = {
+    ...specification,
+    info: { ...specification.info, version: APP_VERSION },
+  };
 
   // Route for serving the OpenAPI specification in JSON format
-  router.get("/openapi.json", (_request, response) =>
-    response.json(specification),
-  );
+  router.get("/openapi.json", (_request, response) => response.json(document));
 
   // Route for serving the Swagger UI documentation
   router.get("/docs", (_request, response) =>
