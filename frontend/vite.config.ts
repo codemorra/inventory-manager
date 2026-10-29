@@ -5,6 +5,9 @@ import { defineConfig } from "vitest/config";
 import tailwindcss from "@tailwindcss/vite";
 
 const licenseFile = fileURLToPath(new URL("../LICENSE", import.meta.url));
+const iconFile = fileURLToPath(
+  new URL("../assets/icons/app-logo.svg", import.meta.url),
+);
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -20,6 +23,8 @@ export default defineConfig({
         // Vite checks both the file path and the raw import identifier.
         licenseFile,
         `${licenseFile}?raw`,
+        iconFile,
+        `${iconFile}?raw`,
       ],
     },
   },

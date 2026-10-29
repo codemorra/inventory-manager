@@ -1,7 +1,6 @@
 {
   "app": {
-    "name": "Inventory Manager",
-    "tagline": "Behalte den Überblick"
+    "name": "Inventory Manager"
   },
   "common": {
     "accent": {
