@@ -1,4 +1,5 @@
 import type { ServerResponse } from "node:http";
+import { updateRoutes } from "./routes/updates.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { storageRoutes } from "./routes/storage.js";
 import { backupRoutes } from "./routes/backups.js";
@@ -93,6 +94,7 @@ export function createApp(
     response.json({ status: "ok" });
   });
   app.use(docsRoutes());
+  app.use("/application-update", updateRoutes());
   app.use("/application-settings", settingsRoutes(services));
   app.use("/storage-locations", storageRoutes(services, options.relocate));
   app.use(

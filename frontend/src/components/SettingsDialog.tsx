@@ -6,6 +6,7 @@ import { LanguageSwitch } from "./LanguageSwitch";
 import { Modal } from "./Modal";
 import { AccentPicker } from "./AccentPicker";
 import { ThemeSwitch } from "./ThemeSwitch";
+import { UpdateSettings } from "./UpdateSettings";
 import { StorageSettings } from "./StorageSettings";
 import { BackupSettings } from "./BackupSettings";
 import { useAttachmentWarnings } from "../hooks/useAttachmentWarnings";
@@ -96,6 +97,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
               : "settings.savedAutomatically",
         )}
       </p>
+      <UpdateSettings />
     </Modal>
   );
 }

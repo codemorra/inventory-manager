@@ -25,6 +25,14 @@ The default address is `http://127.0.0.1:8000`. `/health` checks readiness;
 `/docs`, `/redoc`, and `/openapi.json` provide API documentation.
 Update `src/openapi.json` when routes or DTOs change.
 
+## Manual update checks
+
+`GET /application-update` performs an on-demand unauthenticated GitHub check for the fixed public repository `codemorra/inventory-manager`. It has no request body or configurable repository URL and returns `Cache-Control: no-store`. All completed checks return HTTP 200 with `current_version` and `status`: `available`, `current`, `no_release`, `failed` or `rate_limited`. `available` and `current` also include `latest_version` and a project-owned `release_url`. `current` means that the published version is not newer, including when the local version is ahead.
+
+The checker uses `/repos/codemorra/inventory-manager/releases/latest`, validates a regular published release and accepts only `vX.Y.Z` tags. Installed versions must be `X.Y.Z`. Each numeric component is compared without integer precision loss; for example, `1.10.0` is newer than `1.9.0`. Unsupported tags or malformed responses yield `failed`. A 404 is reported as `no_release` only if a second request confirms that the public repository is available; otherwise it is a failure.
+
+The complete GitHub operation, including response-body reads and the optional repository check, has a seven-second deadline. Concurrent checks share an in-flight operation. GitHub rate-limit deadlines are respected in memory; responses without a deadline use a one-minute pause. Only the application name/version is sent in its User-Agent; no application data or GitHub token is sent. There are no startup or scheduled checks, automatic retries or persisted results. The backend requires outbound HTTPS access for this feature. It does not install updates or change settings/data revisions.
+
 ## Configuration
 
 Optionally copy `.env.example` to `.env`. Development, start, and migration commands
