@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
 import { InventoryImportDialog } from "../InventoryImportDialog";
-import { SettingsDialog } from "../SettingsDialog";
 import { Modal } from "../Modal";
 import { dataChangedEvent } from "../../services/api";
 import { reloadAfterRestore } from "../../services/backups";
@@ -39,7 +38,6 @@ export function AppShell({ children }: AppShellProps) {
   // Follow system appearance changes even while settings are closed.
   useTheme();
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [dataChanged, setDataChanged] = useState(false);
   useEffect(() => {
     /**
@@ -141,13 +139,12 @@ export function AppShell({ children }: AppShellProps) {
           </svg>
           {t("templates.title")}
         </NavLink>
-        <button
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium text-muted transition enabled:hover:bg-control-hover enabled:hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
-          onClick={() => {
-            setIsNavigationOpen(false);
-            setIsSettingsOpen(true);
-          }}
-          type="button"
+        <NavLink
+          to="/settings"
+          onClick={() => setIsNavigationOpen(false)}
+          className={({ isActive }) =>
+            `flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-accent ${isActive ? "bg-accent-soft text-accent" : "text-muted hover:bg-control-hover hover:text-foreground"}`
+          }
         >
           <svg
             aria-hidden="true"
@@ -165,7 +162,7 @@ export function AppShell({ children }: AppShellProps) {
             <circle cx="12" cy="12" r="3.2" />
           </svg>
           {t("settings.title")}
-        </button>
+        </NavLink>
       </div>
     </div>
   );
@@ -195,9 +192,6 @@ export function AppShell({ children }: AppShellProps) {
         )}
         {isGroupCreateOpen && (
           <GroupCreateDialog onClose={() => setIsGroupCreateOpen(false)} />
-        )}
-        {isSettingsOpen && (
-          <SettingsDialog onClose={() => setIsSettingsOpen(false)} />
         )}
         <a
           className="fixed left-4 top-3 z-50 -translate-y-24 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-surface focus:translate-y-0"

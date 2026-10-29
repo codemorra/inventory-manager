@@ -11,7 +11,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { AttachmentDraft } from "../../src/components/attachmentDraft";
 import { AttachmentFieldInput } from "../../src/components/AttachmentFieldInput";
-import { SettingsDialog } from "../../src/components/SettingsDialog";
+import { GeneralSettings } from "../../src/components/GeneralSettings";
 import {
   uploadAttachment,
   discardAttachment,
@@ -46,7 +46,7 @@ function file(size: number) {
   return value;
 }
 
-/** Render a live field value with optional access to the actual Settings dialog. */
+/** Render a live field value with optional access to the actual general settings controls. */
 function show() {
   const draft = new AttachmentDraft();
   draft.begin();
@@ -66,7 +66,14 @@ function show() {
         <button type="button" onClick={() => setSettings(true)}>
           Open settings
         </button>
-        {settings && <SettingsDialog onClose={() => setSettings(false)} />}
+        {settings && (
+          <>
+            <GeneralSettings />
+            <button type="button" onClick={() => setSettings(false)}>
+              Close settings
+            </button>
+          </>
+        )}
       </>
     );
   }
@@ -116,10 +123,10 @@ test("remembers warning dismissal and restores warnings from Settings", async ()
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Open settings" }));
   await user.click(
-    screen.getByRole("button", { name: "Show file warnings again" }),
+    screen.getByRole("checkbox", { name: "Warn before adding large files" }),
   );
   expect(preferenceStore.readPreferences()?.attachmentWarnings).toBe("show");
-  await user.click(screen.getByRole("button", { name: "Close dialog" }));
+  await user.click(screen.getByRole("button", { name: "Close settings" }));
   await user.upload(
     screen.getByLabelText("Files"),
     file(largeAttachmentWarningBytes),

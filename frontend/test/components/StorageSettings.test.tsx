@@ -2,7 +2,7 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { StorageSettings } from "../../src/components/StorageSettings";
-import { SettingsDialog } from "../../src/components/SettingsDialog";
+import { SettingsPage } from "../../src/pages/SettingsPage";
 import { preferenceStore } from "../../src/preferences/store";
 import { ApiError } from "../../src/services/api";
 import * as api from "../../src/services/storage";
@@ -58,18 +58,18 @@ afterEach(() => {
 
 async function changeData() {
   const input = await screen.findByLabelText(
-    "Data folder (database and attachments)",
+    "Data folder (inventories and attachments)",
   );
   await userEvent.clear(input);
   await userEvent.type(input, "/new/data");
 }
 
-test("loads storage paths only when the settings section is expanded", async () => {
-  render(<SettingsDialog onClose={() => {}} />);
+test("loads storage paths only when the settings section is selected", async () => {
+  render(<SettingsPage />);
   expect(api.getStorageLocations).not.toHaveBeenCalled();
-  await userEvent.click(screen.getByText("Storage locations"));
+  await userEvent.click(screen.getByRole("tab", { name: "Storage locations" }));
   expect(
-    await screen.findByLabelText("Data folder (database and attachments)"),
+    await screen.findByLabelText("Data folder (inventories and attachments)"),
   ).toHaveValue("/app/data");
   expect(
     screen.getByRole("button", { name: "Change storage locations" }),
@@ -96,7 +96,7 @@ test("uses the latest settings revision for scheduling, refreshes preferences an
   expect(refresh).toHaveBeenCalledOnce();
   expect(busy.mock.calls).toEqual([[true], [false]]);
   expect(
-    screen.getByLabelText("Data folder (database and attachments)"),
+    screen.getByLabelText("Data folder (inventories and attachments)"),
   ).toBeDisabled();
   vi.mocked(api.getStorageLocations).mockResolvedValue(planned);
   await userEvent.click(
@@ -105,11 +105,11 @@ test("uses the latest settings revision for scheduling, refreshes preferences an
   await waitFor(() => expect(api.cancelStorageMove).toHaveBeenCalledWith(3));
   await waitFor(() =>
     expect(
-      screen.getByLabelText("Data folder (database and attachments)"),
+      screen.getByLabelText("Data folder (inventories and attachments)"),
     ).toBeEnabled(),
   );
   expect(
-    screen.getByLabelText("Data folder (database and attachments)"),
+    screen.getByLabelText("Data folder (inventories and attachments)"),
   ).toHaveValue("/app/data");
 });
 
@@ -129,7 +129,7 @@ test("never overwrites a path plan created elsewhere while this dialog was open"
   expect(await screen.findByRole("alert")).toHaveTextContent("have changed");
   expect(api.changeStorageLocations).not.toHaveBeenCalled();
   expect(
-    screen.getByLabelText("Data folder (database and attachments)"),
+    screen.getByLabelText("Data folder (inventories and attachments)"),
   ).toHaveValue("/new/data");
 });
 
@@ -161,7 +161,7 @@ test("blocks an overridden data path while still allowing backup changes and sho
   });
   render(<StorageSettings onBusyChange={() => {}} />);
   expect(
-    await screen.findByLabelText("Data folder (database and attachments)"),
+    await screen.findByLabelText("Data folder (inventories and attachments)"),
   ).toBeDisabled();
   expect(screen.getByLabelText("Backup folder")).toBeEnabled();
   await userEvent.click(screen.getByText("Other application paths"));
@@ -171,8 +171,8 @@ test("blocks an overridden data path while still allowing backup changes and sho
 test("disables appearance controls until a storage request completes", async () => {
   const pending = deferred<StorageLocationState>();
   vi.mocked(api.changeStorageLocations).mockReturnValue(pending.promise);
-  render(<SettingsDialog onClose={() => {}} />);
-  await userEvent.click(screen.getByText("Storage locations"));
+  render(<SettingsPage />);
+  await userEvent.click(screen.getByRole("tab", { name: "Storage locations" }));
   await changeData();
   await userEvent.click(
     screen.getByRole("button", { name: "Change storage locations" }),
@@ -202,7 +202,7 @@ test("keeps edited paths on validation failure and explains failed startup moves
   );
   await waitFor(() => expect(screen.getAllByRole("alert")).toHaveLength(2));
   expect(
-    screen.getByLabelText("Data folder (database and attachments)"),
+    screen.getByLabelText("Data folder (inventories and attachments)"),
   ).toHaveValue("/new/data");
 });
 
@@ -216,14 +216,14 @@ test("uses each default path as a draft without moving files until confirmation"
     },
   });
   render(<StorageSettings onBusyChange={() => {}} />);
-  await screen.findByLabelText("Data folder (database and attachments)");
+  await screen.findByLabelText("Data folder (inventories and attachments)");
   await userEvent.click(
     screen.getByRole("button", {
-      name: "Use default: Data folder (database and attachments)",
+      name: "Use default: Data folder (inventories and attachments)",
     }),
   );
   expect(
-    screen.getByLabelText("Data folder (database and attachments)"),
+    screen.getByLabelText("Data folder (inventories and attachments)"),
   ).toHaveValue("/app/data");
   expect(screen.getByLabelText("Backup folder")).toHaveValue("/custom/backups");
   await userEvent.click(
@@ -248,7 +248,7 @@ test("shows a completed live switch without requiring an application restart", a
     await screen.findByText("Storage locations have been changed."),
   ).toBeVisible();
   expect(
-    screen.getByLabelText("Data folder (database and attachments)"),
+    screen.getByLabelText("Data folder (inventories and attachments)"),
   ).toBeEnabled();
   expect(
     screen.queryByRole("button", { name: "Cancel scheduled change" }),

@@ -13,14 +13,17 @@ import { ChoiceSelect } from "./ChoiceSelect";
  * Edit automatic backup policy while background reads update only operational status.
  * @param disabled Whether another backup or storage operation prevents configuration changes.
  * @param onBusyChange Notify the parent until an explicit policy save has settled.
+ * @param onDirtyChange Notify the parent when schedule changes have not been saved.
  * @returns Frequency, retention, last-success and retry/error controls in the current theme and language.
  */
 export function AutomaticBackupSettings({
   disabled,
   onBusyChange,
+  onDirtyChange,
 }: {
   disabled: boolean;
   onBusyChange: (busy: boolean) => void;
+  onDirtyChange?: ((dirty: boolean) => void) | undefined;
 }) {
   const { t, i18n } = useTranslation();
   const id = useId();
@@ -144,14 +147,18 @@ export function AutomaticBackupSettings({
   const changed =
     base &&
     (frequency !== base.frequency || Number(retention) !== base.retention);
+  useEffect(() => {
+    onDirtyChange?.(Boolean(changed));
+  }, [changed, onDirtyChange]);
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="space-y-3 rounded-md border border-shell p-3"
+      className="space-y-4 border-b border-shell pb-6"
     >
       <h3 id={`${id}-title`} className="text-sm font-semibold text-heading">
         {t("backups.automaticTitle")}
       </h3>
+      <p className="text-sm text-muted">{t("backups.automaticHelp")}</p>
       {loading && (
         <p role="status" className="text-sm text-muted">
           {t("backups.scheduleLoading")}
@@ -164,27 +171,26 @@ export function AutomaticBackupSettings({
             if (!blocked && validRetention && changed) void submit();
           }}
         >
-          <fieldset
-            disabled={blocked}
-            className="space-y-3 disabled:opacity-60"
-          >
-            <ChoiceSelect
-              id={`${id}-frequency`}
-              label={t("backups.frequency")}
-              compact
-              portal
-              disabled={blocked}
-              value={frequency}
-              onChange={(value) =>
-                setFrequency(value as BackupPolicy["frequency"])
-              }
-              options={(["disabled", "daily", "weekly"] as const).map(
-                (value) => ({
-                  value,
-                  label: t(`backups.frequencies.${value}`),
-                }),
-              )}
-            />
+          <fieldset disabled={blocked} className="space-y-3">
+            <div className="w-full max-w-48">
+              <ChoiceSelect
+                id={`${id}-frequency`}
+                label={t("backups.frequency")}
+                compact
+                portal
+                disabled={blocked}
+                value={frequency}
+                onChange={(value) =>
+                  setFrequency(value as BackupPolicy["frequency"])
+                }
+                options={(["disabled", "daily", "weekly"] as const).map(
+                  (value) => ({
+                    value,
+                    label: t(`backups.frequencies.${value}`),
+                  }),
+                )}
+              />
+            </div>
             {frequency === "weekly" && (
               <p className="text-xs text-muted">{t("backups.weeklyHelp")}</p>
             )}

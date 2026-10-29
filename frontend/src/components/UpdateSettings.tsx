@@ -46,7 +46,7 @@ export function UpdateSettings() {
       aria-busy={checking}
       className="mt-5 border-t border-shell pt-4"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <p className="text-sm text-heading">
           {t("updates.version", { version: APP_VERSION })}
         </p>
@@ -63,7 +63,7 @@ export function UpdateSettings() {
         role="status"
         aria-live="polite"
         aria-atomic="true"
-        className="mt-2 text-sm text-muted"
+        className="mt-2 min-h-10 text-sm text-muted sm:min-h-5"
       >
         {checking
           ? t("updates.checking")

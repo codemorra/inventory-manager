@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
-import { SettingsDialog } from "../../src/components/SettingsDialog";
+import { SettingsPage } from "../../src/pages/SettingsPage";
 import { UpdateSettings } from "../../src/components/UpdateSettings";
 import { APP_VERSION } from "../../src/generated/app-version";
 import * as api from "../../src/services/applicationUpdates";
@@ -26,12 +26,13 @@ const available: ApplicationUpdate = {
     "https://github.com/codemorra/inventory-manager/releases/tag/v1.10.0",
 };
 
-test("Settings shows its build version without checking on open, even under StrictMode", () => {
+test("Settings shows its build version in About without checking, even under StrictMode", async () => {
   render(
     <StrictMode>
-      <SettingsDialog onClose={() => {}} />
+      <SettingsPage />
     </StrictMode>,
   );
+  await userEvent.click(screen.getByRole("tab", { name: "About" }));
   expect(screen.getByText(`Version ${APP_VERSION}`)).toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "Check for updates" }),

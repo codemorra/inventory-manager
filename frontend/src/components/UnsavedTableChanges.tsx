@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Modal } from "./Modal";
 
 interface UnsavedTableChangesProps {
+  context?: "table" | "settings";
   dirty: boolean;
   saving: boolean;
   onDiscard: () => void;
@@ -15,21 +16,29 @@ interface UnsavedTableChangesProps {
  * @returns A themed leave confirmation only when navigation has been blocked.
  */
 function RouterDraftGuard({
+  context = "table",
   dirty,
   saving,
   onDiscard,
 }: UnsavedTableChangesProps) {
   const { t } = useTranslation();
   const blocker = useBlocker(dirty || saving);
+  const prefix = context === "settings" ? "settings.leave" : "table.edit";
   if (blocker.state !== "blocked") return null;
   return (
     <Modal
       size="small"
-      title={t("table.edit.leaveTitle")}
+      title={t(`${prefix}.leaveTitle`)}
       onClose={() => blocker.reset()}
     >
       <p className="text-sm">
-        {t(saving ? "table.edit.waitForSave" : "table.edit.leaveDescription")}
+        {t(
+          saving
+            ? `${prefix}.waitForSave`
+            : context === "settings" && !dirty
+              ? "settings.leave.readyDescription"
+              : `${prefix}.leaveDescription`,
+        )}
       </p>
       <div className="mt-5 flex justify-end gap-2">
         <button
@@ -38,7 +47,7 @@ function RouterDraftGuard({
           className="rounded-sm border border-shell px-3 py-2 text-sm hover:bg-control-hover"
           onClick={() => blocker.reset()}
         >
-          {t("table.edit.stay")}
+          {t(`${prefix}.stay`)}
         </button>
         <button
           type="button"
@@ -49,7 +58,11 @@ function RouterDraftGuard({
             blocker.proceed();
           }}
         >
-          {t("table.edit.discardAndLeave")}
+          {t(
+            context === "settings" && !dirty
+              ? "settings.leave.leave"
+              : `${prefix}.discardAndLeave`,
+          )}
         </button>
       </div>
     </Modal>

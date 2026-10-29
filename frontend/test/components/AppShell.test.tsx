@@ -29,7 +29,8 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { SettingsPage } from "../../src/pages/SettingsPage";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { AppShell } from "../../src/components/layout/AppShell";
@@ -68,7 +69,10 @@ function renderAppShell(initialPath = "/") {
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[initialPath]}>
         <AppShell>
-          <h1>Page content</h1>
+          <Routes>
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="*" element={<h1>Page content</h1>} />
+          </Routes>
         </AppShell>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -192,21 +196,21 @@ describe("AppShell", () => {
     expect(
       screen.queryByRole("button", { name: "Blue" }),
     ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Settings" }));
-    const dialog = screen.getByRole("dialog", { name: "Settings" });
-    expect(within(dialog).getByLabelText("Appearance")).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: "Blue" }));
-    expect(document.documentElement.dataset.accent).toBe("blue");
-    await user.selectOptions(within(dialog).getByLabelText("Language"), "de");
-
+    await user.click(screen.getByRole("link", { name: "Settings" }));
     expect(
-      screen.getByRole("dialog", { name: "Einstellungen" }),
+      screen.getByRole("heading", { name: "Settings", level: 1 }),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Dialog schließen" }));
+    expect(screen.getByLabelText("Appearance")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Blue" }));
+    expect(document.documentElement.dataset.accent).toBe("blue");
+    await user.selectOptions(screen.getByLabelText("Language"), "de");
+    expect(
+      screen.getByRole("heading", { name: "Einstellungen", level: 1 }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  // Test that mobile settings replace the navigation overlay with one dialog.
+  // Test that opening settings closes the mobile navigation overlay.
   test("opens settings from mobile navigation", async () => {
     const user = userEvent.setup();
     mockedGetInventories.mockResolvedValue([]);
@@ -216,14 +220,14 @@ describe("AppShell", () => {
       name: "Mobile navigation",
     });
     await user.click(
-      within(navigation).getByRole("button", { name: "Settings" }),
+      within(navigation).getByRole("link", { name: "Settings" }),
     );
 
     expect(
       screen.queryByRole("dialog", { name: "Mobile navigation" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("dialog", { name: "Settings" }),
+      screen.getByRole("heading", { name: "Settings", level: 1 }),
     ).toBeInTheDocument();
   });
 
@@ -235,7 +239,7 @@ describe("AppShell", () => {
     expect(screen.getByText("Inventory Manager")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Page content" })).toBeVisible();
     expect(
-      within(screen.getByRole("complementary")).getByRole("button", {
+      within(screen.getByRole("complementary")).getByRole("link", {
         name: "Settings",
       }),
     ).toBeInTheDocument();

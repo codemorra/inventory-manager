@@ -15,13 +15,19 @@ import { AutomaticBackupSettings } from "./AutomaticBackupSettings";
 
 /**
  * Manage durable data backups within the application settings.
+ * @param active Whether the backup section is currently visible.
  * @param onBusyChange Notify the parent while a backup operation is awaiting its result.
+ * @param onDirtyChange Notify the parent about unsaved automatic-backup preferences.
  * @returns Backup creation, confirmed deletion, status and native download controls.
  */
 export function BackupSettings({
+  active = true,
   onBusyChange,
+  onDirtyChange,
 }: {
+  active?: boolean;
   onBusyChange: (busy: boolean) => void;
+  onDirtyChange?: ((dirty: boolean) => void) | undefined;
 }) {
   const { t, i18n } = useTranslation();
   const [backups, setBackups] = useState<StoredBackup[]>();
@@ -29,7 +35,19 @@ export function BackupSettings({
   const [busy, setBusy] = useState(false);
   const [policyBusy, setPolicyBusy] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState<"created" | "deleted" | null>(null);
+  const [success, setSuccess] = useState<
+    "created" | "deleted" | "refreshed" | null
+  >(null);
+  const [previousActive, setPreviousActive] = useState(active);
+  if (previousActive !== active) {
+    setPreviousActive(active);
+    if (!active) setSuccess(null);
+  }
+  useEffect(() => {
+    if (!success || busy || loading) return;
+    const timer = setTimeout(() => setSuccess(null), 4_000);
+    return () => clearTimeout(timer);
+  }, [success, busy, loading]);
   const [deleteTarget, setDeleteTarget] = useState<StoredBackup | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<string | File | null>(
     null,
@@ -79,6 +97,7 @@ export function BackupSettings({
         setBackups(result);
         setError("");
         setNeedsReload(false);
+        if (reload > 0) setSuccess("refreshed");
       })
       .catch(() => {
         if (!controller.signal.aborted) setError("backups.loadFailed");
@@ -223,21 +242,25 @@ export function BackupSettings({
       <AutomaticBackupSettings
         disabled={blocked}
         onBusyChange={policyBusyChanged}
+        onDirtyChange={onDirtyChange}
       />
+      <h3 className="text-sm font-semibold text-heading">
+        {t("backups.manageTitle")}
+      </h3>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={blocked || loading || needsReload}
           onClick={() => void save()}
-          className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-surface enabled:hover:bg-accent-hover disabled:opacity-50"
+          className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-surface hover:bg-accent-hover"
         >
-          {t(busy ? "backups.creating" : "backups.create")}
+          {t("backups.create")}
         </button>
         <button
           type="button"
           disabled={blocked || loading || needsReload}
           onClick={() => restoreFileInput.current?.click()}
-          className="rounded-md border border-shell px-3 py-2 text-sm enabled:hover:bg-control-hover disabled:opacity-50"
+          className="rounded-md border border-shell px-3 py-2 text-sm hover:bg-control-hover"
         >
           {t("backups.restoreFile")}
         </button>
@@ -258,37 +281,32 @@ export function BackupSettings({
           ref={refreshButton}
           disabled={blocked || loading}
           onClick={() => {
+            setSuccess(null);
+            setError("");
             setLoading(true);
             setReload((value) => value + 1);
           }}
-          className="rounded-md border border-shell px-3 py-2 text-sm enabled:hover:bg-control-hover disabled:opacity-50"
+          className="rounded-md border border-shell px-3 py-2 text-sm hover:bg-control-hover"
         >
           {t("backups.refresh")}
         </button>
       </div>
-      {busy && (
-        <p role="status" className="text-sm text-muted">
-          {t("backups.creatingHelp")}
-        </p>
-      )}
-      {success && (
-        <p role="status" className="text-sm text-success">
-          {t(`backups.${success}`)}
-        </p>
-      )}
-      {error && (
-        <p
-          role="alert"
-          className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger"
-        >
-          {t(error)}
-        </p>
-      )}
-      {loading && (
-        <p role="status" className="text-sm text-muted">
-          {t("backups.loading")}
-        </p>
-      )}
+      <BackupStatus
+        message={
+          !active
+            ? ""
+            : busy
+              ? t("backups.creating")
+              : loading
+                ? t("backups.loading")
+                : error
+                  ? t(error)
+                  : success
+                    ? t(`backups.${success}`)
+                    : ""
+        }
+        tone={busy || loading ? "muted" : error ? "error" : "success"}
+      />
       {backups?.length === 0 && !loading && (
         <p className="text-sm text-muted">{t("backups.empty")}</p>
       )}
@@ -370,7 +388,7 @@ export function BackupSettings({
                       strokeLinejoin="round"
                       viewBox="0 0 24 24"
                     >
-                      <path d="M3 10a9 9 0 1 1 2 8M3 4v6h6M12 7v5l3 2" />
+                      <path d="M3 12a9 9 0 1 0 9-9c-2.5 0-4.9 1-6.7 2.7L3 8M3 3v5h5M12 7v5l3 2" />
                     </svg>
                   </button>
                   <button
@@ -447,6 +465,44 @@ export function BackupSettings({
           onBusyChange={onBusyChange}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * Replace backup feedback in one reserved area with short opacity transitions.
+ * @param message The current feedback, or an empty string to fade it out.
+ * @param tone Whether the feedback describes progress, an error or success.
+ * @returns A stable feedback area that announces messages after their transition.
+ */
+function BackupStatus({
+  message,
+  tone,
+}: {
+  message: string;
+  tone: "muted" | "error" | "success";
+}) {
+  const [displayed, setDisplayed] = useState({ message: "", tone });
+  const visible =
+    Boolean(message) &&
+    displayed.message === message &&
+    displayed.tone === tone;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDisplayed({ message, tone });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [message, tone]);
+  return (
+    <div className="min-h-10 text-right text-sm sm:min-h-5">
+      <p
+        role={displayed.tone === "error" ? "alert" : "status"}
+        aria-atomic="true"
+        aria-hidden={!visible}
+        className={`transition-opacity duration-150 motion-reduce:transition-none ${visible ? "opacity-100" : "opacity-0"} ${displayed.tone === "error" ? "text-danger" : displayed.tone === "success" ? "text-success" : "text-muted"}`}
+      >
+        {displayed.message}
+      </p>
     </div>
   );
 }
