@@ -133,7 +133,10 @@ export function ContextMenu({
             </span>
           )}
           {action.icon && (
-            <span aria-hidden="true" className="shrink-0 text-accent">
+            <span
+              aria-hidden="true"
+              className={`shrink-0 ${action.danger ? "text-danger" : "text-accent"}`}
+            >
               {action.icon}
             </span>
           )}

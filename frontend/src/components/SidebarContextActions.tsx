@@ -30,6 +30,41 @@ interface SidebarContextActionsProps {
 }
 
 /**
+ * Render matching symbols for sidebar editing, export and deletion actions.
+ * @param action The menu action represented by the symbol.
+ * @returns A decorative icon inheriting the menu action's color.
+ */
+function SidebarActionIcon({
+  action,
+}: {
+  action: "edit" | "export" | "delete";
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      viewBox="0 0 24 24"
+    >
+      {action === "edit" ? (
+        <path d="m16 3 5 5L8 21H3v-5L16 3Z" />
+      ) : action === "export" ? (
+        <>
+          <path d="M14 3H5v18h14v-4M14 3v5h5l-5-5Z" />
+          <path d="M11 12h10m-3-3 3 3-3 3" />
+        </>
+      ) : (
+        <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" />
+      )}
+    </svg>
+  );
+}
+
+/**
  * Render context actions and their edit or deletion dialogs.
  * @param target The selected inventory or group.
  * @param onClose Callback used to close the action flow.
@@ -114,6 +149,7 @@ export function SidebarContextActions({
         actions={[
           {
             label: group ? t("contextMenu.rename") : t("common.actions.edit"),
+            icon: <SidebarActionIcon action="edit" />,
             disabled: Boolean(editingInventoryId),
             onSelect: () => openDialog("edit"),
           },
@@ -122,6 +158,7 @@ export function SidebarContextActions({
             : [
                 {
                   label: t("archives.export"),
+                  icon: <SidebarActionIcon action="export" />,
                   disabled: Boolean(
                     editingInventoryId || configurationInventoryId,
                   ),
@@ -134,6 +171,7 @@ export function SidebarContextActions({
               ]),
           {
             label: t("common.actions.delete"),
+            icon: <SidebarActionIcon action="delete" />,
             disabled: Boolean(editingInventoryId),
             danger: true,
             onSelect: () => openDialog("delete"),
