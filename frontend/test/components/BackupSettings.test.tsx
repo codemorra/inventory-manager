@@ -10,7 +10,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { BackupSettings } from "../../src/components/BackupSettings";
-import { SettingsDialog } from "../../src/components/SettingsDialog";
+import { SettingsPage } from "../../src/pages/SettingsPage";
 import { ApiError } from "../../src/services/api";
 import * as api from "../../src/services/backups";
 import { deferred } from "../helpers/inventoryArchives";
@@ -67,10 +67,10 @@ afterEach(() => {
   vi.resetAllMocks();
 });
 
-test("loads backups only when their settings section is expanded", async () => {
-  render(<SettingsDialog onClose={() => {}} />);
+test("loads backups only when their settings section is selected", async () => {
+  render(<SettingsPage />);
   expect(api.listBackups).not.toHaveBeenCalled();
-  await userEvent.click(screen.getByText("Backups"));
+  await userEvent.click(screen.getByRole("tab", { name: "Backups" }));
   expect(await screen.findByText("No backups yet.")).toBeVisible();
   expect(screen.getByRole("button", { name: "Create backup" })).toBeEnabled();
 });
@@ -84,19 +84,20 @@ test("shows metadata and unreadable entries and delegates downloads to the nativ
   expect(await screen.findByText("backup.zip")).toBeVisible();
   expect(screen.getByText("Manual")).toBeVisible();
   expect(screen.getByText("2 KiB")).toBeVisible();
-  expect(screen.getByText("Metadata could not be read")).toBeVisible();
+  expect(
+    screen.getByText("Backup information could not be read"),
+  ).toBeVisible();
   await userEvent.click(
     screen.getByRole("button", { name: "Download backup.zip" }),
   );
   expect(api.downloadBackup).toHaveBeenCalledExactlyOnceWith("backup.zip");
 });
 
-test("keeps an accepted creation mounted and blocks dismissal and appearance changes until it finishes", async () => {
+test("keeps an accepted creation mounted and blocks section and appearance changes until it finishes", async () => {
   const pending = deferred<CreatedBackup>();
-  const close = vi.fn();
   vi.mocked(api.createBackup).mockReturnValue(pending.promise);
-  render(<SettingsDialog onClose={close} />);
-  await userEvent.click(screen.getByText("Backups"));
+  render(<SettingsPage />);
+  await userEvent.click(screen.getByRole("tab", { name: "Backups" }));
   await screen.findByText("No backups yet.");
   await userEvent.dblClick(
     screen.getByRole("button", { name: "Create backup" }),
@@ -104,12 +105,14 @@ test("keeps an accepted creation mounted and blocks dismissal and appearance cha
   expect(api.createBackup).toHaveBeenCalledOnce();
   expect(screen.getByLabelText("Appearance")).toBeDisabled();
   expect(screen.getByRole("combobox", { name: "Frequency" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Close dialog" })).toBeDisabled();
+  expect(screen.getByRole("tab", { name: "General" })).toBeDisabled();
   await userEvent.keyboard("{Escape}");
-  await userEvent.click(screen.getByRole("dialog").parentElement!);
-  expect(close).not.toHaveBeenCalled();
-  await userEvent.click(screen.getByText("Backups"));
-  await userEvent.click(screen.getByText("Backups"));
+  expect(screen.getByRole("tab", { name: "Backups" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await userEvent.click(screen.getByRole("tab", { name: "Backups" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Backups" }));
   expect(api.listBackups).toHaveBeenCalledOnce();
   vi.mocked(api.listBackups).mockResolvedValue([stored]);
   await act(async () => {
@@ -117,8 +120,15 @@ test("keeps an accepted creation mounted and blocks dismissal and appearance cha
   });
   expect(await screen.findByText("Backup saved.")).toBeVisible();
   expect(screen.getByLabelText("Appearance")).toBeEnabled();
-  expect(screen.getByRole("button", { name: "Close dialog" })).toBeEnabled();
+  expect(screen.getByRole("tab", { name: "General" })).toBeEnabled();
   expect(screen.getByText("backup.zip")).toBeVisible();
+  await userEvent.click(screen.getByRole("tab", { name: "General" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Backups" }));
+  await waitFor(() =>
+    expect(screen.queryByText("Backup saved.")).not.toBeInTheDocument(),
+  );
+  expect(screen.getByText("backup.zip")).toBeVisible();
+  expect(api.createBackup).toHaveBeenCalledOnce();
 });
 
 test("requires a list refresh after an uncertain creation response without automatically creating another backup", async () => {
@@ -145,7 +155,9 @@ test("preserves a successfully created entry if the following catalog refresh fa
   await screen.findByText("No backups yet.");
   vi.mocked(api.listBackups).mockRejectedValueOnce(new Error("Read failed"));
   await userEvent.click(screen.getByRole("button", { name: "Create backup" }));
-  expect(await screen.findByText("Backup saved.")).toBeVisible();
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "list could not be loaded",
+  );
   expect(screen.getByText("backup.zip")).toBeVisible();
   expect(screen.getByRole("alert")).toHaveTextContent(
     "list could not be loaded",
@@ -332,4 +344,52 @@ test("removes an unavailable selection from the list and reports its changed sta
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(screen.queryByText("backup.zip")).not.toBeInTheDocument();
   expect(screen.getByText("No backups yet.")).toBeVisible();
+});
+
+test("replaces loading, creation and success feedback in the same status area", async () => {
+  const catalog = deferred<StoredBackup[]>();
+  const creation = deferred<CreatedBackup>();
+  vi.mocked(api.listBackups).mockReturnValueOnce(catalog.promise);
+  vi.mocked(api.createBackup).mockReturnValueOnce(creation.promise);
+  render(<BackupSettings onBusyChange={() => {}} />);
+  const loading = await screen.findByText("Loading backups…");
+  const status = loading.parentElement;
+  await act(async () => catalog.resolve([]));
+  await userEvent.click(screen.getByRole("button", { name: "Create backup" }));
+  expect((await screen.findByText("Creating backup…")).parentElement).toBe(
+    status,
+  );
+  expect(screen.queryByText("Loading backups…")).not.toBeInTheDocument();
+  await act(async () => creation.resolve(created));
+  expect((await screen.findByText("Backup saved.")).parentElement).toBe(status);
+  expect(screen.queryByText("Creating backup…")).not.toBeInTheDocument();
+});
+
+test("fades out success feedback after four seconds without removing the backup", async () => {
+  render(<BackupSettings onBusyChange={() => {}} />);
+  await screen.findByText("No backups yet.");
+  vi.mocked(api.listBackups).mockResolvedValue([stored]);
+  vi.useFakeTimers();
+  try {
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Create backup" }));
+    });
+    await act(async () => vi.advanceTimersByTimeAsync(150));
+    expect(screen.getByText("Backup saved.")).toHaveClass("opacity-100");
+    await act(async () => vi.advanceTimersByTimeAsync(3_850));
+    expect(screen.getByText("Backup saved.")).toHaveClass("opacity-0");
+    await act(async () => vi.advanceTimersByTimeAsync(150));
+    expect(screen.queryByText("Backup saved.")).not.toBeInTheDocument();
+    expect(screen.getByText("backup.zip")).toBeVisible();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("confirms a fast manual list refresh in the shared status area", async () => {
+  render(<BackupSettings onBusyChange={() => {}} />);
+  await screen.findByText("No backups yet.");
+  await userEvent.click(screen.getByRole("button", { name: "Refresh list" }));
+  expect(await screen.findByText("Backup list refreshed.")).toBeVisible();
+  expect(api.listBackups).toHaveBeenCalledTimes(2);
 });

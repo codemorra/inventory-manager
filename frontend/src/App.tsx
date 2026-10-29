@@ -6,6 +6,7 @@ import { AppShell } from "./components/layout/AppShell";
 import { InventoryOverviewPage } from "./pages/InventoryOverviewPage";
 import { InventoryItemsPage } from "./pages/InventoryItemsPage";
 import { InventoryFieldsPage } from "./pages/InventoryFieldsPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { InventoryTemplatesPage } from "./pages/InventoryTemplatesPage";
 
 // A data router supports explicit navigation blocking for unsaved table drafts.
@@ -19,6 +20,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <InventoryOverviewPage /> },
       { path: "/templates", element: <InventoryTemplatesPage /> },
+      { path: "/settings", element: <SettingsPage /> },
       {
         path: "/inventories/:inventoryId/items",
         element: <InventoryItemsPage />,

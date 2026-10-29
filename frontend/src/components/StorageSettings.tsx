@@ -12,11 +12,18 @@ import type {
   StorageLocationState,
 } from "../types/storage";
 
-/** Apply checked live storage changes independently of appearance preferences. */
+/**
+ * Apply checked live storage changes independently of appearance preferences.
+ * @param onBusyChange Notify the parent while storage operations are running.
+ * @param onDirtyChange Notify the parent when paths have unsaved changes.
+ * @returns Storage location controls with explicit application of changed paths.
+ */
 export function StorageSettings({
   onBusyChange,
+  onDirtyChange,
 }: {
   onBusyChange: (busy: boolean) => void;
+  onDirtyChange?: ((dirty: boolean) => void) | undefined;
 }) {
   const { t } = useTranslation();
   const id = useId();
@@ -99,6 +106,15 @@ export function StorageSettings({
       onBusyChange(false);
     }
   }
+  const baseline = state?.pending ?? state?.paths;
+  const dirty = Boolean(
+    baseline &&
+    (draft.dataDirectory !== baseline.dataDirectory ||
+      draft.backupsDirectory !== baseline.backupsDirectory),
+  );
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
   const blocked = busy || preferences.pending > 0 || preferences.failed;
   const unchanged =
     state &&

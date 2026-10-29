@@ -277,8 +277,30 @@
   },
   "settings": {
     "title": "Einstellungen",
-    "description": "Wähle Sprache, Darstellung und Akzentfarbe für die Anwendung.",
-    "savedAutomatically": "Anwendungseinstellungen werden automatisch gespeichert."
+    "description": "Passe Inventory Manager an deine Wünsche an, verwalte Speicherorte und sichere deine Daten.",
+    "sectionsLabel": "Einstellungsbereiche",
+    "sections": {
+      "general": "Allgemein",
+      "storage": "Speicherorte",
+      "backups": "Backups",
+      "about": "Über"
+    },
+    "fileWarnings": "Vor dem Hinzufügen großer Dateien warnen",
+    "fileWarningsHelp": "Bei Dateien ab 100 MiB wird nachgefragt. Nach deiner Bestätigung kannst du die Datei weiterhin hinzufügen.",
+    "aboutDescription": "Verwalte deine Inventare, Einträge und angehängten Dateien an einem Ort.",
+    "author": "Autor",
+    "project": "Projekt",
+    "license": "Lizenz",
+    "licenseTitle": "MIT-Lizenz",
+    "leave": {
+      "leaveTitle": "Einstellungen verlassen?",
+      "leaveDescription": "Deine Änderungen an Speicherorten oder automatischen Backups sind noch nicht gespeichert. Ohne Speichern verlassen?",
+      "waitForSave": "Ein Vorgang läuft noch. Warte, bis er abgeschlossen ist, bevor du die Einstellungen verlässt.",
+      "stay": "Hier bleiben",
+      "discardAndLeave": "Änderungen verwerfen und verlassen",
+      "readyDescription": "Der Vorgang ist abgeschlossen. Möchtest du die Einstellungen verlassen?",
+      "leave": "Einstellungen verlassen"
+    }
   },
   "table": {
     "search": {
@@ -433,7 +455,6 @@
     "largeDescription": "Mindestens eine gewählte Datei ist 100 MiB oder größer. Die Anwendung legt eine eigene Kopie an, die zusätzlichen Speicherplatz benötigt.",
     "dontWarnAgain": "Diese Warnung künftig nicht mehr anzeigen",
     "continue": "Dateien hinzufügen",
-    "restoreWarnings": "Datei-Warnungen wieder anzeigen",
     "more_one": "+ {{count}} weitere",
     "more_other": "+ {{count}} weitere",
     "saveAs": "Speichern unter …",
@@ -489,8 +510,8 @@
   },
   "storage": {
     "title": "Speicherorte",
-    "description": "Wähle, wo deine Daten und Backups gespeichert werden. Vorhandene Dateien werden automatisch verschoben. Der Zielordner muss leer sein.",
-    "dataDirectory": "Datenordner (Datenbank und Anhänge)",
+    "description": "Wähle, wo deine Daten und Backups gespeichert werden. Beim Übernehmen werden vorhandene Dateien mitverschoben. Verwende vollständige Pfade zu getrennten, leeren Zielordnern.",
+    "dataDirectory": "Datenordner (Inventare und Anhänge)",
     "backupsDirectory": "Backupordner",
     "current": "Aktuell: {{path}}",
     "loading": "Speicherorte werden geladen…",
@@ -508,7 +529,7 @@
     "tempDirectory": "Temporäre Dateien",
     "overridden": "Der Datenordner wird beim Start vorgegeben und kann hier nicht geändert werden.",
     "conflict": "Einstellungen oder Speicherorte haben sich geändert. Lade die Speicherorte vor einem erneuten Versuch neu.",
-    "invalid": "Wähle getrennte, leere Zielordner mit absoluten Pfaden.",
+    "invalid": "Wähle getrennte, leere Zielordner und gib jeweils den vollständigen Ordnerpfad an.",
     "saveFailed": "Die Speicherorte konnten nicht geändert werden. Lade sie neu, um den aktuellen Stand zu prüfen.",
     "changed": "Die Speicherorte wurden geändert.",
     "default": "Standard verwenden",
@@ -519,15 +540,15 @@
     "description": "Sichere deine Inventare, Vorlagen, Tabellenansichten und angehängten Dateien als ZIP-Archiv.",
     "create": "Backup erstellen",
     "creating": "Backup wird erstellt…",
-    "creatingHelp": "Deine Daten werden gesichert und geprüft. Bitte warte.",
     "created": "Backup gespeichert.",
     "refresh": "Liste aktualisieren",
+    "refreshed": "Backupliste aktualisiert.",
     "loading": "Backups werden geladen…",
     "empty": "Noch keine Backups vorhanden.",
     "list": "Gespeicherte Backups",
-    "download": "Herunterladen",
+    "download": "Speichern",
     "downloadLabel": "{{filename}} herunterladen",
-    "unreadable": "Metadaten konnten nicht gelesen werden",
+    "unreadable": "Backup-Informationen konnten nicht gelesen werden",
     "loadFailed": "Die Backupliste konnte nicht geladen werden. Aktualisiere die Liste, um es erneut zu versuchen.",
     "createFailed": "Das Backup konnte nicht erstellt werden. Prüfe die Dateien und den verfügbaren Speicherplatz und versuche es erneut.",
     "conflict": "Ein anderer Speichervorgang läuft. Versuche es anschließend erneut.",
@@ -558,7 +579,7 @@
     "restoreItems": "Einträge",
     "restoreAttachments": "Dateien",
     "restoreWarning": "Die Wiederherstellung ersetzt den aktuellen Datenbestand. Ungespeicherte Änderungen werden verworfen.",
-    "restoreSafety": "Vor dem Ersetzen wird eine Sicherung deines aktuellen Datenbestands erstellt.",
+    "restoreSafety": "Vor dem Ersetzen wird eine Sicherung deiner aktuellen Daten erstellt. Wenn diese Sicherung fehlschlägt, werden keine Daten ersetzt.",
     "confirmRestore": "Daten ersetzen und wiederherstellen",
     "restoring": "Sicherheitsbackup wird erstellt und Daten werden wiederhergestellt. Bitte warte.",
     "restoreFailed": "Das Backup konnte nicht wiederhergestellt werden. Dein bisheriger Datenbestand wurde beibehalten.",
@@ -580,8 +601,8 @@
       "weekly": "Wöchentlich"
     },
     "weeklyHelp": "Ein automatisches Backup pro Kalenderwoche, Montag bis Sonntag.",
-    "retention": "Automatische Backups aufbewahren",
-    "retentionHelp": "Ältere automatische Backups werden nach einer erfolgreichen neuen Sicherung entfernt.",
+    "retention": "Anzahl aufzubewahrender automatischer Backups",
+    "retentionHelp": "Die Anzahl gilt nur für automatische Backups. Ältere werden nach einer erfolgreichen neuen Sicherung entfernt.",
     "scheduleLoading": "Backup-Einstellungen werden geladen…",
     "scheduleSave": "Backup-Einstellungen speichern",
     "scheduleSaving": "Wird gespeichert…",
@@ -595,7 +616,9 @@
     "automaticRunning": "Ein automatisches Backup wird erstellt…",
     "automaticFailed": "Das letzte automatische Backup ist fehlgeschlagen.",
     "retentionFailed": "Einige ältere automatische Backups konnten nicht entfernt werden.",
-    "retryAt": "Nächster Versuch: {{date}}"
+    "retryAt": "Nächster Versuch: {{date}}",
+    "manageTitle": "Backups verwalten",
+    "automaticHelp": "Automatische Backups werden erstellt, solange die Anwendung läuft."
   },
   "updates": {
     "title": "Anwendungsupdates",

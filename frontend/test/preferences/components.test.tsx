@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { PreferenceBootstrap } from "../../src/components/PreferenceBootstrap";
 import { PreferenceStatus } from "../../src/components/PreferenceStatus";
-import { SettingsDialog } from "../../src/components/SettingsDialog";
+import { SettingsPage } from "../../src/pages/SettingsPage";
 import { preferenceStore } from "../../src/preferences/store";
 import * as api from "../../src/services/preferences";
 import { ApiError } from "../../src/services/api";
@@ -54,7 +54,7 @@ function renderPreferences(node: ReactNode) {
 function show() {
   return renderPreferences(
     <PreferenceBootstrap>
-      <SettingsDialog onClose={() => {}} />
+      <SettingsPage />
       <PreferenceStatus />
     </PreferenceBootstrap>,
   );
@@ -83,7 +83,7 @@ test("loads once under StrictMode and applies saved theme/accent before editable
   renderPreferences(
     <StrictMode>
       <PreferenceBootstrap>
-        <SettingsDialog onClose={() => {}} />
+        <SettingsPage />
       </PreferenceBootstrap>
     </StrictMode>,
   );
@@ -120,7 +120,7 @@ test("persists appearance, accent, language and warning choices through the back
   await user.selectOptions(screen.getByLabelText("Appearance"), "dark");
   await user.click(screen.getByRole("button", { name: "Blue" }));
   await user.click(
-    screen.getByRole("button", { name: "Show file warnings again" }),
+    screen.getByRole("checkbox", { name: "Warn before adding large files" }),
   );
   await user.selectOptions(screen.getByLabelText("Language"), "de");
   await screen.findByLabelText("Sprache");

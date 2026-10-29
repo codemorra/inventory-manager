@@ -277,8 +277,30 @@
   },
   "settings": {
     "title": "Settings",
-    "description": "Choose your language, appearance, and accent color.",
-    "savedAutomatically": "Application preferences are saved automatically."
+    "description": "Make Inventory Manager work the way you prefer, manage your storage and keep your data backed up.",
+    "sectionsLabel": "Settings sections",
+    "sections": {
+      "general": "General",
+      "storage": "Storage locations",
+      "backups": "Backups",
+      "about": "About"
+    },
+    "fileWarnings": "Warn before adding large files",
+    "fileWarningsHelp": "Ask before adding files of 100 MiB or more. You can still add the file after confirming.",
+    "aboutDescription": "Organize your inventories, items and attached files in one place.",
+    "author": "Author",
+    "project": "Project",
+    "license": "License",
+    "licenseTitle": "MIT License",
+    "leave": {
+      "leaveTitle": "Leave settings?",
+      "leaveDescription": "Your changes to storage locations or automatic backups have not been saved. Leave without saving?",
+      "waitForSave": "An operation is still in progress. Wait for it to finish before leaving settings.",
+      "stay": "Stay here",
+      "discardAndLeave": "Discard changes and leave",
+      "readyDescription": "The operation has finished. Leave settings?",
+      "leave": "Leave settings"
+    }
   },
   "table": {
     "search": {
@@ -433,7 +455,6 @@
     "largeDescription": "At least one selected file is 100 MiB or larger. The application keeps its own copy, which uses additional disk space.",
     "dontWarnAgain": "Do not show this warning again",
     "continue": "Add files",
-    "restoreWarnings": "Show file warnings again",
     "more_one": "+ {{count}} more",
     "more_other": "+ {{count}} more",
     "saveAs": "Save as…",
@@ -489,8 +510,8 @@
   },
   "storage": {
     "title": "Storage locations",
-    "description": "Choose where your data and backups are stored. Existing files are moved automatically. The destination folder must be empty.",
-    "dataDirectory": "Data folder (database and attachments)",
+    "description": "Choose where your data and backups are stored. Existing files are moved when you apply the change. Enter full paths to separate, empty destination folders.",
+    "dataDirectory": "Data folder (inventories and attachments)",
     "backupsDirectory": "Backup folder",
     "current": "Current: {{path}}",
     "loading": "Loading storage locations…",
@@ -508,7 +529,7 @@
     "tempDirectory": "Temporary files",
     "overridden": "The data folder is specified at startup and cannot be changed here.",
     "conflict": "Settings or storage locations have changed. Reload the locations before trying again.",
-    "invalid": "Choose separate, empty destination folders using absolute paths.",
+    "invalid": "Choose separate, empty destination folders and enter the full path to each folder.",
     "saveFailed": "Storage locations could not be changed. Reload them to check the current state.",
     "changed": "Storage locations have been changed.",
     "default": "Use default",
@@ -519,15 +540,15 @@
     "description": "Save your inventories, templates, table views and attached files in a ZIP archive.",
     "create": "Create backup",
     "creating": "Creating backup…",
-    "creatingHelp": "Your data is being saved and checked. Please wait.",
     "created": "Backup saved.",
     "refresh": "Refresh list",
+    "refreshed": "Backup list refreshed.",
     "loading": "Loading backups…",
     "empty": "No backups yet.",
     "list": "Saved backups",
-    "download": "Download",
+    "download": "Save",
     "downloadLabel": "Download {{filename}}",
-    "unreadable": "Metadata could not be read",
+    "unreadable": "Backup information could not be read",
     "loadFailed": "The backup list could not be loaded. Refresh the list to try again.",
     "createFailed": "The backup could not be created. Check the files and available storage, then try again.",
     "conflict": "Another storage operation is running. Please try again afterward.",
@@ -558,7 +579,7 @@
     "restoreItems": "Items",
     "restoreAttachments": "Files",
     "restoreWarning": "Restoring replaces the current data. Unsaved changes will be discarded.",
-    "restoreSafety": "A backup of your current data is created before replacement.",
+    "restoreSafety": "A backup of your current data is created before replacement. If that backup fails, no data is replaced.",
     "confirmRestore": "Replace data and restore",
     "restoring": "Creating safety backup and restoring data. Please wait.",
     "restoreFailed": "The backup could not be restored. Your previous data was retained.",
@@ -581,7 +602,7 @@
     },
     "weeklyHelp": "One automatic backup per calendar week, Monday to Sunday.",
     "retention": "Automatic backups to keep",
-    "retentionHelp": "Older automatic backups are removed after a successful new backup.",
+    "retentionHelp": "This number applies only to automatic backups. Older ones are removed after a successful new backup.",
     "scheduleLoading": "Loading backup settings…",
     "scheduleSave": "Save backup settings",
     "scheduleSaving": "Saving…",
@@ -595,7 +616,9 @@
     "automaticRunning": "An automatic backup is running…",
     "automaticFailed": "The last automatic backup failed.",
     "retentionFailed": "Some older automatic backups could not be removed.",
-    "retryAt": "Next attempt: {{date}}"
+    "retryAt": "Next attempt: {{date}}",
+    "manageTitle": "Manage backups",
+    "automaticHelp": "Automatic backups are created while the application is running."
   },
   "updates": {
     "title": "Application updates",
