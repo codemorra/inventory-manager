@@ -14,52 +14,12 @@ import { ChoiceSelect } from "./ChoiceSelect";
 import { ApiError } from "../services/api";
 import { Modal } from "./Modal";
 
-// Define properties for the inventory creation control.
-interface InventoryCreateFormProps {
-  triggerClassName?: string;
-  onCreated?: (() => void) | undefined;
-}
-
-/**
- * Render a trigger and modal form for creating an inventory.
- * @param triggerClassName Optional classes applied to the modal trigger.
- * @param onCreated Callback used to dismiss navigation after successful creation.
- * @returns The inventory creation control.
- */
-export function InventoryCreateForm({
-  triggerClassName = "inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover",
-  onCreated,
-}: InventoryCreateFormProps = {}) {
-  const { t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <>
-      <button
-        className={triggerClassName}
-        onClick={() => setIsOpen(true)}
-        type="button"
-      >
-        <span aria-hidden="true" className="text-lg leading-none">
-          +
-        </span>
-        {t("inventories.actions.new")}
-      </button>
-      {isOpen && (
-        <InventoryCreationDialog
-          onClose={() => setIsOpen(false)}
-          onCreated={onCreated}
-        />
-      )}
-    </>
-  );
-}
-
 /**
  * Keep creation inputs and selected template revisions isolated until the dialog closes.
  * @param props Dismissal and navigation callbacks.
  * @returns The empty-inventory or template-based creation form.
  */
-function InventoryCreationDialog(props: {
+export function InventoryCreateForm(props: {
   onClose: () => void;
   onCreated: (() => void) | undefined;
 }) {

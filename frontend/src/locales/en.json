@@ -261,7 +261,6 @@
     "searchPlaceholder": "Search inventories…",
     "clearSearch": "Clear inventory search",
     "noSearchResults": "No matching inventories.",
-    "allInventories": "Overview",
     "close": "Close menu",
     "closeBackdrop": "Close navigation",
     "inventories": "Inventories",
@@ -272,7 +271,9 @@
     "loadingInventories": "Loading inventories…",
     "noInventories": "No inventories created yet.",
     "open": "Open menu",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "new": "New",
+    "goToOverview": "Go to overview"
   },
   "settings": {
     "title": "Settings",

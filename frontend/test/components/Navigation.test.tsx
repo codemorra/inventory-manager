@@ -81,10 +81,7 @@ describe("Navigation inventory search", () => {
     expect(
       screen.queryByRole("link", { name: "Books" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "New inventory" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New" })).toBeInTheDocument();
     await user.click(link);
     expect(onNavigate).toHaveBeenCalledOnce();
     expect(getInventories).toHaveBeenCalledOnce();
@@ -137,9 +134,11 @@ describe("Navigation inventory search", () => {
 });
 
 // Importing would navigate away from a live table draft; keep that action explicitly locked.
-test("locks the import control during table editing", () => {
+test("locks the import control during table editing", async () => {
+  const user = userEvent.setup();
   renderNavigation(true);
+  await user.click(screen.getByRole("button", { name: "New" }));
   expect(
-    screen.getByRole("button", { name: "Import inventory" }),
+    screen.getByRole("menuitem", { name: "Import inventory" }),
   ).toBeDisabled();
 });

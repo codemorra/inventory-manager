@@ -1,11 +1,10 @@
 import { useContext, useRef, useState } from "react";
 import { TableEditSessionContext } from "../tableEditSession";
-import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useInventories, useUpdateInventory } from "../../hooks/useInventories";
 import { ApiError } from "../../services/api";
-import { InventoryCreateForm } from "../InventoryCreateForm";
+import { SidebarCreateActions } from "./SidebarCreateActions";
 import { useInventoryGroups } from "../../hooks/useInventoryGroups";
 import { InventoryTree } from "../InventoryTree";
 import type { SidebarContextTarget } from "../SidebarContextActions";
@@ -32,8 +31,9 @@ export function Navigation({
   onContext,
 }: NavigationProps) {
   const { t, i18n } = useTranslation();
-  const { inventoryId: editingInventoryId, configurationInventoryId } =
-    useContext(TableEditSessionContext);
+  const { inventoryId: editingInventoryId } = useContext(
+    TableEditSessionContext,
+  );
   const [search, setSearch] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
   const groupQuery = useInventoryGroups();
@@ -64,80 +64,19 @@ export function Navigation({
   return (
     <nav
       aria-label={t("navigation.label")}
-      className="flex min-h-0 flex-1 flex-col px-3 pb-4 pt-5"
+      className="mx-3 mt-4 flex min-h-0 flex-1 flex-col border-t border-shell pb-4 pt-4"
     >
-      <div className="flex shrink-0 items-stretch gap-2">
-        <InventoryCreateForm
-          onCreated={onNavigate}
-          triggerClassName="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-surface transition hover:bg-accent-hover"
-        />
-        <button
-          type="button"
-          aria-label={t("archives.import")}
-          title={
-            editingInventoryId || configurationInventoryId
-              ? t("archives.saveFirst")
-              : t("archives.import")
-          }
-          disabled={Boolean(editingInventoryId || configurationInventoryId)}
-          onClick={onImport}
-          className="flex w-10 shrink-0 items-center justify-center rounded-lg border border-shell text-heading enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:opacity-50"
-        >
-          <svg
-            aria-hidden="true"
-            className="size-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            viewBox="0 0 24 24"
-          >
-            <path d="M12 3v12m-4-4 4 4 4-4M4 15v5h16v-5" />
-          </svg>
-        </button>
-      </div>
-      <button
-        className="mt-2 rounded-md border border-shell px-3 py-2 text-sm font-medium text-heading enabled:hover:bg-control-hover enabled:hover:border-accent/50"
-        onClick={onCreateGroup}
-        type="button"
-      >
-        <span aria-hidden="true">+ </span>
-        {t("groups.new")}
-      </button>
-
-      <NavLink
-        className={({ isActive }) =>
-          `mt-5 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-            isActive
-              ? "bg-accent-soft text-accent"
-              : "text-muted hover:bg-surface-hover hover:text-foreground"
-          }`
-        }
-        end
-        onClick={onNavigate}
-        to="/"
-      >
-        <svg
-          aria-hidden="true"
-          className="size-5"
-          fill="none"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="1.7"
-          viewBox="0 0 24 24"
-        >
-          <path d="M4 7.5 12 3l8 4.5-8 4.5-8-4.5Z" />
-          <path d="m4 12 8 4.5 8-4.5M4 16.5 12 21l8-4.5" />
-        </svg>
-        {t("navigation.allInventories")}
-      </NavLink>
-
-      <div className="mt-5 flex min-h-0 flex-1 flex-col border-t border-shell pt-4">
-        <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted">
-          {t("navigation.inventories")}
-        </p>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex shrink-0 items-center justify-between gap-2">
+          <p className="min-w-0 text-xs font-semibold uppercase tracking-wider text-muted">
+            {t("navigation.inventories")}
+          </p>
+          <SidebarCreateActions
+            onCreated={onNavigate}
+            onCreateGroup={onCreateGroup}
+            onImport={onImport}
+          />
+        </div>
 
         <div
           className="relative mt-3 shrink-0"

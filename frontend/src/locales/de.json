@@ -261,7 +261,6 @@
     "searchPlaceholder": "Inventare suchen…",
     "clearSearch": "Inventarsuche leeren",
     "noSearchResults": "Keine passenden Inventare gefunden.",
-    "allInventories": "Übersicht",
     "close": "Menü schließen",
     "closeBackdrop": "Navigation schließen",
     "inventories": "Inventare",
@@ -272,7 +271,9 @@
     "loadingInventories": "Inventare werden geladen…",
     "noInventories": "Noch keine Inventare erstellt.",
     "open": "Menü öffnen",
-    "skipToContent": "Zum Inhalt springen"
+    "skipToContent": "Zum Inhalt springen",
+    "new": "Neu",
+    "goToOverview": "Zur Übersicht"
   },
   "settings": {
     "title": "Einstellungen",

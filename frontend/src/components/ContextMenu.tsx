@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 // Define a context menu action.
 export interface ContextMenuAction {
   label: string;
+  icon?: ReactNode;
   onSelect: () => void;
   danger?: boolean;
   checked?: boolean;
@@ -129,6 +130,11 @@ export function ContextMenu({
           {hasIndicators && (
             <span aria-hidden="true" className="w-4 shrink-0 text-accent">
               {action.checked ? "✓" : ""}
+            </span>
+          )}
+          {action.icon && (
+            <span aria-hidden="true" className="shrink-0 text-accent">
+              {action.icon}
             </span>
           )}
           <span className="min-w-0 wrap-break-word">{action.label}</span>
