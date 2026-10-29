@@ -595,5 +595,18 @@
     "automaticFailed": "Das letzte automatische Backup ist fehlgeschlagen.",
     "retentionFailed": "Einige ältere automatische Backups konnten nicht entfernt werden.",
     "retryAt": "Nächster Versuch: {{date}}"
+  },
+  "updates": {
+    "title": "Anwendungsupdates",
+    "version": "Version {{version}}",
+    "check": "Nach Updates suchen",
+    "checking": "Updates werden geprüft…",
+    "available": "Version {{version}} ist verfügbar.",
+    "current": "Keine neuere veröffentlichte Version verfügbar.",
+    "no_release": "Noch kein öffentlicher Release verfügbar.",
+    "failed": "Die Update-Prüfung ist fehlgeschlagen. Bitte versuche es erneut.",
+    "rate_limited": "Das Anfragelimit von GitHub wurde erreicht. Bitte versuche es später erneut.",
+    "openRelease": "Release öffnen",
+    "instructions": "Anleitung zum Aktualisieren"
   }
 }

@@ -38,6 +38,70 @@
         }
       }
     },
+    "/application-update": {
+      "get": {
+        "tags": ["Application updates"],
+        "summary": "Manually check for a newer published application version",
+        "description": "Queries the fixed public GitHub repository without authentication. Accepts vX.Y.Z release tags and compares numeric components against the built X.Y.Z application version. Reports no public release separately from failures, and respects GitHub rate-limit deadlines. Shares simultaneous checks; complete upstream deadline is seven seconds. Does not install updates, persist results or change application data. Requires outbound HTTPS. No uploaded release assets are required.",
+        "operationId": "check_application_update",
+        "responses": {
+          "200": {
+            "description": "Completed check, including recoverable upstream failures. current means no newer published version.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationUpdate"
+                },
+                "examples": {
+                  "available": {
+                    "value": {
+                      "current_version": "1.9.0",
+                      "status": "available",
+                      "latest_version": "1.10.0",
+                      "release_url": "https://github.com/codemorra/inventory-manager/releases/tag/v1.10.0"
+                    }
+                  },
+                  "current": {
+                    "value": {
+                      "current_version": "1.10.0",
+                      "status": "current",
+                      "latest_version": "1.10.0",
+                      "release_url": "https://github.com/codemorra/inventory-manager/releases/tag/v1.10.0"
+                    }
+                  },
+                  "no_release": {
+                    "value": {
+                      "current_version": "0.0.0",
+                      "status": "no_release"
+                    }
+                  },
+                  "failed": {
+                    "value": {
+                      "current_version": "0.0.0",
+                      "status": "failed"
+                    }
+                  },
+                  "rate_limited": {
+                    "value": {
+                      "current_version": "0.0.0",
+                      "status": "rate_limited"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/inventories": {
       "get": {
         "tags": ["inventories"],
@@ -5839,6 +5903,57 @@
             ]
           }
         }
+      },
+      "ApplicationUpdate": {
+        "title": "ApplicationUpdate",
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "current_version",
+              "status",
+              "latest_version",
+              "release_url"
+            ],
+            "properties": {
+              "current_version": {
+                "type": "string",
+                "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?![\\s\\S])",
+                "description": "Application version captured when the backend was built."
+              },
+              "status": {
+                "type": "string",
+                "enum": ["available", "current"]
+              },
+              "latest_version": {
+                "type": "string",
+                "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?![\\s\\S])"
+              },
+              "release_url": {
+                "type": "string",
+                "format": "uri",
+                "description": "Validated release link on the fixed project repository."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["current_version", "status"],
+            "properties": {
+              "current_version": {
+                "type": "string",
+                "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?![\\s\\S])",
+                "description": "Application version captured when the backend was built."
+              },
+              "status": {
+                "type": "string",
+                "enum": ["no_release", "failed", "rate_limited"]
+              }
+            }
+          }
+        ]
       }
     },
     "parameters": {

@@ -595,5 +595,18 @@
     "automaticFailed": "The last automatic backup failed.",
     "retentionFailed": "Some older automatic backups could not be removed.",
     "retryAt": "Next attempt: {{date}}"
+  },
+  "updates": {
+    "title": "Application updates",
+    "version": "Version {{version}}",
+    "check": "Check for updates",
+    "checking": "Checking for updates…",
+    "available": "Version {{version}} is available.",
+    "current": "No newer published version is available.",
+    "no_release": "No public release is available yet.",
+    "failed": "Unable to check for updates. Please try again.",
+    "rate_limited": "GitHub’s request limit has been reached. Please try again later.",
+    "openRelease": "Open release",
+    "instructions": "Update instructions"
   }
 }
