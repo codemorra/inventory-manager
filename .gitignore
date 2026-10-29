@@ -2,12 +2,14 @@
 .local/
 
 # Frontend
+/frontend/src/generated/app-version.ts
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
 frontend/*.local
 
 # Backend
+/backend/src/generated/app-version.ts
 backend/.venv/
 node_modules/
 backend/dist/
