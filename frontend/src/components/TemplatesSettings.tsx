@@ -2,11 +2,11 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useInventoryTemplates } from "../hooks/useInventoryTemplates";
 import type { InventoryTemplate } from "../types/inventoryTemplate";
-import { InventoryTemplateEditDialog } from "../components/InventoryTemplateEditDialog";
-import { InventoryTemplateDeleteDialog } from "../components/InventoryTemplateDeleteDialog";
+import { InventoryTemplateEditDialog } from "./InventoryTemplateEditDialog";
+import { InventoryTemplateDeleteDialog } from "./InventoryTemplateDeleteDialog";
 
-/** Render template management separately from inventory navigation and item data. */
-export function InventoryTemplatesPage() {
+/** Render independent structure templates within the application settings. */
+export function TemplatesSettings() {
   const { t } = useTranslation();
   const query = useInventoryTemplates();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -21,12 +21,7 @@ export function InventoryTemplatesPage() {
 
   return (
     <div>
-      <header className="mb-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-heading sm:text-4xl">
-          {t("templates.title")}
-        </h1>
-        <p className="mt-2 text-sm text-muted">{t("templates.description")}</p>
-      </header>
+      <p className="mb-5 text-sm text-muted">{t("templates.description")}</p>
       {query.isPending && (
         <p role="status" className="text-sm text-muted">
           {t("templates.loading")}
@@ -50,7 +45,7 @@ export function InventoryTemplatesPage() {
       )}
       {!query.isPending && !query.isError && !query.data?.length && (
         <div className="rounded-md border border-dashed border-shell bg-surface p-6">
-          <h2 className="font-semibold">{t("templates.empty")}</h2>
+          <h3 className="font-semibold">{t("templates.empty")}</h3>
           <p className="mt-2 text-sm text-muted">{t("templates.emptyHelp")}</p>
         </div>
       )}
@@ -65,9 +60,9 @@ export function InventoryTemplatesPage() {
               className="flex flex-wrap items-center justify-between gap-4 p-4"
             >
               <div className="min-w-0 flex-1">
-                <h2 className="wrap-anywhere font-semibold text-heading">
+                <h3 className="wrap-anywhere font-semibold text-heading">
                   {template.name}
-                </h2>
+                </h3>
                 {template.description && (
                   <p className="mt-1 whitespace-pre-wrap wrap-anywhere text-sm text-muted">
                     {template.description}

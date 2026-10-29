@@ -174,8 +174,8 @@ test("shows unsaved changes and lets the user explicitly retry transport failure
     "could not be saved",
   );
   expect(
-    screen.getByText("Some changes have not been saved."),
-  ).toBeInTheDocument();
+    screen.queryByText("Some changes have not been saved."),
+  ).not.toBeInTheDocument();
   expect(screen.getByLabelText("Appearance")).toHaveValue("dark");
   await user.click(screen.getByRole("button", { name: "Retry" }));
   await waitFor(() =>

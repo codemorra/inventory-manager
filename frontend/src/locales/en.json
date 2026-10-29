@@ -283,6 +283,7 @@
       "general": "General",
       "storage": "Storage locations",
       "backups": "Backups",
+      "templates": "Templates",
       "about": "About"
     },
     "fileWarnings": "Warn before adding large files",

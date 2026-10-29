@@ -7,6 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import {
   createMemoryRouter,
@@ -19,6 +20,7 @@ import * as storage from "../../src/services/storage";
 import * as schedules from "../../src/services/automaticBackups";
 import * as backups from "../../src/services/backups";
 import * as updates from "../../src/services/applicationUpdates";
+import * as templates from "../../src/services/inventoryTemplates";
 import { automaticSchedule } from "../helpers/automaticBackups";
 import { deferred } from "../helpers/inventoryArchives";
 import type { CreatedBackup } from "../../src/types/backup";
@@ -36,6 +38,10 @@ vi.mock("../../src/services/automaticBackups", () => ({
 }));
 vi.mock("../../src/services/applicationUpdates", () => ({
   checkForUpdates: vi.fn(),
+}));
+vi.mock("../../src/services/inventoryTemplates", async (original) => ({
+  ...(await original<object>()),
+  getInventoryTemplates: vi.fn(),
 }));
 vi.mock("../../src/services/backups", async (original) => ({
   ...(await original<object>()),
@@ -67,6 +73,17 @@ beforeEach(() => {
     structuredClone(automaticSchedule),
   );
   vi.mocked(backups.listBackups).mockResolvedValue([]);
+  vi.mocked(templates.getInventoryTemplates).mockResolvedValue([
+    {
+      id: "example",
+      name: "Office equipment",
+      description: "Reusable equipment structure",
+      revision: 1,
+      fields: [],
+      created_at: "",
+      updated_at: "",
+    },
+  ]);
 });
 afterEach(() => {
   cleanup();
@@ -95,22 +112,27 @@ function show() {
     ],
     { initialEntries: ["/settings"] },
   );
-  render(<RouterProvider router={router} />);
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
   return router;
 }
 
-test("offers four keyboard-accessible sections and loads management data only when opened", async () => {
+test("offers five keyboard-accessible sections and loads management data only when opened", async () => {
   const user = userEvent.setup();
   show();
   expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
     "General",
     "Storage locations",
     "Backups",
+    "Templates",
     "About",
   ]);
-  expect(
-    screen.queryByRole("tab", { name: "Templates" }),
-  ).not.toBeInTheDocument();
   expect(storage.getStorageLocations).not.toHaveBeenCalled();
   expect(backups.listBackups).not.toHaveBeenCalled();
   const general = screen.getByRole("tab", { name: "General" });
@@ -214,4 +236,24 @@ test("shows the original MIT license and returns focus after dismissal", async (
   await user.keyboard("{Escape}");
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(trigger).toHaveFocus();
+});
+
+test("loads template management inside Settings only when its tab is opened", async () => {
+  const user = userEvent.setup();
+  show();
+  expect(templates.getInventoryTemplates).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("tab", { name: "Templates" }));
+  expect(
+    await screen.findByRole("heading", { name: "Office equipment", level: 3 }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("heading", { name: "Settings", level: 1 }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Edit template Office equipment" }),
+  ).toBeVisible();
+  await user.click(screen.getByRole("tab", { name: "General" }));
+  await user.click(screen.getByRole("tab", { name: "Templates" }));
+  expect(screen.getByText("Office equipment")).toBeVisible();
+  expect(templates.getInventoryTemplates).toHaveBeenCalledOnce();
 });

@@ -10,7 +10,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { InventoryTemplatesPage } from "../../src/pages/InventoryTemplatesPage";
+import { TemplatesSettings } from "../../src/components/TemplatesSettings";
 import * as api from "../../src/services/inventoryTemplates";
 import { ApiError } from "../../src/services/api";
 import type { InventoryTemplate } from "../../src/types/inventoryTemplate";
@@ -83,7 +83,7 @@ function showPage() {
   });
   render(
     <QueryClientProvider client={client}>
-      <InventoryTemplatesPage />
+      <TemplatesSettings />
     </QueryClientProvider>,
   );
   return client;
