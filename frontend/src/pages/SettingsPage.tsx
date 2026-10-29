@@ -3,10 +3,17 @@ import { useTranslation } from "react-i18next";
 import { GeneralSettings } from "../components/GeneralSettings";
 import { StorageSettings } from "../components/StorageSettings";
 import { BackupSettings } from "../components/BackupSettings";
+import { TemplatesSettings } from "../components/TemplatesSettings";
 import { AboutSettings } from "../components/AboutSettings";
 import { UnsavedTableChanges } from "../components/UnsavedTableChanges";
 
-const sections = ["general", "storage", "backups", "about"] as const;
+const sections = [
+  "general",
+  "storage",
+  "backups",
+  "templates",
+  "about",
+] as const;
 type Section = (typeof sections)[number];
 
 /**
@@ -127,6 +134,7 @@ export function SettingsPage() {
                   />
                 </fieldset>
               )}
+              {section === "templates" && <TemplatesSettings />}
               {section === "about" && <AboutSettings />}
             </>
           )}

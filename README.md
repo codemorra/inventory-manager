@@ -36,7 +36,7 @@ Create an inventory from the sidebar, optionally choosing a template, its includ
 
 Click a column heading to cycle through ascending, descending, and original order. Use **View** to show or hide columns, wrap text, toggle image previews for file columns, or restore automatic widths. Drag a heading's right edge to resize a column; right-click the heading to restore its automatic width or hide it. Table preferences are saved with each inventory. Use search and filters to narrow items, or the pencil to edit cells and save or discard changes together.
 
-Open **Settings** at the bottom of the sidebar to change language, appearance, and accent color. **Templates** directly above it lets you edit or delete saved structures.
+Open **Settings** at the bottom of the sidebar to change language, appearance, and accent color. **Settings > Templates** lets you edit or delete saved structures.
 
 Use **Settings > Backups** to create a ZIP backup of your inventories, templates, table views and attached files, or enable daily/weekly automatic backups with a retention limit. Saved backups show their date, kind and size. Use the download icon to save an archive or the delete icon to remove it after confirmation.
 

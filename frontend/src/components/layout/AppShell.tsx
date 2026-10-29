@@ -119,27 +119,6 @@ export function AppShell({ children }: AppShellProps) {
       />
       <div className="mt-auto grid shrink-0 gap-1 border-t border-shell px-3 py-3">
         <NavLink
-          to="/templates"
-          onClick={() => setIsNavigationOpen(false)}
-          className={({ isActive }) =>
-            `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-accent ${isActive ? "bg-accent-soft text-accent" : "text-muted hover:bg-control-hover hover:text-foreground"}`
-          }
-        >
-          <svg
-            aria-hidden="true"
-            className="size-4 shrink-0"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            viewBox="0 0 24 24"
-          >
-            <path d="M8 3h12v15H8zM4 7v14h12M11 7h6m-6 4h6m-6 4h3" />
-          </svg>
-          {t("templates.title")}
-        </NavLink>
-        <NavLink
           to="/settings"
           onClick={() => setIsNavigationOpen(false)}
           className={({ isActive }) =>

@@ -84,7 +84,7 @@ test.each([false, true])(
   async (mobile) => {
     const user = userEvent.setup();
     mockedGetInventories.mockResolvedValue([]);
-    renderAppShell("/templates");
+    renderAppShell("/settings");
     if (mobile)
       await user.click(screen.getByRole("button", { name: "Open menu" }));
     const scope = mobile
@@ -290,31 +290,18 @@ describe("AppShell", () => {
   });
 });
 
-// The separate management entry sits above Settings and closes mobile navigation when followed.
-test.each([false, true])(
-  "opens templates from the sidebar footer (mobile: %s)",
-  async (mobile) => {
-    const user = userEvent.setup();
-    mockedGetInventories.mockResolvedValue([]);
-    renderAppShell();
-    if (mobile)
-      await user.click(screen.getByRole("button", { name: "Open menu" }));
-    const area = mobile
-      ? within(screen.getByRole("dialog", { name: "Mobile navigation" }))
-      : screen;
-    const link = area.getByRole("link", { name: "Templates" });
-    expect(link).toHaveAttribute("href", "/templates");
-    expect(link.nextElementSibling).toHaveTextContent("Settings");
-    await user.click(link);
-    expect(
-      screen.queryByRole("dialog", { name: "Mobile navigation" }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Templates" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-  },
-);
+// Template management is available within Settings rather than as a separate destination.
+test("keeps template management out of the sidebar footer", () => {
+  mockedGetInventories.mockResolvedValue([]);
+  renderAppShell();
+  expect(
+    screen.queryByRole("link", { name: "Templates" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute(
+    "href",
+    "/settings",
+  );
+});
 
 // Import is shell-owned so dismissing mobile navigation does not unmount the import dialog.
 test("opens import from the creation menu and replaces mobile navigation", async () => {
