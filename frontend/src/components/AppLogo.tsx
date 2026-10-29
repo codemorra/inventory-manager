@@ -14,9 +14,11 @@ function prepareLogo() {
   for (const element of svg.querySelectorAll<SVGElement>("*")) {
     const label = element.getAttribute("inkscape:label");
     if (label === "background") {
-      element.style.setProperty("fill", "var(--app-accent)", "important");
-    } else if (label && ["mark", "m", "i1", "i2"].includes(label)) {
-      element.style.setProperty("fill", "var(--app-chrome)", "important");
+      element.style.setProperty(
+        "fill",
+        "var(--app-logo-background)",
+        "important",
+      );
     }
   }
   return new XMLSerializer().serializeToString(svg);

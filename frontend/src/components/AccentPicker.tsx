@@ -8,20 +8,21 @@ import { accentColors, applyAccent } from "../appearance/accent";
 export function AccentPicker() {
   const { t } = useTranslation();
   const [saved, setAccent] = useStoredPreference("accent");
-  const accent = saved ?? "teal";
+  const accent = saved ?? "brand";
 
   useEffect(() => {
     applyAccent(accent);
   }, [accent]);
 
   return (
-    <fieldset>
+    <fieldset className="min-w-0">
       <legend className="mb-2 text-xs font-medium text-muted">
         {t("common.accent.label")}
       </legend>
-      <div className="flex gap-2">
+      <div className="flex max-w-xs flex-wrap gap-2">
         {accentColors.map((color) => (
           <button
+            title={t(`common.accent.${color}`)}
             aria-label={t(`common.accent.${color}`)}
             aria-pressed={accent === color}
             className="grid size-8 place-items-center rounded-md border border-shell bg-surface text-foreground outline-none transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-muted aria-pressed:border-accent aria-pressed:bg-accent-soft"
@@ -31,14 +32,8 @@ export function AccentPicker() {
           >
             <span
               aria-hidden="true"
-              className={`size-4 rounded-sm ${
-                {
-                  teal: "bg-teal-600",
-                  blue: "bg-blue-600",
-                  purple: "bg-purple-600",
-                  orange: "bg-orange-600",
-                }[color]
-              }`}
+              data-accent={color}
+              className="accent-swatch size-4 rounded-sm bg-accent"
             />
           </button>
         ))}

@@ -1,17 +1,24 @@
 import { preferenceStore } from "../preferences/store";
 
 // Define the supported accent palettes.
-export const accentColors = ["teal", "blue", "purple", "orange"] as const;
+export const accentColors = [
+  "brand",
+  "cyan",
+  "blue",
+  "purple",
+  "orange",
+  "slate",
+] as const;
 export type AccentColor = (typeof accentColors)[number];
 
 /**
  * Read the stored accent color with a fallback for unsupported values.
- * @returns The stored accent color or teal.
+ * @returns The stored accent color or the original logo palette.
  */
 export function getInitialAccent(): AccentColor {
-  if (typeof window === "undefined") return "teal";
+  if (typeof window === "undefined") return "brand";
   const stored = preferenceStore.readPreferences()?.accent;
-  return accentColors.find((color) => color === stored) ?? "teal";
+  return accentColors.find((color) => color === stored) ?? "brand";
 }
 
 /**

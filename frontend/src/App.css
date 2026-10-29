@@ -20,6 +20,7 @@
   --color-muted: var(--app-muted);
   --color-shell: var(--app-border);
   --color-accent: var(--app-accent);
+  --color-accent-text: var(--app-accent-text);
   --color-accent-hover: var(--app-accent-hover);
   --color-accent-soft: var(--app-accent-soft);
   --color-danger: var(--app-danger);
@@ -40,20 +41,18 @@
   --app-surface: color-mix(in srgb, var(--app-accent) 1%, #ffffff);
   --app-chrome: color-mix(in srgb, var(--app-accent) 7%, #fafafa);
   --app-surface-muted: color-mix(in srgb, var(--app-accent) 5%, #f8f8f8);
-  --app-surface-hover: color-mix(in srgb, var(--app-accent) 10%, #eeeeee);
+  --app-surface-hover: color-mix(in srgb, var(--app-accent) 6%, #e0e0e0);
   --app-foreground: color-mix(in srgb, var(--app-accent) 12%, #191919);
   --app-heading: color-mix(in srgb, var(--app-accent) 35%, #191919);
   --app-muted: color-mix(in srgb, var(--app-accent) 12%, #626262);
   --app-border: color-mix(in srgb, var(--app-accent) 18%, #dedede);
+  --app-logo-background: #0f766e;
   --app-accent: #0f766e;
   --app-accent-hover: #0b5f59;
+  --app-accent-text: var(--app-accent-hover);
   --app-accent-soft: #c6e7e1;
-  /* Keep control hover distinct from both row hover and selected surfaces. */
-  --app-control-hover: color-mix(
-    in srgb,
-    var(--app-accent) 14%,
-    var(--app-accent-soft)
-  );
+  /* Use a neutral hover surface distinct from the tinted selection background. */
+  --app-control-hover: color-mix(in srgb, var(--app-accent) 8%, #d7d7d7);
   --app-danger: #b4232f;
   --app-danger-soft: #fdebed;
   --app-success: #26703d;
@@ -69,19 +68,25 @@
 }
 
 :root[data-theme="dark"] {
+  --app-accent-text: var(--app-accent);
   color-scheme: dark;
-  --app-canvas: color-mix(in srgb, var(--app-accent) 4%, #111111);
-  --app-surface: color-mix(in srgb, var(--app-accent) 4%, #191919);
-  --app-chrome: color-mix(in srgb, var(--app-accent) 8%, #191919);
-  --app-surface-muted: color-mix(in srgb, var(--app-accent) 7%, #222222);
-  --app-surface-hover: color-mix(in srgb, var(--app-accent) 11%, #2c2c2c);
+  --app-canvas: color-mix(in srgb, var(--app-accent) 1%, #111111);
+  --app-surface: color-mix(in srgb, var(--app-accent) 1%, #191919);
+  --app-chrome: color-mix(in srgb, var(--app-accent) 2%, #191919);
+  --app-surface-muted: color-mix(in srgb, var(--app-accent) 2%, #222222);
+  --app-surface-hover: color-mix(in srgb, var(--app-accent) 3%, #2c2c2c);
   --app-foreground: color-mix(in srgb, var(--app-accent) 8%, #f2f2f2);
   --app-heading: color-mix(in srgb, var(--app-accent) 30%, #f2f2f2);
   --app-muted: color-mix(in srgb, var(--app-accent) 12%, #b3b3b3);
-  --app-border: color-mix(in srgb, var(--app-accent) 18%, #383838);
-  --app-accent: #65d6c9;
-  --app-accent-hover: #8be2d8;
-  --app-accent-soft: #183c38;
+  --app-border: color-mix(in srgb, var(--app-accent) 6%, #383838);
+  --app-accent: #2abca9;
+  --app-accent-hover: #47d3bf;
+  --app-accent-soft: #202a28;
+  --app-control-hover: color-mix(
+    in srgb,
+    var(--app-accent) 6%,
+    var(--app-accent-soft)
+  );
   --app-danger: #ffadb5;
   --app-danger-soft: #48242a;
   --app-success: #9cd6ac;
@@ -91,40 +96,94 @@
     0 8px 18px rgb(0 0 0 / 22%), 0 24px 56px rgb(0 0 0 / 38%);
 }
 
-:root[data-accent="blue"] {
+:root[data-accent="brand"],
+.accent-swatch[data-accent="brand"] {
+  --app-logo-background: #0f766e;
+  --app-accent: #0f766e;
+  --app-accent-hover: #0b5f59;
+  --app-accent-soft: #c6e7e1;
+}
+
+:root[data-accent="blue"],
+.accent-swatch[data-accent="blue"] {
+  --app-logo-background: #245bcc;
   --app-accent: #245bcc;
   --app-accent-hover: #1949af;
   --app-accent-soft: #cedcf8;
 }
 
-:root[data-accent="purple"] {
+:root[data-accent="cyan"],
+.accent-swatch[data-accent="cyan"] {
+  --app-logo-background: #126a83;
+  --app-accent: #126a83;
+  --app-accent-hover: #0d566b;
+  --app-accent-soft: #c8e6ef;
+}
+
+:root[data-accent="purple"],
+.accent-swatch[data-accent="purple"] {
+  --app-logo-background: #7542c4;
   --app-accent: #7542c4;
   --app-accent-hover: #6031a8;
   --app-accent-soft: #e0d2f4;
 }
 
-:root[data-accent="orange"] {
+:root[data-accent="orange"],
+.accent-swatch[data-accent="orange"] {
+  --app-logo-background: #a94c0a;
   --app-accent: #a94c0a;
   --app-accent-hover: #8e3d05;
   --app-accent-soft: #f5dcc6;
 }
 
-:root[data-theme="dark"][data-accent="blue"] {
+:root[data-accent="slate"],
+.accent-swatch[data-accent="slate"] {
+  --app-logo-background: #526174;
+  --app-accent: #526174;
+  --app-accent-hover: #414f60;
+  --app-accent-soft: #d7dfe9;
+}
+
+:root[data-theme="dark"][data-accent="brand"],
+:root[data-theme="dark"] .accent-swatch[data-accent="brand"] {
+  --app-accent: #2abca9;
+  --app-accent-hover: #47d3bf;
+  --app-accent-soft: #202a28;
+}
+
+:root[data-theme="dark"][data-accent="blue"],
+:root[data-theme="dark"] .accent-swatch[data-accent="blue"] {
   --app-accent: #8ab3ff;
   --app-accent-hover: #aecaff;
-  --app-accent-soft: #243553;
+  --app-accent-soft: #222833;
 }
 
-:root[data-theme="dark"][data-accent="purple"] {
-  --app-accent: #c5a0ff;
-  --app-accent-hover: #d7bdff;
-  --app-accent-soft: #38274e;
+:root[data-theme="dark"][data-accent="cyan"],
+:root[data-theme="dark"] .accent-swatch[data-accent="cyan"] {
+  --app-accent: #38bfdf;
+  --app-accent-hover: #67d4ec;
+  --app-accent-soft: #20292d;
 }
 
-:root[data-theme="dark"][data-accent="orange"] {
-  --app-accent: #ffb175;
-  --app-accent-hover: #ffcca6;
-  --app-accent-soft: #492e1f;
+:root[data-theme="dark"][data-accent="purple"],
+:root[data-theme="dark"] .accent-swatch[data-accent="purple"] {
+  --app-accent: #ae80f2;
+  --app-accent-hover: #c59bff;
+  --app-accent-soft: #27232e;
+}
+
+:root[data-theme="dark"][data-accent="orange"],
+:root[data-theme="dark"] .accent-swatch[data-accent="orange"] {
+  --app-accent: #f49b46;
+  --app-accent-hover: #ffb46c;
+  --app-accent-soft: #2d2721;
+}
+
+:root[data-theme="dark"][data-accent="slate"],
+:root[data-theme="dark"] .accent-swatch[data-accent="slate"] {
+  --app-accent: #aebdcc;
+  --app-accent-hover: #c7d2de;
+  --app-accent-soft: #262a2e;
 }
 
 @layer base {

@@ -213,7 +213,7 @@ function TemplateEditorSession({
               aria-current={section === entry ? "page" : undefined}
               disabled={busy || pendingEditors.length > 0}
               onClick={() => setSection(entry)}
-              className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50 ${section === entry ? "border-accent bg-accent-soft text-accent" : "border-transparent text-muted enabled:hover:bg-control-hover"}`}
+              className={`border-b-2 px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50 ${section === entry ? "border-accent bg-accent-soft text-accent-text" : "border-transparent text-muted enabled:hover:bg-control-hover"}`}
             >
               {t(
                 entry === "general"

@@ -81,7 +81,7 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
                 >
                   <td className="px-5 py-4 font-semibold text-foreground">
                     <Link
-                      className="transition-colors hover:text-accent"
+                      className="transition-colors hover:text-accent-text"
                       to={`/inventories/${inventory.id}/items`}
                     >
                       {inventory.name}
@@ -93,7 +93,7 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
                   <td className="whitespace-nowrap px-5 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Link
-                        className="rounded-lg bg-accent-soft px-3 py-2 font-medium text-accent transition hover:bg-control-hover"
+                        className="rounded-lg bg-accent-soft px-3 py-2 font-medium text-accent-text transition hover:bg-control-hover"
                         to={`/inventories/${inventory.id}/items`}
                       >
                         {t("inventories.actions.items")}

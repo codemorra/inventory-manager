@@ -21,7 +21,7 @@ const original: ApplicationSettings = {
   preferences: {
     language: "system",
     theme: "system",
-    accent: "teal",
+    accent: "brand",
     attachmentWarnings: "show",
   },
 };

@@ -2,4 +2,4 @@
 
 `app-logo.svg` is the shared source artwork for Inventory Manager. Keep the authoritative SVG here so the frontend, browser icon and future desktop builds can use the same design.
 
-The frontend imports this file and applies theme colors to an in-memory copy: `background` uses the selected accent, while `mark`, `m`, `i1` and `i2` use the contrasting application chrome color. These names are Inkscape object labels; retain them when editing the artwork. Geometry and opacity come from the SVG itself, and its stored colors remain the defaults for standalone use.
+The frontend uses the SVG directly and applies the selected accent color to its background when rendering. Keep the Inkscape object label `background` so the color mapping continues to work when editing the artwork.

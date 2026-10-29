@@ -5,10 +5,12 @@
   "common": {
     "accent": {
       "label": "Accent color",
-      "teal": "Teal",
+      "brand": "Green",
       "blue": "Blue",
       "purple": "Purple",
-      "orange": "Orange"
+      "orange": "Orange",
+      "cyan": "Cyan",
+      "slate": "Graphite"
     },
     "actions": {
       "increase": "Increase {{field}}",

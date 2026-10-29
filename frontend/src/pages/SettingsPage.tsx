@@ -89,7 +89,7 @@ export function SettingsPage() {
                 .item(next);
               nextTab?.focus();
             }}
-            className={`shrink-0 border-b-2 px-3 py-3 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2 disabled:opacity-50 ${active === section ? "border-accent text-accent" : "border-transparent text-muted enabled:hover:bg-surface-hover enabled:hover:text-heading"}`}
+            className={`shrink-0 border-b-2 px-3 py-3 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2 disabled:opacity-50 ${active === section ? "border-accent text-accent-text" : "border-transparent text-muted enabled:hover:bg-surface-hover enabled:hover:text-heading"}`}
           >
             {t(`settings.sections.${section}`)}
           </button>

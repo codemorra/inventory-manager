@@ -170,7 +170,7 @@ export function InventoryFieldCard({
             <h2 className="wrap-break-word text-sm font-semibold text-heading">
               {inventoryField.name}
             </h2>
-            <p className="inline-flex rounded-md bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent">
+            <p className="inline-flex rounded-md bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent-text">
               {t(`fields.types.${inventoryField.field_type}`)}
             </p>
             {inventoryField.is_required && (

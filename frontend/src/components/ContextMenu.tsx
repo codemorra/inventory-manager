@@ -128,14 +128,14 @@ export function ContextMenu({
           onClick={action.onSelect}
         >
           {hasIndicators && (
-            <span aria-hidden="true" className="w-4 shrink-0 text-accent">
+            <span aria-hidden="true" className="w-4 shrink-0 text-accent-text">
               {action.checked ? "✓" : ""}
             </span>
           )}
           {action.icon && (
             <span
               aria-hidden="true"
-              className={`shrink-0 ${action.danger ? "text-danger" : "text-accent"}`}
+              className={`shrink-0 ${action.danger ? "text-danger" : "text-accent-text"}`}
             >
               {action.icon}
             </span>

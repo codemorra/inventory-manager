@@ -149,7 +149,7 @@ export function InventoryTree({
               });
             }}
             aria-current={active ? "page" : undefined}
-            className={`block truncate rounded-md px-3 py-2 text-sm transition-colors ${active ? "bg-accent-soft font-semibold text-accent" : "text-muted hover:bg-surface-hover hover:text-foreground"}`}
+            className={`block truncate rounded-md px-3 py-2 text-sm transition-colors ${active ? "bg-accent-soft font-semibold text-accent-text" : "text-muted hover:bg-surface-hover hover:text-foreground"}`}
             draggable={Boolean(onMove) && !disabled}
             onDragStart={(event) => startDrag(event, inventory.id)}
             onDragEnd={cancelMove}

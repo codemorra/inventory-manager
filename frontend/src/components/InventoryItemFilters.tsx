@@ -118,7 +118,7 @@ export function InventoryItemFilters({
         aria-controls={expanded ? `${id}-panel` : undefined}
         aria-describedby={filters.length ? `${id}-count` : undefined}
         disabled={disabled || !fields.length}
-        className={`flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${expanded || filters.length ? "bg-accent-soft text-accent" : "text-muted"}`}
+        className={`flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${expanded || filters.length ? "bg-accent-soft text-accent-text" : "text-muted"}`}
         onClick={() => {
           if (expanded) close();
           else {

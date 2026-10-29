@@ -5399,7 +5399,7 @@
           },
           "accent": {
             "type": "string",
-            "enum": ["teal", "blue", "purple", "orange"]
+            "enum": ["brand", "cyan", "blue", "purple", "orange", "slate"]
           },
           "attachmentWarnings": {
             "type": "string",

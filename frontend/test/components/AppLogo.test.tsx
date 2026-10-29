@@ -13,17 +13,21 @@ test("constrains the artwork to header dimensions without relying on external CS
   expect(svg.parentElement).toHaveStyle({ width: "36px", height: "36px" });
 });
 
-test("uses the current accent and a theme-aware contrasting monogram", () => {
+test("changes only the logo background and preserves the original white monogram", () => {
   const { container } = render(<AppLogo />);
   const shapes = [...container.querySelectorAll<SVGElement>("svg *")];
   const background = shapes.find(
     (shape) => shape.getAttribute("inkscape:label") === "background",
   )!;
-  expect(background.style.fill).toBe("var(--app-accent)");
+  expect(background.style.fill).toBe("var(--app-logo-background)");
+  const mark = shapes.find(
+    (shape) => shape.getAttribute("inkscape:label") === "mark",
+  )!;
+  expect(mark).toHaveAttribute("fill", "#f4faf9");
   for (const label of ["mark", "m", "i1", "i2"]) {
     const part = shapes.find(
       (shape) => shape.getAttribute("inkscape:label") === label,
     )!;
-    expect(part.style.fill).toBe("var(--app-chrome)");
+    expect(part.style.fill).toBe("");
   }
 });
