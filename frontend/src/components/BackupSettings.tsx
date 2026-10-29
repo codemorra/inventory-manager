@@ -313,111 +313,119 @@ export function BackupSettings({
       {Boolean(backups?.length) && (
         <ul
           aria-label={t("backups.list")}
-          className="max-h-80 divide-y divide-shell overflow-y-auto rounded-md border border-shell"
+          tabIndex={0}
+          className="max-h-112 divide-y divide-shell overflow-y-auto overscroll-contain rounded-md border border-shell bg-surface focus-visible:outline-2 focus-visible:outline-accent"
         >
           {backups!.map((backup) => (
-            <li key={backup.filename} className="space-y-2 p-3">
-              <p className="break-all text-xs text-muted">{backup.filename}</p>
-              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                <div>
-                  {backup.metadata ? (
-                    <>
-                      <time
-                        dateTime={backup.metadata.created_at}
-                        className="font-medium"
-                      >
-                        {new Intl.DateTimeFormat(locale, {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        }).format(new Date(backup.metadata.created_at))}
-                      </time>
-                      <span className="ml-2 text-muted">
-                        {t(`backups.kinds.${backup.metadata.kind}`)}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-danger">
+            <li
+              key={backup.filename}
+              className="flex flex-col justify-between gap-3 p-3 text-sm sm:flex-row sm:items-center"
+            >
+              <div className="min-w-0 flex-1">
+                {backup.metadata ? (
+                  <>
+                    <time
+                      dateTime={backup.metadata.created_at}
+                      className="font-semibold text-heading"
+                    >
+                      {new Intl.DateTimeFormat(locale, {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      }).format(new Date(backup.metadata.created_at))}
+                    </time>
+                    <p className="mt-1 text-xs text-muted">
+                      <span>{t(`backups.kinds.${backup.metadata.kind}`)}</span>
+                      <span aria-hidden="true"> · </span>
+                      <span>{archiveSize(backup.byte_size, locale)}</span>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-danger">
                       {t("backups.unreadable")}
-                    </span>
-                  )}
-                  <span className="ml-2 text-muted">
-                    {archiveSize(backup.byte_size, locale)}
-                  </span>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    disabled={blocked || loading}
-                    title={t("backups.download")}
-                    aria-label={t("backups.downloadLabel", {
-                      filename: backup.filename,
-                    })}
-                    onClick={() => downloadBackup(backup.filename)}
-                    className="rounded-md border border-shell p-1.5 enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      {archiveSize(backup.byte_size, locale)}
+                    </p>
+                  </>
+                )}
+                <p className="mt-2 wrap-anywhere text-sm text-muted">
+                  {backup.filename}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={blocked || loading}
+                  title={t("backups.download")}
+                  aria-label={t("backups.downloadLabel", {
+                    filename: backup.filename,
+                  })}
+                  onClick={() => downloadBackup(backup.filename)}
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md border border-shell enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"
+                >
+                  <svg
+                    aria-hidden="true"
+                    className="size-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    viewBox="0 0 24 24"
                   >
-                    <svg
-                      aria-hidden="true"
-                      className="size-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={blocked || loading || needsReload}
-                    title={t("backups.restore")}
-                    aria-label={t("backups.restoreLabel", {
-                      filename: backup.filename,
-                    })}
-                    onClick={() => setRestoreTarget(backup.filename)}
-                    className="rounded-md border border-shell p-1.5 enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"
+                    <path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  disabled={blocked || loading || needsReload}
+                  title={t("backups.restore")}
+                  aria-label={t("backups.restoreLabel", {
+                    filename: backup.filename,
+                  })}
+                  onClick={() => setRestoreTarget(backup.filename)}
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md border border-shell enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"
+                >
+                  <svg
+                    aria-hidden="true"
+                    className="size-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    viewBox="0 0 24 24"
                   >
-                    <svg
-                      aria-hidden="true"
-                      className="size-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M3 12a9 9 0 1 0 9-9c-2.5 0-4.9 1-6.7 2.7L3 8M3 3v5h5M12 7v5l3 2" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={blocked || loading || needsReload}
-                    title={t("common.actions.delete")}
-                    aria-label={t("backups.deleteLabel", {
-                      filename: backup.filename,
-                    })}
-                    onClick={() => {
-                      setDeleteTarget(backup);
-                      setDeleteError(null);
-                    }}
-                    className="rounded-md border border-shell p-1.5 text-danger enabled:hover:bg-danger-soft focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"
+                    <path d="M3 12a9 9 0 1 0 9-9c-2.5 0-4.9 1-6.7 2.7L3 8M3 3v5h5M12 7v5l3 2" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  disabled={blocked || loading || needsReload}
+                  title={t("common.actions.delete")}
+                  aria-label={t("backups.deleteLabel", {
+                    filename: backup.filename,
+                  })}
+                  onClick={() => {
+                    setDeleteTarget(backup);
+                    setDeleteError(null);
+                  }}
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md border border-shell text-danger enabled:hover:bg-danger-soft focus-visible:outline-2 focus-visible:outline-danger disabled:opacity-50"
+                >
+                  <svg
+                    aria-hidden="true"
+                    className="size-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    viewBox="0 0 24 24"
                   >
-                    <svg
-                      aria-hidden="true"
-                      className="size-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" />
-                    </svg>
-                  </button>
-                </div>
+                    <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" />
+                  </svg>
+                </button>
               </div>
             </li>
           ))}

@@ -52,27 +52,28 @@ export function TemplatesSettings() {
       {Boolean(query.data?.length) && (
         <ul
           aria-label={t("templates.title")}
-          className="divide-y divide-shell rounded-md border border-shell bg-surface"
+          tabIndex={0}
+          className="max-h-[max(28rem,calc(100dvh-20rem))] divide-y divide-shell overflow-y-auto overscroll-contain rounded-md border border-shell bg-surface focus-visible:outline-2 focus-visible:outline-accent"
         >
           {query.data?.map((template) => (
             <li
               key={template.id}
-              className="flex flex-wrap items-center justify-between gap-4 p-4"
+              className="flex flex-col justify-between gap-3 p-3 text-sm sm:flex-row sm:items-center"
             >
               <div className="min-w-0 flex-1">
                 <h3 className="wrap-anywhere font-semibold text-heading">
                   {template.name}
                 </h3>
-                {template.description && (
-                  <p className="mt-1 whitespace-pre-wrap wrap-anywhere text-sm text-muted">
-                    {template.description}
-                  </p>
-                )}
                 <p className="mt-1 text-xs text-muted">
                   {t("templates.fieldCount", { count: template.fields.length })}
                 </p>
+                {template.description && (
+                  <p className="mt-2 whitespace-pre-wrap wrap-anywhere text-sm text-muted">
+                    {template.description}
+                  </p>
+                )}
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex shrink-0 items-center gap-1.5">
                 <button
                   type="button"
                   aria-label={t("templates.editNamed", { name: template.name })}
@@ -81,7 +82,7 @@ export function TemplatesSettings() {
                     editTrigger.current = event.currentTarget;
                     setEditingId(template.id);
                   }}
-                  className="flex size-8 items-center justify-center rounded-md border border-shell enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md border border-shell enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"
                 >
                   <svg
                     aria-hidden="true"
@@ -103,7 +104,7 @@ export function TemplatesSettings() {
                   })}
                   title={t("common.actions.delete")}
                   onClick={() => setDeleting(template)}
-                  className="flex size-8 items-center justify-center rounded-md bg-danger-soft text-danger enabled:hover:bg-danger/25 focus-visible:outline-2 focus-visible:outline-danger"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md border border-shell text-danger enabled:hover:bg-danger-soft focus-visible:outline-2 focus-visible:outline-danger disabled:opacity-50"
                 >
                   <svg
                     aria-hidden="true"
@@ -115,7 +116,7 @@ export function TemplatesSettings() {
                     strokeLinejoin="round"
                     viewBox="0 0 24 24"
                   >
-                    <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />
+                    <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" />
                   </svg>
                 </button>
               </div>
