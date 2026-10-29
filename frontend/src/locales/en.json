@@ -1,7 +1,6 @@
 {
   "app": {
-    "name": "Inventory Manager",
-    "tagline": "Organize what matters"
+    "name": "Inventory Manager"
   },
   "common": {
     "accent": {

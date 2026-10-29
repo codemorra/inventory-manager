@@ -2,6 +2,7 @@ import { PreferenceStatus } from "../PreferenceStatus";
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
+import { AppLogo } from "../AppLogo";
 
 import { InventoryImportDialog } from "../InventoryImportDialog";
 import { Modal } from "../Modal";
@@ -81,28 +82,13 @@ export function AppShell({ children }: AppShellProps) {
         title={t("navigation.goToOverview")}
         aria-label={`${t("app.name")} – ${t("navigation.goToOverview")}`}
         onClick={() => setIsNavigationOpen(false)}
-        className="mx-3 mt-3 flex shrink-0 items-center gap-3 rounded-md px-2 py-2 transition hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-accent"
+        className="mx-3 mt-3 flex shrink-0 items-center gap-2 rounded-md px-2 py-2 transition hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-accent"
       >
-        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-surface">
-          <svg
-            aria-hidden="true"
-            className="size-6"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.7"
-            viewBox="0 0 24 24"
-          >
-            <path d="M4 7.5 12 3l8 4.5-8 4.5-8-4.5Z" />
-            <path d="M4 7.5V17l8 4 8-4V7.5M12 12v9" />
-          </svg>
-        </span>
+        <AppLogo />
         <div>
-          <p className="text-sm font-semibold tracking-tight text-heading">
+          <p className="whitespace-nowrap text-lg font-semibold tracking-tight text-accent">
             {t("app.name")}
           </p>
-          <p className="text-xs text-muted">{t("app.tagline")}</p>
         </div>
       </NavLink>
       <Navigation
