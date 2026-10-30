@@ -37,7 +37,7 @@ interface InventoryTableControlsProps {
 }
 
 /**
- * Render view options on the left and item actions on the right.
+ * Render search and filters on the left, with the count, view options, and actions on the right.
  * @param props The item count, actions, text wrapping, and visible columns.
  * @returns A compact action row with a keyboard-accessible View dropdown.
  */
@@ -241,27 +241,11 @@ export function InventoryTableControls({
     <div
       role="group"
       aria-label={t("table.menu.label")}
-      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-t-md border border-b-0 border-shell bg-surface-muted p-1.5 text-sm text-foreground"
+      className="flex flex-col items-stretch justify-between gap-x-4 gap-y-2 rounded-t-md sm:flex-row sm:items-center border border-b-0 border-shell bg-surface-muted p-1.5 text-sm text-foreground"
     >
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <button
-          ref={trigger}
-          type="button"
-          aria-haspopup="menu"
-          aria-expanded={expanded}
-          aria-controls={expanded ? `${id}-menu` : undefined}
-          disabled={!available}
-          className={`cursor-pointer rounded-sm px-2.5 py-1.5 text-sm font-medium transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${expanded ? "bg-control-hover text-heading" : ""}`}
-          onKeyDown={handleKeyDown}
-          onClick={() => {
-            focusLast.current = false;
-            setOpen(!expanded);
-          }}
-        >
-          {t("table.menu.view")}
-        </button>
+      <div className="flex min-w-0 items-center gap-2 sm:flex-1">
         {onSearchQueryChange && (
-          <div className="relative w-56 max-w-full">
+          <div className="relative w-144 min-w-0 max-w-full">
             <input
               id={`${id}-search`}
               type="search"
@@ -298,9 +282,9 @@ export function InventoryTableControls({
             )}
           </div>
         )}
-        {filterControl}
+        {filterControl && <div className="shrink-0">{filterControl}</div>}
       </div>
-      <div className="ml-auto flex flex-wrap items-center gap-3">
+      <div className="ml-auto flex shrink-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:whitespace-nowrap">
         {itemCount !== undefined && (
           <p
             role="status"
@@ -316,6 +300,22 @@ export function InventoryTableControls({
                 })}
           </p>
         )}
+        <button
+          ref={trigger}
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={expanded}
+          aria-controls={expanded ? `${id}-menu` : undefined}
+          disabled={!available}
+          className={`cursor-pointer rounded-sm px-2.5 py-1.5 text-sm font-medium transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${expanded ? "bg-control-hover text-heading" : ""}`}
+          onKeyDown={handleKeyDown}
+          onClick={() => {
+            focusLast.current = false;
+            setOpen(!expanded);
+          }}
+        >
+          {t("table.menu.view")}
+        </button>
         {actions}
       </div>
       {expanded &&
