@@ -43,9 +43,7 @@ export function InventoryOverviewPage() {
 
         {!isPending && !isError && inventories?.length === 0 && (
           <section className="rounded-2xl border border-dashed border-shell bg-surface/70 px-6 py-14 text-center shadow-soft">
-            <h2 className="text-lg font-semibold">
-              {t("inventories.empty")}
-            </h2>
+            <h2 className="text-lg font-semibold">{t("inventories.empty")}</h2>
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
               {t("inventories.emptyDescription")}
             </p>
