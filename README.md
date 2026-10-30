@@ -88,6 +88,7 @@ Node.js 24 or later and npm are required. Install each package from the reposito
 npm ci
 npm --prefix backend ci
 npm --prefix frontend ci
+npm --prefix desktop ci
 ```
 
 The root `package.json` defines the application version. Development, typecheck, test and build commands generate version modules for the relevant package; see [application versioning](docs/app-versioning.md).

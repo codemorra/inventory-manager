@@ -14,6 +14,10 @@ backend/.venv/
 node_modules/
 backend/dist/
 
+# Desktop
+desktop/dist/
+/desktop/src/generated/app-version.ts
+
 # Local configuration (commit .env.example files only)
 .env
 .env.*

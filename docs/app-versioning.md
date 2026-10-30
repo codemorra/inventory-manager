@@ -1,6 +1,6 @@
 # Application versioning
 
-The root `package.json` is the authoritative application-version source. The private frontend and backend packages have no independent application versions.
+The root `package.json` is the authoritative application-version source. The private frontend, backend and desktop packages have no independent application versions.
 
 ## Generated modules
 
@@ -13,6 +13,8 @@ node scripts/generate-app-version.mjs
 ```
 
 When invoking tools directly instead of using npm scripts, generate the required modules first.
+
+The desktop package generates its own version module through the same lifecycle hooks. To generate it directly, run `node scripts/generate-app-version.mjs desktop`.
 
 ## Build metadata
 
