@@ -19,7 +19,8 @@
       "from": "../build/.work/runtime/frontend",
       "to": "app-runtime/frontend"
     },
-    { "from": "../build/.work/runtime/node", "to": "app-runtime/node" }
+    { "from": "../build/.work/runtime/node", "to": "app-runtime/node" },
+    { "from": "../build/.work/runtime/icons", "to": "app-runtime/icons" }
   ],
   "npmRebuild": false,
   "artifactName": "Inventory-Manager-${version}-${os}-x64.${ext}",

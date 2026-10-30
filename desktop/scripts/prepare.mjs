@@ -108,6 +108,11 @@ export async function prepareRuntime(options = {}) {
   await cp(join(root, "frontend/dist"), join(runtime, "frontend/dist"), {
     recursive: true,
   });
+  await mkdir(join(runtime, "icons"), { recursive: true });
+  await cp(
+    join(root, "assets/icons/app-logo.png"),
+    join(runtime, "icons/app-logo.png"),
+  );
   return runtime;
 }
 

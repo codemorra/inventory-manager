@@ -140,7 +140,7 @@ export async function buildDesktop(format) {
     unpacked,
     "resources/app-runtime",
   );
-  for (const name of ["backend", "frontend", "node"])
+  for (const name of ["backend", "frontend", "node", "icons"])
     await verifyPackageFiles(
       join(root, "build/.work/runtime", name),
       join(resources, name),
