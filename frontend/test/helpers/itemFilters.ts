@@ -4,7 +4,7 @@ import type {
 } from "../../src/types/inventoryField";
 import type { InventoryItem } from "../../src/types/inventoryItem";
 import type { ItemFilter } from "../../src/types/itemFilter";
-import { itemFilterOperators } from "../../src/components/inventoryItemFilters";
+import { itemFilterOperators } from "../../src/components/itemFilterLogic";
 
 /**
  * Build a filterable field with readable option labels and independent identifiers.
