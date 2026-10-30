@@ -107,6 +107,8 @@ npm run dev:frontend
 
 The backend defaults to `http://127.0.0.1:8000`; the Vite frontend usually runs at `http://localhost:5173`. Verify backend readiness at `/health`. The backend applies Drizzle migrations before listening, creating an empty database on first startup.
 
+For the Electron desktop window, run `npm run dev:desktop`. It builds the application and starts its Node backend automatically. See [desktop setup](docs/desktop.md) for storage, updates and testing.
+
 For a compiled backend:
 
 ```bash

@@ -1,0 +1,40 @@
+# Run with Electron
+
+Electron displays the existing frontend in a desktop window. A separate Node.js process runs the backend, database, files and backups.
+
+## Start locally
+
+With Node.js 24 or later and npm installed, run from the repository root:
+
+```bash
+npm ci
+npm --prefix backend ci
+npm --prefix frontend ci
+npm --prefix desktop ci
+npm run dev:desktop
+```
+
+The start command builds the application and prepares its runtime in `.local/desktop-runtime/`. Unchanged backend dependencies are reused. The backend listens on a free local port and stops cleanly when you close the window. Unsaved changes require confirmation; starting again activates the existing window.
+
+Web links open in your browser, and downloads use a Save As dialog. Window size and position are saved.
+
+## Data and updates
+
+Repository starts use the existing `InventoryData/`. Stop any development backend using that storage before starting Electron. Set `INVENTORY_DATA_DIR` to an absolute path for a separate installation. The desktop launcher reads process environment variables, not `backend/.env`.
+
+Packaged-mode defaults are `%LOCALAPPDATA%\InventoryManager\` on Windows and `$XDG_DATA_HOME/inventory-manager/` on Linux, normally `~/.local/share/inventory-manager/`. Settings and logs stay at that root; data and backup folders can be changed in Settings. Packaged temporary files use the user's temporary storage. Repository temporary files remain under `InventoryData/temp/`.
+
+Logs are in `logs/inventory-manager.log` and `logs/desktop.log`. Window preferences are separate in `config/window-state.json`.
+
+Before updating the source, create a backup in Settings. Run `npm run dev:desktop` again afterward to rebuild; saved data stays in its selected storage location. See [application backups](../backend/docs/application-backup.md) for backup contents and restore compatibility.
+
+## Checks
+
+`npm run check` includes desktop type checking, linting and unit tests. To test the real Electron runtime with temporary data:
+
+```bash
+npm --prefix desktop run prepare:runtime
+npm --prefix desktop run smoke
+```
+
+The smoke test checks startup, shutdown, restart, files, backups and window behavior without using your saved data.
