@@ -22,6 +22,7 @@ import {
  */
 export async function startDesktop(options: { show?: boolean } = {}) {
   app.setName("Inventory Manager");
+  if (process.platform === "linux") app.setDesktopName("inventory-manager");
   const repositoryRoot = fileURLToPath(new URL("../../", import.meta.url));
   const paths = desktopPaths({
     packaged: app.isPackaged,
@@ -190,6 +191,9 @@ export async function startDesktop(options: { show?: boolean } = {}) {
     window = new BrowserWindow({
       ...visibleBounds(saved?.bounds, areas),
       title: "Inventory Manager",
+      ...(process.platform === "linux"
+        ? { icon: join(runtimeDirectory, "icons/app-logo.png") }
+        : {}),
       show: false,
       webPreferences: {
         nodeIntegration: false,
