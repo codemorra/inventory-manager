@@ -77,6 +77,30 @@ afterEach(() => {
 });
 
 describe("InventoryTable", () => {
+  test("searches names and descriptions and restores inventories when cleared", async () => {
+    const user = userEvent.setup();
+    renderInventoryTable();
+    const search = screen.getByRole("searchbox", {
+      name: "Search inventories",
+    });
+
+    await user.type(search, "  CABLES  ");
+    expect(screen.getByRole("link", { name: "Cables" })).toBeInTheDocument();
+    await user.clear(search);
+    await user.type(search, "COLLECTION");
+    expect(screen.getByRole("link", { name: "Cables" })).toBeInTheDocument();
+    await user.type(search, " missing");
+    expect(
+      screen.queryByRole("link", { name: "Cables" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "No matching inventories found.",
+    );
+    await user.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(screen.getByRole("link", { name: "Cables" })).toBeInTheDocument();
+    expect(search).toHaveFocus();
+  });
+
   test.each(["description", "row"])(
     "opens an inventory by clicking its %s",
     async (target) => {
@@ -102,6 +126,10 @@ describe("InventoryTable", () => {
       screen.queryByRole("button", { name: "Items" }),
     ).not.toBeInTheDocument();
 
+    await user.tab();
+    expect(
+      screen.getByRole("searchbox", { name: "Search inventories" }),
+    ).toHaveFocus();
     await user.tab();
     expect(screen.getByRole("link", { name: "Cables" })).toHaveFocus();
     await user.keyboard("{Enter}");

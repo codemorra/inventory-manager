@@ -20,7 +20,17 @@ interface InventoryTableProps {
  */
 export function InventoryTable({ inventories }: InventoryTableProps) {
   const [deletingTarget, setDeletingTarget] = useState<Inventory | null>(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [searchQuery, setSearchQuery] = useState("");
+  const needle = searchQuery
+    .trim()
+    .normalize("NFC")
+    .toLocaleLowerCase(i18n.language);
+  const visibleInventories = inventories.filter((inventory) =>
+    [inventory.name, inventory.description ?? ""].some((text) =>
+      text.normalize("NFC").toLocaleLowerCase(i18n.language).includes(needle),
+    ),
+  );
   const navigate = useNavigate();
   const [editingInventoryId, setEditingInventoryId] = useState<string | null>(
     null,
@@ -55,19 +65,56 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
 
   return (
     <>
-      <div className="overflow-hidden rounded-2xl border border-shell bg-surface shadow-soft">
+      <div className="rounded-t-md border border-b-0 border-shell bg-surface-muted p-1.5">
+        <div className="relative w-144 max-w-full">
+          <input
+            type="search"
+            aria-label={t("inventories.search.label")}
+            placeholder={t("inventories.search.placeholder")}
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            className="w-full rounded-sm border border-shell bg-surface py-1.5 pr-8 pl-2.5 text-sm text-foreground placeholder:text-muted focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-search-cancel-button]:appearance-none"
+          />
+          {searchQuery.length > 0 && (
+            <button
+              type="button"
+              aria-label={t("table.search.clear")}
+              title={t("table.search.clear")}
+              className="absolute inset-y-0 right-0 flex w-8 cursor-pointer items-center justify-center rounded-sm text-muted transition hover:text-heading focus-visible:outline-2 focus-visible:outline-accent"
+              onClick={(event) => {
+                setSearchQuery("");
+                event.currentTarget.parentElement
+                  ?.querySelector("input")
+                  ?.focus();
+              }}
+            >
+              <svg
+                aria-hidden="true"
+                className="size-4"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="m4 4 8 8M12 4l-8 8" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-b-md border border-shell bg-surface">
         <div className="overflow-x-auto">
           <table className="min-w-full border-collapse text-left text-sm">
             <thead className="bg-surface-muted text-xs font-semibold uppercase tracking-wider text-muted">
               <tr>
-                <th className="border-b border-shell px-5 py-3.5" scope="col">
+                <th className="border-b border-shell px-5 py-3" scope="col">
                   {t("common.fields.name")}
                 </th>
-                <th className="border-b border-shell px-5 py-3.5" scope="col">
+                <th className="border-b border-shell px-5 py-3" scope="col">
                   {t("common.fields.description")}
                 </th>
                 <th
-                  className="border-b border-shell px-5 py-3.5 text-right"
+                  className="border-b border-shell px-5 py-3 text-right"
                   scope="col"
                 >
                   {t("table.actions")}
@@ -75,7 +122,18 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-shell">
-              {inventories.map((inventory) => (
+              {visibleInventories.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={3}
+                    className="px-5 py-8 text-center text-muted"
+                    role="status"
+                  >
+                    {t("inventories.search.empty")}
+                  </td>
+                </tr>
+              )}
+              {visibleInventories.map((inventory) => (
                 <tr
                   className="cursor-pointer transition-colors hover:bg-surface-hover/60"
                   onClick={(event) => {

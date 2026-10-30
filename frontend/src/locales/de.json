@@ -74,6 +74,11 @@
     "error": "Inventargruppen konnten nicht geladen oder geändert werden. Bitte erneut versuchen."
   },
   "inventories": {
+    "search": {
+      "label": "Inventare durchsuchen",
+      "placeholder": "Inventare durchsuchen…",
+      "empty": "Keine passenden Inventare gefunden."
+    },
     "editor": {
       "finishForm": "Schließe das offene Feld- oder Optionsformular ab oder brich es ab, bevor du speicherst.",
       "invalidDraft": "Neue Auswahlfelder benötigen mindestens eine Option mit einem eindeutigen, nicht leeren Namen.",
