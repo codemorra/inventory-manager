@@ -1,8 +1,11 @@
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import electron from "electron";
+import { prepareRuntime } from "./prepare.mjs";
 
+await prepareRuntime();
 const environment = { ...process.env };
+environment.INVENTORY_NODE_EXECUTABLE = process.execPath;
 delete environment.ELECTRON_RUN_AS_NODE;
 const child = spawn(
   electron,
