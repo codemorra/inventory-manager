@@ -74,6 +74,11 @@
     "error": "Unable to load or update inventory groups. Please try again."
   },
   "inventories": {
+    "search": {
+      "label": "Search inventories",
+      "placeholder": "Search inventories…",
+      "empty": "No matching inventories found."
+    },
     "editor": {
       "finishForm": "Complete or cancel the open field or option form before saving.",
       "invalidDraft": "New selection fields need at least one option with a unique, non-empty name.",

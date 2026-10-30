@@ -12,11 +12,11 @@ export function InventoryOverviewPage() {
   return (
     <div>
       <div className="min-w-0 w-full">
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-heading sm:text-3xl">
+        <header className="mb-5 grid items-start gap-y-2">
+          <h1 className="min-h-9 text-2xl font-semibold tracking-tight text-heading sm:text-3xl">
             {t("inventories.title")}
           </h1>
-          <p className="mt-2 text-sm text-muted">
+          <p className="text-sm leading-relaxed text-muted">
             {t("inventories.description")}
           </p>
         </header>
