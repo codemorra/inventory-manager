@@ -65,6 +65,7 @@ export function ChoiceSelect(props: ChoiceSelectProps) {
     )
     .join(", ");
   const [active, setActive] = useState(0);
+  const [keyboardNavigation, setKeyboardNavigation] = useState(false);
   const activeIndex = Math.max(0, Math.min(active, options.length - 1));
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -177,6 +178,7 @@ export function ChoiceSelect(props: ChoiceSelectProps) {
    * @param event The combobox keyboard event.
    */
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    setKeyboardNavigation(true);
     if (event.key === "Escape" && expanded) {
       event.preventDefault();
       event.stopPropagation();
@@ -243,9 +245,16 @@ export function ChoiceSelect(props: ChoiceSelectProps) {
             id={`${id}-option-${index}`}
             aria-selected={selectedValues.includes(option.value)}
             tabIndex={-1}
-            className={`flex w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-left ${index === activeIndex ? "bg-control-hover" : "hover:bg-control-hover"} ${selectedValues.includes(option.value) ? "font-semibold text-accent-text" : "text-foreground"}`}
+            className={`flex w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-left ${keyboardNavigation && index === activeIndex ? "bg-control-hover" : "hover:bg-control-hover"} ${selectedValues.includes(option.value) ? "font-semibold text-accent-text" : "text-foreground"}`}
             onMouseDown={(event) => event.preventDefault()}
-            onPointerMove={() => setActive(index)}
+            onPointerEnter={() => {
+              setKeyboardNavigation(false);
+              setActive(index);
+            }}
+            onPointerMove={() => {
+              setKeyboardNavigation(false);
+              setActive(index);
+            }}
             onClick={() => choose(index)}
           >
             {props.multiple && (
@@ -305,7 +314,8 @@ export function ChoiceSelect(props: ChoiceSelectProps) {
         }
         disabled={disabled || options.length === 0}
         className={`mt-1.5 flex w-full items-center justify-between rounded-md border border-shell bg-surface text-left text-sm text-foreground outline-none transition enabled:hover:border-accent/50 enabled:hover:bg-control-hover focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50 ${compact ? "gap-2 px-2.5 py-1.5" : "gap-3 px-3 py-2.5"}`}
-        onClick={() => {
+        onClick={(event) => {
+          setKeyboardNavigation(event.detail === 0);
           if (expanded) setOpen(false);
           else showOptions();
         }}

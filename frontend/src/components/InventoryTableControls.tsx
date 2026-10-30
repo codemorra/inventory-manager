@@ -1,3 +1,4 @@
+import { focusHoveredMenuItem } from "./menuPointerFocus";
 import {
   type KeyboardEvent,
   type ReactNode,
@@ -374,6 +375,8 @@ export function InventoryTableControls({
               ref={menu}
               id={`${id}-menu`}
               role="menu"
+              onPointerOver={focusHoveredMenuItem}
+              onPointerMove={focusHoveredMenuItem}
               aria-label={t("table.menu.view")}
               className="fixed z-40 max-h-[calc(100dvh-1rem)] min-w-48 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain rounded-md border border-shell bg-surface p-1 text-sm text-foreground shadow-raised"
               onKeyDown={handleKeyDown}
@@ -384,7 +387,7 @@ export function InventoryTableControls({
                   role="menuitemcheckbox"
                   aria-checked={wrapText}
                   tabIndex={-1}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:bg-surface-hover"
                   onPointerEnter={(event) => {
                     if (event.pointerType === "mouse") setColumnsOpen(false);
                   }}
@@ -411,7 +414,7 @@ export function InventoryTableControls({
                   role="menuitemcheckbox"
                   aria-checked={attachmentPreviews}
                   tabIndex={-1}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:bg-surface-hover"
                   onPointerEnter={(event) => {
                     if (event.pointerType === "mouse") setColumnsOpen(false);
                   }}
@@ -438,7 +441,7 @@ export function InventoryTableControls({
                   role="menuitemcheckbox"
                   aria-checked={allColumnsAutomatic}
                   tabIndex={-1}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
                   onPointerEnter={(event) => {
                     if (event.pointerType === "mouse") setColumnsOpen(false);
                   }}
@@ -479,7 +482,7 @@ export function InventoryTableControls({
                       columnsExpanded ? `${id}-columns` : undefined
                     }
                     tabIndex={-1}
-                    className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover"
+                    className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:bg-surface-hover"
                     onPointerEnter={(event) => {
                       if (event.pointerType === "mouse") openColumns(false);
                     }}
@@ -511,6 +514,8 @@ export function InventoryTableControls({
                 ref={columnsMenu}
                 id={`${id}-columns`}
                 role="menu"
+                onPointerOver={focusHoveredMenuItem}
+                onPointerMove={focusHoveredMenuItem}
                 aria-label={t("table.menu.columns")}
                 className="fixed z-40 max-h-[calc(100dvh-1rem)] min-w-48 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain rounded-md border border-shell bg-surface p-1 text-sm text-foreground shadow-raised"
                 onKeyDown={handleKeyDown}
@@ -528,7 +533,7 @@ export function InventoryTableControls({
                         : undefined
                     }
                     tabIndex={-1}
-                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
                     onClick={() => onToggleColumn?.(column.id)}
                   >
                     <span

@@ -311,3 +311,32 @@ test("toggles optional image previews and keeps the active state accessible", as
     screen.getByRole("menuitemcheckbox", { name: "Image previews" }),
   ).toHaveAttribute("aria-checked", "true");
 });
+
+test("follows the hovered action in the view menu and its columns submenu", async () => {
+  const user = userEvent.setup();
+  render(
+    <InventoryTableControls
+      onWrapTextChange={vi.fn()}
+      onAutomaticWidths={vi.fn()}
+      onToggleColumn={vi.fn()}
+      columns={[
+        { id: "first", name: "Title", visible: true },
+        { id: "second", name: "Notes", visible: true },
+      ]}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "View" }));
+  await user.hover(
+    screen.getByRole("menuitemcheckbox", { name: "Automatic widths" }),
+  );
+  expect(
+    screen.getByRole("menuitemcheckbox", { name: "Automatic widths" }),
+  ).toHaveFocus();
+  await user.hover(screen.getByRole("menuitem", { name: "Columns" }));
+  await user.hover(
+    await screen.findByRole("menuitemcheckbox", { name: "Notes" }),
+  );
+  expect(screen.getByRole("menuitemcheckbox", { name: "Notes" })).toHaveFocus();
+  await user.keyboard("{Home}");
+  expect(screen.getByRole("menuitemcheckbox", { name: "Title" })).toHaveFocus();
+});
