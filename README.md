@@ -1,92 +1,99 @@
 # Inventory Manager
 
-> This project is currently under development. The interface, field configuration, and application behavior may change as development progresses.
+Inventory Manager is a local application for organizing personal inventories. Create lists with your own fields, manage items and attachments, and reuse inventory structures as templates.
 
-Inventory Manager is a local application for flexible management of personal inventories.
-
-Users can create inventory lists, define custom fields, and manage items with typed values. Each inventory has its own field configuration, including text limits and options for select and multiselect fields.
-
-A responsive sidebar provides direct access to inventories, while tables and dialogs support configuration and item management.
+Run it in a desktop window on Linux or Windows, or in your browser with Docker. Data stays in your local storage.
 
 ![Cable inventory with typed field values and grouped inventories in the sidebar](docs/screenshots/inventory.png)
 
-The screenshot uses synthetic demo data.
+## Features
 
-## Current features
+- **Custom inventories:** Define the fields you need for each list, such as an item's name, quantity, purchase date or storage location. Choose from text, numbers, dates, times, durations, selections, checkboxes, links, files and automatic IDs.
+- **Organization and templates:** Arrange inventories in groups and reuse their field structures as templates for new lists.
+- **Search and editing:** Find items using text search and field-specific filters, sort by columns, and edit individual items or several table cells together.
+- **Table layouts:** Choose visible columns, adjust their widths, wrap long text and show image previews. Each inventory keeps its own view settings.
+- **Attachments and exchange:** Keep copies of documents and photos with your items. Export an inventory with its attached files as a ZIP archive and import it into another installation.
+- **Backups and storage:** Create and restore data backups, schedule daily or weekly backups, and choose where data and backup files are stored.
+- **Appearance and language:** Switch between German and English, light and dark themes, and several accent colors.
 
-- Inventory lists with custom fields and typed items
-- Managed file attachments with download links and optional image previews
-- ZIP inventory import/export including attached files
-- Full data backups with checked restoration and daily/weekly automatic scheduling
-- Reusable inventory structure templates
-- Single-level groups with drag-and-drop organization
-- Sidebar filtering by inventory title
-- Sortable item tables
-- Inventory-local text search across all fields and combinable, type-aware filters
-- Direct cell editing with atomic saving and conflict protection
-- Per-inventory table views with column visibility, automatic/manual widths, and text wrapping
-- Required fields, per-column sorting controls, and drag-and-drop field ordering
-- Configurable text limits, selection options, web links, and automatic numbering
-- English and German interface
-- Light, dark, and system appearance modes with accent colors
+## How it works
 
-## Getting started
+Create an inventory through **New > New inventory** in the sidebar. Each inventory has its own fields: a cable collection might use connector type, length, quantity and a photo, while a tool inventory might use model, purchase date and storage location. Open **Inventory settings** beside the title to add and arrange these fields, mark required values and define selection options.
 
-Create an inventory from the sidebar, optionally choosing a template, its included fields, and a group. Use the **Inventory settings** gear beside its title to define fields and selection options or save its structure as a template. Save the configuration and add items with **New item**. Drag inventories onto sidebar groups to organize them. Right-click an inventory to export a ZIP with its saved entries and files; use the import icon beside **New inventory** to check an archive and create an independent copy.
+Add entries with **New item**. Use a row's edit action to change an item, or the table's pencil action to edit several cells and save the changes together. Search and filters narrow the list, column headings control sorting, and **View** lets you adjust which information the table shows.
 
-Click a column heading to cycle through ascending, descending, and original order. Use **View** to show or hide columns, wrap text, toggle image previews for file columns, or restore automatic widths. Drag a heading's right edge to resize a column; right-click the heading to restore its automatic width or hide it. Table preferences are saved with each inventory. Use search and filters to narrow items, or the pencil to edit cells and save or discard changes together.
+Drag inventories into sidebar groups to organize larger collections. If several lists need the same fields, save an inventory's structure as a template and select it when creating the next list. Templates provide a starting point; each inventory can then be edited independently.
 
-Open **Settings** at the bottom of the sidebar to change language, appearance, and accent color. **Settings > Templates** lets you edit or delete saved structures.
+Attach files to keep managed copies with an item. Export an inventory from its sidebar context menu to share or move the list with its saved items and files. Choose **New > Import inventory** to select an archive, review its contents and create an independent copy. Use **Settings > Backups** to back up or restore data across all inventories.
 
-Use **Settings > Backups** to create a ZIP backup of your inventories, templates, table views and attached files, or enable daily/weekly automatic backups with a retention limit. Saved backups show their date, kind and size. Use the download icon to save an archive or the delete icon to remove it after confirmation.
-
-To restore data, use a saved backup's restore icon or **Restore from file**. Review the checked summary and confirm replacement of the current data. A safety backup is created first. Reload the application after restoration to continue with the restored data.
-
-## Fields and item values
-
-| Field type      | Purpose                                                           |
-| --------------- | ----------------------------------------------------------------- |
-| Text            | Text with a limit of 1–1,000 characters, defaulting to 255        |
-| Number          | Whole or decimal numbers                                          |
-| Yes/No          | A boolean value displayed as yes or no                            |
-| Checkbox        | A checkbox that can be toggled directly in the item table         |
-| Date            | A calendar date                                                   |
-| Time            | A time of day                                                     |
-| Date and time   | A calendar date with a time                                       |
-| Duration        | Hours, minutes, and seconds, stored as whole seconds              |
-| Single choice   | One option from this field's selection options                    |
-| Multiple choice | Several options from this field's selection options               |
-| URL             | An HTTP or HTTPS address with optional link text                  |
-| Files           | Managed copies of one or more files; click a filename to download |
-| Automatic ID    | A read-only number assigned automatically to each item            |
-
-Selection options belong to their field within one inventory. Item dialogs use themed dropdowns for single and multiple choices. Web links open in a new tab; without link text, the address is displayed.
-
-Required fields must be completed for new items and when saving existing items. Adding a required field leaves existing entries unchanged until their next edit. If a table checkbox cannot be saved because required or other input is incomplete, the edit dialog opens with the checkbox change still unsaved. Canceling discards it.
-
-Automatic IDs have independent counters per field and inventory, starting at 1. Adding an ID field numbers existing active items by creation time, with technical IDs breaking ties. Numbers are assigned only when a save succeeds and remain unchanged during item edits. Deleted numbers are not reused unless explicitly enabled in the field settings; that option selects the smallest free number.
+See the [user guide](docs/usage.md) for field types, table controls, templates and backup instructions.
 
 ## Technology
 
-The frontend uses React, TypeScript, Vite, and Tailwind CSS. The Express/TypeScript backend stores data locally in SQLite through Drizzle, with database migrations and rotating log files.
+The frontend uses React and TypeScript, with Vite for development and builds and Tailwind CSS for styling. The backend runs on Node.js with Express, Drizzle and SQLite. Electron provides the desktop window and starts the backend as a separate Node.js process.
 
-## Run with Docker
+Desktop runtime and local builds have been tested on Linux and Windows x64; the Docker runtime has been tested on Linux x64.
 
-Build and start the browser application from the repository root:
+## Getting started
+
+Clone the repository:
+
+```bash
+git clone https://github.com/codemorra/inventory-manager.git
+cd inventory-manager
+```
+
+Choose a desktop build or use Docker. The project distributes source code and build scripts; finished applications and Docker images are built locally.
+
+### Desktop builds
+
+Install Node.js 24 or later and npm, then build on the target operating system:
+
+```bash
+npm run build:desktop
+```
+
+This creates a self-contained Linux AppImage or portable Windows EXE in `dist/onefile/`. For an application directory instead:
+
+```bash
+npm run build:desktop:dir
+```
+
+The directory is created in `dist/onedir/inventory-manager/`; keep all its files together. It generally starts faster because the runtime files are already unpacked. The Windows single-file EXE extracts them at startup; a Linux AppImage normally mounts its contents and can extract them when needed.
+
+Both formats include their runtime and need no separate Node.js installation to run. Builds require internet access and replace the project's installed dependencies using `npm ci`.
+
+See [desktop setup](docs/desktop.md) for prerequisites, output paths and platform notes.
+
+### Docker
+
+With Docker and the Compose plugin installed:
 
 ```bash
 docker compose up --build -d
 ```
 
-Open `http://localhost:8000`. Settings, inventories, attachments, backups and logs persist in a Docker volume. See [Docker setup](docs/docker.md) for updates, storage paths, host-directory mounts and backup guidance. Images are built locally; no prebuilt image is published.
+Open `http://localhost:8000`. Settings, data, attachments, backups and logs persist in a Docker volume. See [Docker setup](docs/docker.md) for storage, timezone configuration and host-directory mounts.
 
-## Build a desktop application
+## Data and backups
 
-With Node.js 24 or later and npm installed, run `npm run build:desktop` on x64 Linux or Windows for a self-contained AppImage or portable EXE, or `npm run build:desktop:dir` for an application directory. See [desktop setup](docs/desktop.md) for prerequisites, updates and storage.
+Repository runs store data in `InventoryData/`. Desktop builds use `%LOCALAPPDATA%\InventoryManager\` on Windows and `$XDG_DATA_HOME/inventory-manager/` on Linux, normally `~/.local/share/inventory-manager/`. Docker uses its persistent volume.
+
+Data and backup folders can be moved in **Settings > Storage locations**. Settings and logs stay at the application root. Files attached to items are independent copies; changing the original file does not update the attachment.
+
+Create or restore data backups in **Settings > Backups**. Automatic backups are optional and run only while the application is running. Backups contain the database and managed attachments; application settings and logs are separate. See [storage and configuration](docs/storage.md) for paths and complete installation copies.
+
+## Updates
+
+Use **Settings > About > Check for updates** to check GitHub releases. Updates are installed manually.
+
+Before updating, create and download a data backup, then close the application. Update the source checkout to the desired version. For desktop builds, repeat the build command and replace the old file or application directory. For development checkouts, reinstall dependencies as described under [Development](#development) and start again. For Docker, run `docker compose up --build -d` again.
+
+Saved data remains in its selected location. Startup applies database migrations; using an older application does not reverse them. Backup restoration requires a matching database schema and migration history.
 
 ## Development
 
-Node.js 24 or later and npm are required. Install each package from the repository root:
+With Node.js 24 or later and npm installed, install the dependencies from the repository root:
 
 ```bash
 npm ci
@@ -95,87 +102,40 @@ npm --prefix frontend ci
 npm --prefix desktop ci
 ```
 
-The root `package.json` defines the application version. Development, typecheck, test and build commands generate version modules for the relevant package; see [application versioning](docs/app-versioning.md).
-
-The packages retain independent lockfiles. `better-sqlite3` is a native dependency; its installation must complete successfully before running the backend. See [backend documentation](backend/README.md).
-
-Start the backend and frontend in separate terminals:
+Start the backend in one terminal:
 
 ```bash
 npm run dev:backend
 ```
 
+Start the frontend in another:
+
 ```bash
 npm run dev:frontend
 ```
 
-The backend defaults to `http://127.0.0.1:8000`; the Vite frontend usually runs at `http://localhost:5173`. Verify backend readiness at `/health`. The backend applies Drizzle migrations before listening, creating an empty database on first startup.
+The backend defaults to `http://127.0.0.1:8000`; the frontend normally uses `http://localhost:5173`. API documentation is served at `/docs`, `/redoc` and `/openapi.json` on the backend.
 
-For the Electron desktop window, run `npm run dev:desktop`. It builds the application and starts its Node backend automatically. See [desktop setup](docs/desktop.md) for storage, updates and testing.
-
-For a compiled backend:
+To run the desktop app during development instead:
 
 ```bash
-npm --prefix backend run build
-npm --prefix backend start
+npm run dev:desktop
 ```
 
-API documentation remains available at `http://127.0.0.1:8000/docs`, with the API contract at `/openapi.json` and an alternative view at `/redoc`.
+This builds the application and opens Electron with its own backend on a free loopback port. Stop any development backend using the same data directory first.
 
-## Configuration and local data
-
-Copy `backend/.env.example` to `backend/.env` to customize the backend. The development, start, and migration commands load that optional file using Node's built-in environment support. Existing process environment variables take precedence.
-
-| Variable                 | Purpose                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| `INVENTORY_DATA_DIR`     | Absolute storage root, default repository-relative `InventoryData/`             |
-| `INVENTORY_DB_PATH`      | Absolute database path, default `<storage root>/data/inventory.db`              |
-| `INVENTORY_HOST`         | Bind address, default `127.0.0.1`                                               |
-| `INVENTORY_PORT`         | Backend port, default `8000`                                                    |
-| `INVENTORY_LOG_LEVEL`    | Application log level, default `INFO`                                           |
-| `INVENTORY_FRONTEND_DIR` | Optional absolute built-frontend directory; enables browser serving with `/api` |
-| `VITE_API_BASE_URL`      | Frontend backend URL, default `http://127.0.0.1:8000`                           |
-
-Configure the frontend through `frontend/.env`, based on `frontend/.env.example`. Backend storage paths support `~/` and are independent of the current working directory. The backend permits requests from `http://localhost:5173` and `http://127.0.0.1:5173`.
-
-The frontend initially selects German for a `de` system locale and English for all other locales. Language, appearance, accent color and file-warning choices are stored in `config/settings.json`; inventory views are stored in SQLite. The system appearance option follows the operating system's light or dark preference, including changes while the application is open. Inventory groups and their assigned inventories are stored in SQLite.
-
-```text
-InventoryData/
-├── config/
-│   └── settings.json
-├── data/
-│   ├── inventory.db
-│   └── attachments/
-├── backups/
-├── logs/
-└── temp/
-```
-
-This storage root is excluded from version control and initialized at startup. Running from the repository keeps runtime files here; data and attachments are separate from backup storage, logs and temporary archive files. The interface loads versioned preferences before editing is available and reports failed saves or conflicting changes with retry/reload actions. Settings > Storage locations lets you choose data and backup folders or restore their defaults. Existing files move after confirmation, without restarting the application. See the [backend storage configuration](backend/README.md#stored-locations).
-
-See [backend documentation](backend/README.md) for migration commands and API behavior.
-
-## Quality checks
-
-Run the complete quality check from the repository root:
+Run the full quality check from the repository root:
 
 ```bash
 npm run check
 ```
 
-It executes typecheck, lint, tests, build, and finally `prettier --check .`. The format check only reads files. The other checks delegate to the frontend and backend packages; backend tests use `node:test`, frontend tests use Vitest.
+See the [development guide](docs/development.md) for project structure, individual checks and desktop smoke tests, and the [backend README](backend/README.md) for migrations and API maintenance.
 
-Tests use synthetic data. The frontend client integration test starts Express with a temporary database and local port. HTTP tests require an environment permitting local socket communication.
-
-Individual checks remain available in each package, for example:
-
-```bash
-npm --prefix backend run test
-npm --prefix frontend run test
-npm run format:check
-```
+This project was developed with the assistance of generative AI tools. Suggestions were reviewed, modified and tested as part of development.
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+Third-party tools, libraries and runtimes are subject to their own licenses. Their license terms and notices also apply when redistributing locally built applications or images.

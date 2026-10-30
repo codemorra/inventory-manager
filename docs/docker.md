@@ -66,7 +66,7 @@ For an existing installation, stop the app and copy its storage contents to the 
 
 ## Update and back up
 
-Before updating, create and download a backup in Settings. It contains the database and attachments. Settings are separate: for a complete copy, stop the app and also save `config/` and any custom data or backup directories. Logs are optional; temporary files and runtime locks are not backup content. See [application backups](../backend/docs/application-backup.md).
+Before updating, create and download a backup in Settings. It contains the database and attachments. Settings are separate: for a complete copy, stop the app and also save `config/` and any custom data or backup directories. Logs are optional; temporary files and runtime locks are not backup content. See [application backups](application-backup.md).
 
 After obtaining the desired source version, run:
 
