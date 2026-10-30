@@ -327,6 +327,7 @@ export async function startServer(config: AppConfig) {
       restore,
       generation: () => generation,
       automatic,
+      frontendDirectory: config.frontendDirectory,
     });
     server.on("request", (request, response) => {
       void (async () => {
