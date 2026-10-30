@@ -80,6 +80,10 @@ docker compose up --build -d
 
 Open `http://localhost:8000`. Settings, inventories, attachments, backups and logs persist in a Docker volume. See [Docker setup](docs/docker.md) for updates, storage paths, host-directory mounts and backup guidance. Images are built locally; no prebuilt image is published.
 
+## Build a desktop application
+
+With Node.js 24 or later and npm installed, run `npm run build:desktop` on x64 Linux or Windows for a self-contained AppImage or portable EXE, or `npm run build:desktop:dir` for an application directory. See [desktop setup](docs/desktop.md) for prerequisites, updates and storage.
+
 ## Development
 
 Node.js 24 or later and npm are required. Install each package from the repository root:

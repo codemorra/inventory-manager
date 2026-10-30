@@ -96,7 +96,7 @@ export function extractNode(archive, destination, distribution) {
 export async function prepareBuildRuntime() {
   const distribution = nodeDistribution(process.platform, process.arch);
   const root = fileURLToPath(new URL("../../", import.meta.url));
-  const runtime = join(root, ".local/desktop-build-runtime");
+  const runtime = join(root, "build/.work/runtime");
   await mkdir(runtime, { recursive: true });
   const temporary = await mkdtemp(join(runtime, ".node-"));
   const extracted = join(temporary, "extracted");

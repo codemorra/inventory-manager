@@ -17,12 +17,15 @@
     "test": "node --import tsx --test test/*.test.ts test/*.test.mjs",
     "prepare:runtime": "node scripts/prepare.mjs",
     "prepare:build-runtime": "node scripts/build-runtime.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "package:local": "electron-builder --config electron-builder.json --publish never",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:package": "node scripts/smoke-packaged.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.5",
     "electron": "^45.1.0",
+    "electron-builder": "^26.18.0",
     "eslint": "^10.12.0",
     "globals": "^17.13.0",
     "tsx": "^4.23.15",

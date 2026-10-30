@@ -2,6 +2,28 @@
 
 Electron displays the existing frontend in a desktop window. A separate Node.js process runs the backend, database, files and backups.
 
+## Build a desktop application
+
+On x64 Linux or Windows, install Node.js 24 or later and npm. From the repository root, build a single-file application:
+
+```bash
+npm run build:desktop
+```
+
+Alternatively, build an application directory:
+
+```bash
+npm run build:desktop:dir
+```
+
+Both commands install the project dependencies, download and verify the Node.js runtime, build the application and check the packaged runtime files. They require internet access and `tar` capable of extracting the platform's Node archive. Existing `node_modules` directories are replaced by `npm ci`.
+
+The single-file `Inventory-Manager-<version>-linux-x64.AppImage` or `Inventory-Manager-<version>-win-x64.exe` is in `dist/onefile/`. The directory build is in `dist/onedir/inventory-manager/`; start `inventory-manager` on Linux or `Inventory Manager.exe` on Windows. Keep the entire directory together. Build intermediates are stored in `build/`; both directories are excluded from Git. Both formats contain their runtime; users do not need Node.js to start them. Builds are created locally and are not published by the project.
+
+On Linux, make the AppImage executable before starting it. AppImage may require FUSE; if unavailable, start it with `--appimage-extract-and-run`. The Windows EXE is portable and unsigned, so Windows may display a warning. It extracts its contents on startup, which can take time.
+
+Before updating, create a backup in Settings and close the application. Update the source, run the chosen build command again and replace the old application file or entire application directory. Settings, data and backups remain in their selected storage locations, not next to the executable. See [application backups](../backend/docs/application-backup.md) for restore compatibility.
+
 ## Start locally
 
 With Node.js 24 or later and npm installed, run from the repository root:
@@ -39,4 +61,12 @@ npm --prefix desktop run smoke
 
 The smoke test checks startup, shutdown, restart, files, backups and window behavior without using your saved data.
 
-`npm --prefix desktop run prepare:build-runtime` prepares a separate runtime for desktop packaging in `.local/desktop-build-runtime/`. It downloads the pinned official Node.js distribution, checks its SHA-256 checksum, and uses its Node and npm versions to install backend production dependencies. This requires internet access and a `tar` command that can extract the platform's Node archive.
+To test a packaged application with temporary data, pass its path to:
+
+```bash
+npm --prefix desktop run smoke:package -- path/to/application
+```
+
+Pass an old and a new application path to check data preservation across replacement. The test starts both applications headlessly and removes its temporary data afterward.
+
+`npm --prefix desktop run prepare:build-runtime` prepares a separate runtime for desktop packaging in `build/.work/runtime/`. It downloads the pinned official Node.js distribution, checks its SHA-256 checksum, and uses its Node and npm versions to install backend production dependencies.
