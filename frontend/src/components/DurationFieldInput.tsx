@@ -55,13 +55,16 @@ export function DurationFieldInput({
           </span>
         )}
       </legend>
-      <div className={`grid grid-cols-3 ${compact ? "gap-1" : "mt-2 gap-2"}`}>
+      <div
+        className={`grid grid-cols-3 ${compact ? "gap-1" : "mt-1.5 w-full max-w-sm gap-3"}`}
+      >
         {(["hours", "minutes", "seconds"] as const).map((part) => (
           <IntegerSpinbox
             key={part}
             id={`${id}-${part}`}
             label={t(`items.duration.${part}`)}
             describedBy={compact ? undefined : `${id}-help`}
+            stretch={!compact}
             min={0}
             max={part === "hours" ? maximumDurationHours : 59}
             value={value[part]}

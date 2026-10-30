@@ -10,6 +10,7 @@ interface IntegerSpinboxProps {
   min: number;
   max: number;
   required?: boolean;
+  stretch?: boolean;
   disabled?: boolean;
   onChange: (value: string) => void;
 }
@@ -22,6 +23,7 @@ interface IntegerSpinboxProps {
  * @param value The controlled integer string, or an empty editing value.
  * @param min The smallest permitted non-negative integer.
  * @param max The largest permitted integer.
+ * @param stretch Whether to fill a form column with the standard item input height.
  * @param required Whether an empty value prevents form submission.
  * @param disabled Whether editing and stepping are disabled.
  * @param onChange Apply a valid edit or a bounded step to the parent form.
@@ -35,6 +37,7 @@ export function IntegerSpinbox({
   min,
   max,
   required = false,
+  stretch = false,
   disabled = false,
   onChange,
 }: IntegerSpinboxProps) {
@@ -159,12 +162,15 @@ export function IntegerSpinbox({
 
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-foreground">
+      <label
+        htmlFor={id}
+        className={`block font-medium ${stretch ? "text-xs text-muted" : "text-sm text-foreground"}`}
+      >
         {label}
       </label>
       <div
         ref={control}
-        className={`relative mt-1.5 w-24 max-w-full overflow-hidden rounded-md border border-shell bg-surface transition focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 ${disabled ? "opacity-50" : ""}`}
+        className={`relative mt-1.5 ${stretch ? "w-full" : "w-24"} max-w-full overflow-hidden rounded-md border border-shell bg-surface transition focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 ${disabled ? "opacity-50" : ""}`}
       >
         <input
           ref={input}
@@ -178,7 +184,7 @@ export function IntegerSpinbox({
           aria-valuemin={min}
           aria-valuemax={max}
           aria-valuenow={value === "" ? undefined : Number(value)}
-          className="block w-full min-w-0 bg-transparent py-1.5 pl-2.5 pr-7 text-sm text-foreground outline-none disabled:cursor-not-allowed"
+          className={`block w-full min-w-0 bg-transparent pl-2.5 pr-7 text-sm text-foreground outline-none disabled:cursor-not-allowed ${stretch ? "py-2.5" : "py-1.5"}`}
           value={value}
           required={required}
           disabled={disabled}

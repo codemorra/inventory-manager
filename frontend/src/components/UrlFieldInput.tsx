@@ -33,7 +33,7 @@ export function UrlFieldInput({
   const invalid =
     value.url !== "" ? !isWebAddress(value.url) : Boolean(value.label?.trim());
   const inputClass =
-    "mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50";
+    "mt-1.5 block min-h-10.5 w-full min-w-0 rounded-md border border-shell bg-surface px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50";
   return (
     <fieldset className="min-w-0" disabled={disabled}>
       <legend className="text-sm font-medium text-foreground">
@@ -44,8 +44,11 @@ export function UrlFieldInput({
           </span>
         )}
       </legend>
-      <div className="mt-2 space-y-3">
-        <label className="block text-sm font-medium" htmlFor={`${id}-address`}>
+      <div className="mt-1.5 grid gap-3 sm:grid-cols-2">
+        <label
+          className="block min-w-0 text-xs font-medium text-muted"
+          htmlFor={`${id}-address`}
+        >
           {t("items.url.address")}
           <input
             id={`${id}-address`}
@@ -65,7 +68,10 @@ export function UrlFieldInput({
             }
           />
         </label>
-        <label className="block text-sm font-medium" htmlFor={`${id}-label`}>
+        <label
+          className="block min-w-0 text-xs font-medium text-muted"
+          htmlFor={`${id}-label`}
+        >
           {t("items.url.label")}
           <input
             id={`${id}-label`}
