@@ -1,3 +1,4 @@
+import { chooseOptions } from "../helpers/choices";
 import { preferenceStore } from "../../src/preferences/store";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -13,9 +14,9 @@ describe("LanguageSwitch", () => {
     const user = userEvent.setup();
     render(<LanguageSwitch />);
 
-    await user.selectOptions(screen.getByLabelText("Language"), "de");
+    await chooseOptions(user, "Language", ["Deutsch"]);
 
-    expect(screen.getByLabelText("Sprache")).toHaveValue("de");
+    expect(screen.getByLabelText("Sprache")).toHaveTextContent("Deutsch");
     expect(preferenceStore.readPreferences()?.language).toBe("de");
     expect(document.documentElement.lang).toBe("de");
   });
