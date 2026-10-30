@@ -14,8 +14,9 @@
     "prebuild": "node ../scripts/generate-app-version.mjs desktop",
     "build": "tsc",
     "pretest": "node ../scripts/generate-app-version.mjs desktop",
-    "test": "node --import tsx --test test/*.test.ts",
+    "test": "node --import tsx --test test/*.test.ts test/*.test.mjs",
     "prepare:runtime": "node scripts/prepare.mjs",
+    "prepare:build-runtime": "node scripts/build-runtime.mjs",
     "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {

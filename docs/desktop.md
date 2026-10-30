@@ -38,3 +38,5 @@ npm --prefix desktop run smoke
 ```
 
 The smoke test checks startup, shutdown, restart, files, backups and window behavior without using your saved data.
+
+`npm --prefix desktop run prepare:build-runtime` prepares a separate runtime for desktop packaging in `.local/desktop-build-runtime/`. It downloads the pinned official Node.js distribution, checks its SHA-256 checksum, and uses its Node and npm versions to install backend production dependencies. This requires internet access and a `tar` command that can extract the platform's Node archive.
