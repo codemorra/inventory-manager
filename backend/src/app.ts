@@ -21,12 +21,13 @@ import { templateRoutes } from "./routes/templates.js";
 import { importRoutes } from "./routes/imports.js";
 import { exchangeRoutes } from "./routes/exchange.js";
 import { attachmentRoutes } from "./routes/attachments.js";
+import { registerFrontendServing } from "./frontend-serving.js";
 
 /**
  * Create and configure an Express application instance.
  * @param logger A logger instance with an "error" method for logging unexpected errors.
  * @param services The domain services with an already initialized database.
- * @param options Optional runtime storage coordination and data-generation callbacks.
+ * @param options Optional storage coordination, data-generation callbacks and production frontend directory.
  * @returns The configured Express application instance.
  */
 export function createApp(
@@ -38,6 +39,7 @@ export function createApp(
     restore?: (id: string, response: ServerResponse) => Promise<unknown>;
     generation?: () => string;
     automatic?: ReturnType<typeof createAutomaticBackups>;
+    frontendDirectory?: string | undefined;
   } = {},
 ) {
   const app = express();
@@ -73,8 +75,9 @@ export function createApp(
   });
   // JSON body parser middleware
   app.use(express.json({ limit: "1mb" }));
+  const api = express.Router();
   // Physical file removal must follow committed mutations, including field/inventory cascades.
-  app.use((request, response, next) => {
+  api.use((request, response, next) => {
     if (
       !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
       !/^\/storage-locations(?:\/|$)/i.test(request.path)
@@ -90,25 +93,25 @@ export function createApp(
   });
 
   // Health check endpoint
-  app.get("/health", (_request, response) => {
+  api.get("/health", (_request, response) => {
     response.json({ status: "ok" });
   });
-  app.use(docsRoutes());
-  app.use("/application-update", updateRoutes());
-  app.use("/application-settings", settingsRoutes(services));
-  app.use("/storage-locations", storageRoutes(services, options.relocate));
-  app.use(
+  api.use(docsRoutes("/api"));
+  api.use("/application-update", updateRoutes());
+  api.use("/application-settings", settingsRoutes(services));
+  api.use("/storage-locations", storageRoutes(services, options.relocate));
+  api.use(
     "/backups",
     backupRoutes(services, options.backup, options.automatic),
   );
-  app.use("/backup-restores", restoreRoutes(services, options.restore));
-  app.use(viewRoutes(services));
-  app.use("/inventory-groups", groupRoutes(services));
-  app.use("/inventory-templates", templateRoutes(services));
-  app.use("/inventory-imports", importRoutes(services));
+  api.use("/backup-restores", restoreRoutes(services, options.restore));
+  api.use(viewRoutes(services));
+  api.use("/inventory-groups", groupRoutes(services));
+  api.use("/inventory-templates", templateRoutes(services));
+  api.use("/inventory-imports", importRoutes(services));
 
   // Inventory-related routes
-  app.use(
+  api.use(
     "/inventories",
     inventoryRoutes(services),
     fieldRoutes(services),
@@ -116,6 +119,20 @@ export function createApp(
     attachmentRoutes(services),
     exchangeRoutes(services),
   );
+
+  // Keep API misses out of the browser router, including requests accepting HTML.
+  api.use((_request, response) => {
+    response.status(404).json({ detail: "Not Found" });
+  });
+  app.use("/api", api);
+  if (options.frontendDirectory) {
+    // Preserve operational endpoints outside the API prefix.
+    app.get(/^\/(?:health|docs|redoc|openapi\.json)\/?$/, api);
+    registerFrontendServing(app, options.frontendDirectory);
+  } else {
+    // Development clients retain their existing unprefixed API addresses.
+    app.use(api);
+  }
 
   // 404 handler for unknown routes
   app.use((_request, response) => {

@@ -70,6 +70,16 @@ Automatic IDs have independent counters per field and inventory, starting at 1. 
 
 The frontend uses React, TypeScript, Vite, and Tailwind CSS. The Express/TypeScript backend stores data locally in SQLite through Drizzle, with database migrations and rotating log files.
 
+## Run with Docker
+
+Build and start the browser application from the repository root:
+
+```bash
+docker compose up --build -d
+```
+
+Open `http://localhost:8000`. Settings, inventories, attachments, backups and logs persist in a Docker volume. See [Docker setup](docs/docker.md) for updates, storage paths, host-directory mounts and backup guidance. Images are built locally; no prebuilt image is published.
+
 ## Development
 
 Node.js 24 or later and npm are required. Install each package from the repository root:
@@ -109,14 +119,15 @@ API documentation remains available at `http://127.0.0.1:8000/docs`, with the AP
 
 Copy `backend/.env.example` to `backend/.env` to customize the backend. The development, start, and migration commands load that optional file using Node's built-in environment support. Existing process environment variables take precedence.
 
-| Variable              | Purpose                                                             |
-| --------------------- | ------------------------------------------------------------------- |
-| `INVENTORY_DATA_DIR`  | Absolute storage root, default repository-relative `InventoryData/` |
-| `INVENTORY_DB_PATH`   | Absolute database path, default `<storage root>/data/inventory.db`  |
-| `INVENTORY_HOST`      | Bind address, default `127.0.0.1`                                   |
-| `INVENTORY_PORT`      | Backend port, default `8000`                                        |
-| `INVENTORY_LOG_LEVEL` | Application log level, default `INFO`                               |
-| `VITE_API_BASE_URL`   | Frontend backend URL, default `http://127.0.0.1:8000`               |
+| Variable                 | Purpose                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `INVENTORY_DATA_DIR`     | Absolute storage root, default repository-relative `InventoryData/`             |
+| `INVENTORY_DB_PATH`      | Absolute database path, default `<storage root>/data/inventory.db`              |
+| `INVENTORY_HOST`         | Bind address, default `127.0.0.1`                                               |
+| `INVENTORY_PORT`         | Backend port, default `8000`                                                    |
+| `INVENTORY_LOG_LEVEL`    | Application log level, default `INFO`                                           |
+| `INVENTORY_FRONTEND_DIR` | Optional absolute built-frontend directory; enables browser serving with `/api` |
+| `VITE_API_BASE_URL`      | Frontend backend URL, default `http://127.0.0.1:8000`                           |
 
 Configure the frontend through `frontend/.env`, based on `frontend/.env.example`. Backend storage paths support `~/` and are independent of the current working directory. The backend permits requests from `http://localhost:5173` and `http://127.0.0.1:5173`.
 

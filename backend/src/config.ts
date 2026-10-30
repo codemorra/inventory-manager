@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { storagePath } from "./storage-paths.js";
@@ -9,6 +9,10 @@ const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const environmentSchema = z.object({
   INVENTORY_DATA_DIR: z.string().min(1).optional(),
   INVENTORY_DB_PATH: z.string().min(1).optional(),
+  INVENTORY_FRONTEND_DIR: z
+    .string()
+    .refine(isAbsolute, "Frontend directory must be absolute.")
+    .optional(),
   INVENTORY_HOST: z.string().min(1).default("127.0.0.1"),
   INVENTORY_PORT: z.coerce.number().int().min(1).max(65535).default(8000),
   INVENTORY_LOG_LEVEL: z
@@ -35,6 +39,7 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env) {
     : undefined;
 
   return {
+    frontendDirectory: settings.INVENTORY_FRONTEND_DIR,
     storageRoot,
     configDirectory: join(storageRoot, "config"),
     settingsPath: join(storageRoot, "config", "settings.json"),

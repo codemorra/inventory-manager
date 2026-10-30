@@ -25,6 +25,8 @@ The default address is `http://127.0.0.1:8000`. `/health` checks readiness;
 `/docs`, `/redoc`, and `/openapi.json` provide API documentation.
 Update `src/openapi.json` when routes or DTOs change.
 
+All API routes are also available under `/api`. Set `INVENTORY_FRONTEND_DIR` to an absolute built-frontend directory to serve the browser application from the backend, with API requests using `/api` exclusively to avoid browser-route collisions. `/health`, `/docs`, `/redoc` and `/openapi.json` remain accessible at the root. Without that setting, development clients retain their unprefixed API addresses. See [Docker setup](../docs/docker.md) for the combined runtime.
+
 ## Manual update checks
 
 `GET /application-update` performs an on-demand unauthenticated GitHub check for the fixed public repository `codemorra/inventory-manager`. It has no request body or configurable repository URL and returns `Cache-Control: no-store`. All completed checks return HTTP 200 with `current_version` and `status`: `available`, `current`, `no_release`, `failed` or `rate_limited`. `available` and `current` also include `latest_version` and a project-owned `release_url`. `current` means that the published version is not newer, including when the local version is ahead.
@@ -38,13 +40,14 @@ The complete GitHub operation, including response-body reads and the optional re
 Optionally copy `.env.example` to `.env`. Development, start, and migration commands
 load it automatically; process environment variables take precedence.
 
-| Variable              | Default                                           |
-| --------------------- | ------------------------------------------------- |
-| `INVENTORY_DATA_DIR`  | Repository-relative `InventoryData/` storage root |
-| `INVENTORY_DB_PATH`   | `<storage root>/data/inventory.db`                |
-| `INVENTORY_HOST`      | `127.0.0.1`                                       |
-| `INVENTORY_PORT`      | `8000`                                            |
-| `INVENTORY_LOG_LEVEL` | `INFO`                                            |
+| Variable                 | Default                                           |
+| ------------------------ | ------------------------------------------------- |
+| `INVENTORY_DATA_DIR`     | Repository-relative `InventoryData/` storage root |
+| `INVENTORY_DB_PATH`      | `<storage root>/data/inventory.db`                |
+| `INVENTORY_HOST`         | `127.0.0.1`                                       |
+| `INVENTORY_PORT`         | `8000`                                            |
+| `INVENTORY_LOG_LEVEL`    | `INFO`                                            |
+| `INVENTORY_FRONTEND_DIR` | Unset; optional absolute built-frontend directory |
 
 Storage overrides must be absolute paths; `~/` is supported. `INVENTORY_DATA_DIR` selects the complete storage root. Runtime layout: `config/settings.json`, `data/inventory.db`, `data/attachments/`, `backups/`, `logs/`, and `temp/`. Server startup and manual database migration resolve the settings file before creating data/backup directories or opening SQLite. They initialize the selected directories and create a version-1 settings document only when missing; existing settings/data are preserved. The settings API supplies file-backed preferences to the frontend. An explicit `INVENTORY_DB_PATH` takes precedence over the database location selected through the settings file.
 
