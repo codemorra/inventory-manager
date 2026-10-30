@@ -3,6 +3,7 @@
     "name": "Inventory Manager"
   },
   "common": {
+    "loading": "Wird geladen…",
     "accent": {
       "label": "Akzentfarbe",
       "brand": "Grün",
