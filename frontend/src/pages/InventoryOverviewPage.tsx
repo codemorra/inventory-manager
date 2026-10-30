@@ -43,22 +43,7 @@ export function InventoryOverviewPage() {
 
         {!isPending && !isError && inventories?.length === 0 && (
           <section className="rounded-2xl border border-dashed border-shell bg-surface/70 px-6 py-14 text-center shadow-soft">
-            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent-soft text-accent-text">
-              <svg
-                aria-hidden="true"
-                className="size-7"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.7"
-                viewBox="0 0 24 24"
-              >
-                <path d="M4 7.5 12 3l8 4.5-8 4.5-8-4.5Z" />
-                <path d="M4 7.5V17l8 4 8-4V7.5M12 12v9" />
-              </svg>
-            </span>
-            <h2 className="mt-5 text-lg font-semibold">
+            <h2 className="text-lg font-semibold">
               {t("inventories.empty")}
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
