@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { cp, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { prepareRuntime } from "./prepare.mjs";
 
@@ -59,7 +59,7 @@ export async function downloadNode(distribution, request = fetch) {
 }
 
 /**
- * Extract Node, npm and the Node license using the host's tar command.
+ * Extract Node, npm and the Node license from the platform archive.
  * @param {string} archive Archive path.
  * @param {string} destination Extraction directory.
  * @param {{ archive: string, executable: string, npmDirectory: string }} distribution Distribution metadata.
@@ -68,9 +68,52 @@ export async function downloadNode(distribution, request = fetch) {
  */
 export function extractNode(archive, destination, distribution) {
   const prefix = distribution.archive.replace(/\.tar\.gz$|\.zip$/, "");
+  if (distribution.archive.endsWith(".zip")) {
+    const command =
+      "Expand-Archive -LiteralPath $env:NODE_ARCHIVE_PATH -DestinationPath $env:NODE_DESTINATION";
+    return new Promise((resolve, reject) => {
+      const child = spawn(
+        "powershell.exe",
+        ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
+        {
+          env: {
+            ...process.env,
+            NODE_ARCHIVE_PATH: archive,
+            NODE_DESTINATION: destination,
+          },
+          stdio: "inherit",
+        },
+      );
+      child.once("error", reject);
+      child.once("exit", async (code, signal) => {
+        if (code !== 0) {
+          reject(new Error(`Node extraction failed (${signal ?? code}).`));
+          return;
+        }
+        try {
+          const files = [
+            distribution.executable,
+            "LICENSE",
+            distribution.npmDirectory,
+          ];
+          for (const file of files) {
+            const source = join(destination, prefix, file);
+            const target = join(destination, file);
+            await mkdir(dirname(target), { recursive: true });
+            await rename(source, target);
+          }
+          await rm(join(destination, prefix), { recursive: true, force: true });
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+  }
+
   const args = [
     "-xf",
-    archive,
+    basename(archive),
     "-C",
     destination,
     "--strip-components=1",
@@ -79,7 +122,10 @@ export function extractNode(archive, destination, distribution) {
     `${prefix}/${distribution.npmDirectory}`,
   ];
   return new Promise((resolve, reject) => {
-    const child = spawn("tar", args, { stdio: "inherit" });
+    const child = spawn("tar", args, {
+      cwd: dirname(archive),
+      stdio: "inherit",
+    });
     child.once("error", reject);
     child.once("exit", (code, signal) => {
       if (code === 0) resolve();

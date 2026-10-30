@@ -1,11 +1,31 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import {
   downloadNode,
+  extractNode,
   nodeDistribution,
   nodeVersion,
 } from "../scripts/build-runtime.mjs";
+
+function runPowerShell(command, environment) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      "powershell.exe",
+      ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
+      { env: { ...process.env, ...environment }, stdio: "inherit" },
+    );
+    child.once("error", reject);
+    child.once("exit", (code, signal) => {
+      if (code === 0) resolve();
+      else reject(new Error(`PowerShell command failed (${signal ?? code}).`));
+    });
+  });
+}
 
 test("build runtime selects only the supported platform distributions", () => {
   const linux = nodeDistribution("linux", "x64");
@@ -27,6 +47,59 @@ test("build runtime selects only the supported platform distributions", () => {
     /x64 Linux or Windows/,
   );
 });
+
+test(
+  "Windows Node archives are extracted into the runtime layout",
+  { skip: process.platform !== "win32" },
+  async () => {
+    const temporary = await mkdtemp(join(tmpdir(), "runtime-zip-test-"));
+    try {
+      const distribution = nodeDistribution("win32", "x64");
+      const prefix = distribution.archive.replace(/\.zip$/, "");
+      const fixtureRoot = join(temporary, "input");
+      const source = join(fixtureRoot, prefix);
+      const archive = join(temporary, distribution.archive);
+      const destination = join(temporary, "extracted");
+      await mkdir(join(source, "node_modules", "npm", "bin"), {
+        recursive: true,
+      });
+      await writeFile(join(source, "node.exe"), "node fixture");
+      await writeFile(join(source, "LICENSE"), "license fixture");
+      await writeFile(
+        join(source, "node_modules", "npm", "bin", "npm-cli.js"),
+        "npm fixture",
+      );
+      await mkdir(destination);
+      await runPowerShell(
+        'Compress-Archive -Path "$env:NODE_FIXTURE_ROOT\\*" -DestinationPath $env:NODE_FIXTURE_ARCHIVE',
+        {
+          NODE_FIXTURE_ROOT: fixtureRoot,
+          NODE_FIXTURE_ARCHIVE: archive,
+        },
+      );
+
+      await extractNode(archive, destination, distribution);
+
+      assert.equal(
+        await readFile(join(destination, "node.exe"), "utf8"),
+        "node fixture",
+      );
+      assert.equal(
+        await readFile(join(destination, "LICENSE"), "utf8"),
+        "license fixture",
+      );
+      assert.equal(
+        await readFile(
+          join(destination, "node_modules", "npm", "bin", "npm-cli.js"),
+          "utf8",
+        ),
+        "npm fixture",
+      );
+    } finally {
+      await rm(temporary, { recursive: true, force: true });
+    }
+  },
+);
 
 test("Node downloads are checked against the pinned checksum", async () => {
   const bytes = Buffer.from("test archive");
