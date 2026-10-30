@@ -1,0 +1,28 @@
+{
+  "name": "inventory-manager-desktop",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "predev": "npm run build",
+    "dev": "node scripts/start.mjs",
+    "pretypecheck": "node ../scripts/generate-app-version.mjs desktop",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "prebuild": "node ../scripts/generate-app-version.mjs desktop",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.5",
+    "electron": "^45.1.0",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1"
+  }
+}

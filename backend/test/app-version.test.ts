@@ -49,6 +49,14 @@ test("version generation uses its repository root and preserves unchanged module
     await execute(process.execPath, [script, "frontend"]);
     assert.match(await readFile(frontend, "utf8"), /APP_VERSION = "3\.0\.0"/);
     assert.equal(await readFile(backend, "utf8"), source);
+    await execute(process.execPath, [script, "desktop"]);
+    assert.match(
+      await readFile(
+        join(directory, "desktop/src/generated/app-version.ts"),
+        "utf8",
+      ),
+      /APP_VERSION = "3\.0\.0"/,
+    );
     await assert.rejects(execute(process.execPath, [script, "unknown"]));
     await writeFile(join(directory, "package.json"), "{}");
     await assert.rejects(execute(process.execPath, [script]));

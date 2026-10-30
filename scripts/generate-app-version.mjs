@@ -3,8 +3,12 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 const root = new URL("../", import.meta.url);
 const targets = process.argv.slice(2);
 if (targets.length === 0) targets.push("frontend", "backend");
-if (targets.some((target) => !["frontend", "backend"].includes(target))) {
-  throw new Error("Expected frontend or backend as the generation target.");
+if (
+  targets.some((target) => !["frontend", "backend", "desktop"].includes(target))
+) {
+  throw new Error(
+    "Expected frontend, backend or desktop as the generation target.",
+  );
 }
 const { version } = JSON.parse(
   await readFile(new URL("package.json", root), "utf8"),
