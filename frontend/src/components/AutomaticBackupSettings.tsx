@@ -191,9 +191,6 @@ export function AutomaticBackupSettings({
                 )}
               />
             </div>
-            {frequency === "weekly" && (
-              <p className="text-xs text-muted">{t("backups.weeklyHelp")}</p>
-            )}
             <label
               htmlFor={`${id}-retention`}
               className="block text-sm font-medium"
