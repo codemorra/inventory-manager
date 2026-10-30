@@ -147,7 +147,7 @@ test("background status refreshes preserve the captured policy and edited retent
   expect(api.updateBackupSchedule).not.toHaveBeenCalled();
 });
 
-test("validates retention and shows the weekly calendar rule and cleanup retry status", async () => {
+test("validates retention and shows the saved weekly frequency and cleanup retry status", async () => {
   vi.mocked(api.getBackupSchedule).mockResolvedValue({
     ...automaticSchedule,
     policy: { frequency: "weekly", retention: 10 },
@@ -156,7 +156,9 @@ test("validates retention and shows the weekly calendar rule and cleanup retry s
     next_retry_at: "2026-10-28T12:05:00.000Z",
   });
   render(<AutomaticBackupSettings disabled={false} onBusyChange={() => {}} />);
-  expect(await screen.findByText(/Monday to Sunday/)).toBeVisible();
+  expect(
+    await screen.findByRole("combobox", { name: "Frequency" }),
+  ).toHaveTextContent("Weekly");
   expect(screen.getByRole("alert")).toHaveTextContent("could not be removed");
   expect(screen.getByRole("alert")).toHaveTextContent("Next attempt");
   expect(
