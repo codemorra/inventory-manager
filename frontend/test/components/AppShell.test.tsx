@@ -1,3 +1,4 @@
+import { chooseOptions } from "../helpers/choices";
 import {
   prepareInventoryExport,
   discardInventoryExport,
@@ -203,7 +204,7 @@ describe("AppShell", () => {
     expect(screen.getByLabelText("Appearance")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Blue" }));
     expect(document.documentElement.dataset.accent).toBe("blue");
-    await user.selectOptions(screen.getByLabelText("Language"), "de");
+    await chooseOptions(user, "Language", ["Deutsch"]);
     expect(
       screen.getByRole("heading", { name: "Einstellungen", level: 1 }),
     ).toBeInTheDocument();

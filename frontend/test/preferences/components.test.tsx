@@ -1,3 +1,4 @@
+import { chooseOptions } from "../helpers/choices";
 import { StrictMode, type ReactNode } from "react";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -117,12 +118,12 @@ test("persists appearance, accent, language and warning choices through the back
   show();
   await screen.findByLabelText("Appearance");
   const browserWrite = vi.spyOn(Storage.prototype, "setItem");
-  await user.selectOptions(screen.getByLabelText("Appearance"), "dark");
+  await chooseOptions(user, "Appearance", ["Dark"]);
   await user.click(screen.getByRole("button", { name: "Blue" }));
   await user.click(
     screen.getByRole("checkbox", { name: "Warn before adding large files" }),
   );
-  await user.selectOptions(screen.getByLabelText("Language"), "de");
+  await chooseOptions(user, "Language", ["Deutsch"]);
   await screen.findByLabelText("Sprache");
   await waitFor(() => expect(preferenceStore.getStatus().pending).toBe(0));
   expect(saved.preferences).toEqual({
@@ -149,12 +150,12 @@ test("supports returning to system language without writing a resolved language 
   const user = userEvent.setup();
   show();
   await screen.findByLabelText("Language");
-  await user.selectOptions(screen.getByLabelText("Language"), "system");
+  await chooseOptions(user, "Language", ["System language"]);
   await screen.findByLabelText("Sprache");
   expect(api.updateApplicationSettings).toHaveBeenCalledExactlyOnceWith(0, {
     language: "system",
   });
-  expect(screen.getByLabelText("Sprache")).toHaveValue("system");
+  expect(screen.getByLabelText("Sprache")).toHaveTextContent("Systemsprache");
 });
 
 // Failed automatic saves remain visible and editable, but are never mislabeled as safely persisted.
@@ -169,14 +170,14 @@ test("shows unsaved changes and lets the user explicitly retry transport failure
   const user = userEvent.setup();
   show();
   await screen.findByLabelText("Appearance");
-  await user.selectOptions(screen.getByLabelText("Appearance"), "dark");
+  await chooseOptions(user, "Appearance", ["Dark"]);
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "could not be saved",
   );
   expect(
     screen.queryByText("Some changes have not been saved."),
   ).not.toBeInTheDocument();
-  expect(screen.getByLabelText("Appearance")).toHaveValue("dark");
+  expect(screen.getByLabelText("Appearance")).toHaveTextContent("Dark");
   await user.click(screen.getByRole("button", { name: "Retry" }));
   await waitFor(() =>
     expect(screen.queryByRole("alert")).not.toBeInTheDocument(),
@@ -191,7 +192,7 @@ test("reloads authoritative preferences after an explicit conflict recovery acti
   const user = userEvent.setup();
   show();
   await screen.findByLabelText("Appearance");
-  await user.selectOptions(screen.getByLabelText("Appearance"), "dark");
+  await chooseOptions(user, "Appearance", ["Dark"]);
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "changed elsewhere",
   );
@@ -205,7 +206,7 @@ test("reloads authoritative preferences after an explicit conflict recovery acti
   });
   await user.click(screen.getByRole("button", { name: "Load saved values" }));
   await waitFor(() =>
-    expect(screen.getByLabelText("Appearance")).toHaveValue("light"),
+    expect(screen.getByLabelText("Appearance")).toHaveTextContent("Light"),
   );
   expect(api.updateApplicationSettings).toHaveBeenCalledOnce();
 });

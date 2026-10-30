@@ -1,3 +1,4 @@
+import { chooseOptions } from "../helpers/choices";
 import { preferenceStore } from "../../src/preferences/store";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -16,9 +17,9 @@ describe("ThemeSwitch", () => {
     const user = userEvent.setup();
     render(<ThemeSwitch />);
 
-    await user.selectOptions(screen.getByLabelText("Appearance"), "dark");
+    await chooseOptions(user, "Appearance", ["Dark"]);
 
-    expect(screen.getByLabelText("Appearance")).toHaveValue("dark");
+    expect(screen.getByLabelText("Appearance")).toHaveTextContent("Dark");
     expect(preferenceStore.readPreferences()?.theme).toBe("dark");
     expect(document.documentElement.dataset.theme).toBe("dark");
   });
