@@ -15,7 +15,8 @@
     "build": "tsc",
     "pretest": "node ../scripts/generate-app-version.mjs desktop",
     "test": "node --import tsx --test test/*.test.ts",
-    "prepare:runtime": "node scripts/prepare.mjs"
+    "prepare:runtime": "node scripts/prepare.mjs",
+    "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
