@@ -180,3 +180,23 @@ test("disables the dropdown when there are no available options", () => {
   expect(screen.getByRole("combobox")).toBeDisabled();
   expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
 });
+
+test("only highlights keyboard navigation and follows the hovered option", async () => {
+  const user = userEvent.setup();
+  renderChoices();
+  const control = screen.getByRole("combobox", { name: "Choices" });
+  await user.click(control);
+  const first = screen.getByRole("option", { name: "First" });
+  const second = screen.getByRole("option", { name: "Second" });
+  expect(first).not.toHaveClass("bg-control-hover");
+  await user.hover(second);
+  expect(control).toHaveAttribute("aria-activedescendant", second.id);
+  expect(first).not.toHaveClass("bg-control-hover");
+  await user.keyboard("{Home}");
+  expect(first).toHaveClass("bg-control-hover");
+  await user.hover(first);
+  await user.hover(second);
+  expect(first).not.toHaveClass("bg-control-hover");
+  await user.keyboard("{Enter}");
+  expect(second).toHaveAttribute("aria-selected", "true");
+});

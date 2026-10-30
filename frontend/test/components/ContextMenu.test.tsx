@@ -92,3 +92,31 @@ test("keeps the menu inside the viewport and dismisses outside clicks", () => {
   fireEvent.pointerDown(document.body);
   expect(close).toHaveBeenCalledOnce();
 });
+
+// Pointer navigation must replace the initial focus and remain usable from the keyboard.
+test("moves focus to the hovered action and resumes keyboard navigation there", async () => {
+  const user = userEvent.setup();
+  const select = vi.fn();
+  render(
+    <ContextMenu
+      x={10}
+      y={10}
+      label="Actions"
+      onClose={vi.fn()}
+      actions={[
+        { label: "Edit", onSelect: vi.fn() },
+        { label: "Delete", onSelect: select },
+      ]}
+    />,
+  );
+  const first = screen.getByRole("menuitem", { name: "Edit" });
+  const second = screen.getByRole("menuitem", { name: "Delete" });
+  expect(first).toHaveFocus();
+  await user.hover(second);
+  expect(second).toHaveFocus();
+  expect(first).not.toHaveFocus();
+  await user.keyboard("{Home}");
+  expect(first).toHaveFocus();
+  await user.keyboard("{ArrowDown}{Enter}");
+  expect(select).toHaveBeenCalledOnce();
+});
