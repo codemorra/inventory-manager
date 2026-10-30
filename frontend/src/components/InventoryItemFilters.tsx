@@ -10,7 +10,7 @@ import {
   filterDurationInput,
   itemFilterError,
   itemFilterOperators,
-} from "./inventoryItemFilters";
+} from "./itemFilterLogic";
 
 // Keep applied conditions outside the panel so dismissal discards only its local draft.
 interface InventoryItemFiltersProps {

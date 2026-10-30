@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import {
   filterInventoryItems,
   itemFilterError,
-} from "../../src/components/inventoryItemFilters";
+} from "../../src/components/itemFilterLogic";
 import type { InventoryFieldType } from "../../src/types/inventoryField";
 import type {
   ItemFilter,

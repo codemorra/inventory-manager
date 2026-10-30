@@ -38,7 +38,7 @@ import { ColumnResizeHandle } from "./ColumnResizeHandle";
 import { ContextMenu } from "./ContextMenu";
 import { sortInventoryItems } from "./inventoryItemSorting";
 import { searchInventoryItems } from "./inventoryItemSearch";
-import { filterInventoryItems, itemFilterError } from "./inventoryItemFilters";
+import { filterInventoryItems, itemFilterError } from "./itemFilterLogic";
 import { InventoryItemFilters } from "./InventoryItemFilters";
 import { InventoryTableCellInput } from "./InventoryTableCellInput";
 import { getTableCellValue } from "./inventoryTableDraft";

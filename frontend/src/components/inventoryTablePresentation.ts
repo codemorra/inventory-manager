@@ -6,7 +6,7 @@ import {
   searchInventoryItems,
   type ItemSearchLabels,
 } from "./inventoryItemSearch";
-import { filterInventoryItems, itemFilterError } from "./inventoryItemFilters";
+import { filterInventoryItems, itemFilterError } from "./itemFilterLogic";
 import { sortInventoryItems } from "./inventoryItemSorting";
 
 // An edit session freezes presentation at entry without persisting search, filters or surplus widths.

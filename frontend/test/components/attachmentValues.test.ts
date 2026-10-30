@@ -18,7 +18,7 @@ import {
 } from "../../src/components/inventoryTableDraft";
 import { searchInventoryItems } from "../../src/components/inventoryItemSearch";
 import { sortInventoryItems } from "../../src/components/inventoryItemSorting";
-import { itemFilterOperators } from "../../src/components/inventoryItemFilters";
+import { itemFilterOperators } from "../../src/components/itemFilterLogic";
 
 // File IDs remain arrays through every form, checkbox shortcut, and atomic-table replacement path.
 test("preserves attachment arrays and validates required file fields without coercing IDs into text", () => {
