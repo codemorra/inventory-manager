@@ -10,10 +10,12 @@
     "predev": "npm run build",
     "dev": "node scripts/start.mjs",
     "pretypecheck": "node ../scripts/generate-app-version.mjs desktop",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p test/tsconfig.json",
     "lint": "eslint .",
     "prebuild": "node ../scripts/generate-app-version.mjs desktop",
-    "build": "tsc"
+    "build": "tsc",
+    "pretest": "node ../scripts/generate-app-version.mjs desktop",
+    "test": "node --import tsx --test test/*.test.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

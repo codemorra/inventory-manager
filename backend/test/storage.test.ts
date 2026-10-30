@@ -16,6 +16,30 @@ import { loadConfig } from "../src/config.js";
 import { initializeStorage, prepareStorage } from "../src/storage.js";
 import { createSettingsService } from "../src/settings/service.js";
 
+test("desktop defaults keep fixed settings and logs while selecting user temporary storage", () => {
+  const root = join(tmpdir(), "inventory-desktop-storage");
+  const temporary = join(tmpdir(), "inventory-desktop-work");
+  const defaults = { tempDirectory: temporary };
+  const config = loadConfig({ INVENTORY_DATA_DIR: root }, defaults);
+  assert.equal(config.storageRoot, root);
+  assert.equal(config.settingsPath, join(root, "config/settings.json"));
+  assert.equal(config.logsDirectory, join(root, "logs"));
+  assert.equal(config.dataDirectory, join(root, "data"));
+  assert.equal(config.backupsDirectory, join(root, "backups"));
+  assert.equal(config.tempDirectory, temporary);
+  const overridden = loadConfig(
+    { INVENTORY_DATA_DIR: join(root, "custom") },
+    defaults,
+  );
+  assert.equal(overridden.storageRoot, join(root, "custom"));
+  assert.equal(overridden.tempDirectory, temporary);
+  assert.throws(
+    () =>
+      loadConfig({ INVENTORY_DATA_DIR: root }, { tempDirectory: "relative" }),
+    /absolute/,
+  );
+});
+
 // The source and compiled entry points resolve the same repository root, independent of the caller's cwd.
 test("uses the repository-local layout and resolves explicit root and database overrides independently", () => {
   const root = fileURLToPath(new URL("../../InventoryData", import.meta.url));

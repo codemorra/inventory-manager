@@ -25,9 +25,13 @@ const environmentSchema = z.object({
 /**
  * Load and resolve the application configuration from environment variables.
  * @param environment The environment variables to load the configuration from. Defaults to process.env.
+ * @param defaults Optional temporary-directory default supplied by a desktop runtime.
  * @returns The resolved application configuration.
  */
-export function loadConfig(environment: NodeJS.ProcessEnv = process.env) {
+export function loadConfig(
+  environment: NodeJS.ProcessEnv = process.env,
+  defaults: { tempDirectory?: string } = {},
+) {
   const settings = environmentSchema.parse(environment);
   // Resolve the development default from the module location, independently of cwd.
   const storageRoot = settings.INVENTORY_DATA_DIR
@@ -45,7 +49,9 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env) {
     settingsPath: join(storageRoot, "config", "settings.json"),
     dataDirectory,
     backupsDirectory: join(storageRoot, "backups"),
-    tempDirectory: join(storageRoot, "temp"),
+    tempDirectory: defaults.tempDirectory
+      ? storagePath(defaults.tempDirectory)
+      : join(storageRoot, "temp"),
     databasePathOverride,
     databasePath: databasePathOverride ?? join(dataDirectory, "inventory.db"),
     attachmentsDirectory: join(dataDirectory, "attachments"),
