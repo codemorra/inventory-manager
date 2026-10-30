@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog } from "electron";
+import { app, BrowserWindow, dialog, screen } from "electron";
 import { spawn } from "node:child_process";
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -7,11 +7,17 @@ import { connectBackend } from "./backend-controller.js";
 import { APP_VERSION } from "./generated/app-version.js";
 import { desktopMessages } from "./messages.js";
 import { desktopPaths } from "./paths.js";
+import { configureWindow } from "./window.js";
+import {
+  readWindowState,
+  visibleBounds,
+  writeWindowState,
+} from "./window-state.js";
 
 /**
  * Start the desktop host, wait for its backend and show the shared application UI.
  * @param options Optional hidden-window mode for Electron integration tests.
- * @returns The running window and backend, or undefined when startup is cancelled.
+ * @returns The running window and backend, or undefined when startup is cancelled or another instance owns this root.
  * @throws {Error} When configuration, startup or page loading fails.
  */
 export async function startDesktop(options: { show?: boolean } = {}) {
@@ -33,6 +39,10 @@ export async function startDesktop(options: { show?: boolean } = {}) {
   app.setPath("userData", join(configDirectory, "desktop"));
   mkdirSync(app.getPath("userData"), { recursive: true, mode: 0o700 });
   app.setPath("sessionData", sessionDirectory);
+  if (!app.requestSingleInstanceLock()) {
+    app.quit();
+    return;
+  }
 
   /**
    * Record desktop host failures separately from the backend's rotating log.
@@ -101,6 +111,12 @@ export async function startDesktop(options: { show?: boolean } = {}) {
     })();
     return shutdown;
   }
+  app.on("second-instance", () => {
+    if (!window || window.isDestroyed()) return;
+    if (window.isMinimized()) window.restore();
+    window.show();
+    window.focus();
+  });
   app.on("before-quit", (event) => {
     if (allowQuit) return;
     event.preventDefault();
@@ -164,9 +180,15 @@ export async function startDesktop(options: { show?: boolean } = {}) {
     });
     const origin = await backend.origin;
     if (shutdown) return;
+    const statePath = join(configDirectory, "window-state.json");
+    const saved = readWindowState(statePath);
+    const primary = screen.getPrimaryDisplay();
+    const areas = [
+      primary,
+      ...screen.getAllDisplays().filter((display) => display.id !== primary.id),
+    ].map((display) => display.workArea);
     window = new BrowserWindow({
-      width: 1200,
-      height: 800,
+      ...visibleBounds(saved?.bounds, areas),
       title: "Inventory Manager",
       show: false,
       webPreferences: {
@@ -175,19 +197,41 @@ export async function startDesktop(options: { show?: boolean } = {}) {
         sandbox: true,
       },
     });
-    // Block new windows and keep navigation on the local backend.
-    window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-    window.webContents.on("will-navigate", (event, url) => {
-      if (new URL(url).origin !== origin) event.preventDefault();
-    });
-    window.webContents.on("will-redirect", (event, url) => {
-      if (new URL(url).origin !== origin) event.preventDefault();
-    });
+    const applicationWindow = window;
+    configureWindow(window, origin, language, report);
+    let saveTimer: ReturnType<typeof setTimeout> | undefined;
+    /** Save normal bounds so maximized or minimized geometry cannot replace them. */
+    function saveWindow() {
+      clearTimeout(saveTimer);
+      if (applicationWindow.isDestroyed() || applicationWindow.isMinimized())
+        return;
+      try {
+        writeWindowState(statePath, {
+          version: 1,
+          bounds: applicationWindow.getNormalBounds(),
+          maximized: applicationWindow.isMaximized(),
+        });
+      } catch (error) {
+        report(error);
+      }
+    }
+    /** Coalesce native geometry events into one preference write. */
+    function scheduleSave() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveWindow, 250);
+    }
+    window.on("move", scheduleSave);
+    window.on("resize", scheduleSave);
+    window.on("maximize", scheduleSave);
+    window.on("unmaximize", scheduleSave);
+    window.on("close", saveWindow);
     window.once("closed", () => {
+      clearTimeout(saveTimer);
       window = undefined;
     });
     await window.loadURL(origin);
     starting = false;
+    if (saved?.maximized) window.maximize();
     if (options.show !== false) window.show();
     return { window, backend, origin, paths, stopped };
   } catch (error) {
