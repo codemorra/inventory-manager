@@ -1,0 +1,35 @@
+{
+  "appId": "io.github.codemorra.inventorymanager",
+  "productName": "Inventory Manager",
+  "directories": {
+    "app": "../build/.work/app",
+    "output": "../build/onefile"
+  },
+  "files": ["dist/**", "package.json", "LICENSE"],
+  "extraResources": [
+    {
+      "from": "../build/.work/runtime/backend",
+      "to": "app-runtime/backend"
+    },
+    {
+      "from": "../build/.work/runtime/backend/node_modules",
+      "to": "app-runtime/backend/node_modules"
+    },
+    {
+      "from": "../build/.work/runtime/frontend",
+      "to": "app-runtime/frontend"
+    },
+    { "from": "../build/.work/runtime/node", "to": "app-runtime/node" }
+  ],
+  "npmRebuild": false,
+  "artifactName": "Inventory-Manager-${version}-${os}-x64.${ext}",
+  "linux": {
+    "target": ["AppImage"],
+    "icon": "../assets/icons/app-logo.png",
+    "category": "Utility"
+  },
+  "win": {
+    "target": ["portable"],
+    "icon": "../assets/icons/app-logo.ico"
+  }
+}
