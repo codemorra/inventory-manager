@@ -1,32 +1,12 @@
-import { app, BrowserWindow } from "electron";
-import { APP_VERSION } from "./generated/app-version.js";
+import { app, dialog } from "electron";
+import { startDesktop } from "./application.js";
+import { desktopMessages } from "./messages.js";
 
-app.setName("Inventory Manager");
-app.on("window-all-closed", () => app.quit());
-process.once("SIGINT", () => app.quit());
-process.once("SIGTERM", () => app.quit());
-
-// Finish evaluating the ESM entry before waiting for Electron readiness.
-void app
-  .whenReady()
-  .then(async () => {
-    app.setAboutPanelOptions({
-      applicationName: "Inventory Manager",
-      applicationVersion: APP_VERSION,
-    });
-    const window = new BrowserWindow({
-      title: "Inventory Manager",
-      width: 1200,
-      height: 800,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        sandbox: true,
-      },
-    });
-    await window.loadURL("about:blank");
-  })
-  .catch((error: unknown) => {
-    console.error("Desktop startup failed:", error);
-    app.exit(1);
-  });
+// Let Electron finish evaluating the ESM entry before waiting for app readiness.
+void startDesktop().catch(async (error: unknown) => {
+  console.error("Desktop startup failed:", error);
+  await app.whenReady();
+  const text = desktopMessages(app.getLocale());
+  dialog.showErrorBox(text.startupTitle, text.startupFailed);
+  app.quit();
+});
