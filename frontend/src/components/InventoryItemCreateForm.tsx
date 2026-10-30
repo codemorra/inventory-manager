@@ -58,33 +58,40 @@ export function InventoryItemFieldInput({
   const inputId = `${idPrefix}-${field.id}`;
   if (field.field_type === "attachment")
     return (
-      <AttachmentFieldInput
-        id={inputId}
-        field={field}
-        value={Array.isArray(value) ? value : []}
-        disabled={disabled}
-        draft={attachments}
-        onChange={onChange}
-      />
+      <div className="min-w-0 md:col-span-2">
+        <AttachmentFieldInput
+          id={inputId}
+          field={field}
+          value={Array.isArray(value) ? value : []}
+          disabled={disabled}
+          draft={attachments}
+          onChange={onChange}
+        />
+      </div>
     );
   if (field.field_type === "url")
     return (
-      <UrlFieldInput
-        id={inputId}
-        label={field.name}
-        value={isUrlInput(value) ? value : { url: "", label: "" }}
-        required={field.is_required}
-        disabled={disabled}
-        onChange={onChange}
-      />
+      <div className="min-w-0 md:col-span-2">
+        <UrlFieldInput
+          id={inputId}
+          label={field.name}
+          value={isUrlInput(value) ? value : { url: "", label: "" }}
+          required={field.is_required}
+          disabled={disabled}
+          onChange={onChange}
+        />
+      </div>
     );
   if (field.field_type === "id")
     return (
-      <label className="block text-sm font-medium" htmlFor={inputId}>
+      <label
+        className="block min-w-0 text-sm font-medium text-foreground"
+        htmlFor={inputId}
+      >
         {field.name}
         <input
           id={inputId}
-          className="mt-1.5 w-full rounded-lg border border-shell bg-surface-muted px-3 py-2.5 text-muted"
+          className="mt-1.5 block min-h-10.5 w-full min-w-0 rounded-md border border-shell bg-surface-muted px-3 py-2.5 text-sm text-muted"
           readOnly
           value={typeof value === "string" ? value : ""}
           placeholder={t("items.automaticId")}
@@ -102,7 +109,7 @@ export function InventoryItemFieldInput({
     </>
   );
   const inputClassName =
-    "mt-1.5 w-full rounded-lg border border-shell bg-surface px-3 py-2.5 text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50";
+    "mt-1.5 block min-h-10.5 w-full min-w-0 rounded-md border border-shell bg-surface px-3 py-2.5 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50";
 
   // Required yes/no fields need an explicit answer rather than a checked-by-default input.
   if (field.field_type === "boolean" && field.is_required) {
@@ -125,20 +132,29 @@ export function InventoryItemFieldInput({
 
   if (field.field_type === "boolean" || field.field_type === "checkbox") {
     return (
-      <label
-        className="flex items-center gap-3 rounded-lg border border-shell bg-surface-muted px-3 py-2.5"
-        htmlFor={inputId}
-      >
-        <input
-          checked={value === true}
-          className="size-4 rounded border-shell accent-accent"
-          disabled={disabled}
-          id={inputId}
-          onChange={(event) => onChange(event.target.checked)}
-          type="checkbox"
-        />
-        <span className="text-sm font-medium">{fieldLabel}</span>
-      </label>
+      <div className="min-w-0">
+        <label
+          className="block text-sm font-medium text-foreground"
+          htmlFor={inputId}
+        >
+          {fieldLabel}
+        </label>
+        <label
+          className={`mt-1.5 flex min-h-10.5 items-center gap-3 rounded-md border border-shell bg-surface px-3 py-2.5 text-sm transition focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-accent/50"}`}
+        >
+          <input
+            checked={value === true}
+            className="size-4 shrink-0 rounded-sm border-shell accent-accent"
+            disabled={disabled}
+            id={inputId}
+            onChange={(event) => onChange(event.target.checked)}
+            type="checkbox"
+          />
+          <span aria-hidden="true" className="text-muted">
+            {t(value === true ? "common.values.yes" : "common.values.no")}
+          </span>
+        </label>
+      </div>
     );
   }
 
@@ -193,14 +209,16 @@ export function InventoryItemFieldInput({
 
   if (field.field_type === "duration")
     return (
-      <DurationFieldInput
-        id={inputId}
-        label={field.name}
-        required={field.is_required}
-        disabled={disabled}
-        value={isDurationInput(value) ? value : emptyDuration()}
-        onChange={onChange}
-      />
+      <div className="min-w-0 md:col-span-2">
+        <DurationFieldInput
+          id={inputId}
+          label={field.name}
+          required={field.is_required}
+          disabled={disabled}
+          value={isDurationInput(value) ? value : emptyDuration()}
+          onChange={onChange}
+        />
+      </div>
     );
 
   const inputType = {
@@ -213,7 +231,7 @@ export function InventoryItemFieldInput({
 
   return (
     <label
-      className="block text-sm font-medium text-foreground"
+      className="block min-w-0 text-sm font-medium text-foreground"
       htmlFor={inputId}
     >
       {fieldLabel}
@@ -337,7 +355,7 @@ export function InventoryItemCreateForm({
                 {t("items.requiredHint")}
               </p>
             )}
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div className="mt-5 grid items-start gap-x-5 gap-y-5 md:grid-cols-2">
               {fields.map((field) => (
                 <InventoryItemFieldInput
                   attachments={attachments.controller}

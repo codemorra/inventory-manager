@@ -73,7 +73,7 @@ export function AttachmentFieldInput({
 
   return (
     <div className="min-w-0">
-      <label htmlFor={id} className="block text-sm font-medium">
+      <label htmlFor={id} className="block text-sm font-medium text-foreground">
         {field.name}
         {field.is_required && (
           <span aria-hidden="true" className="ml-1 text-accent-text">
@@ -81,14 +81,34 @@ export function AttachmentFieldInput({
           </span>
         )}
       </label>
-      <ul className="mt-1 space-y-1">
+      <input
+        id={id}
+        aria-label={field.name}
+        type="file"
+        multiple
+        disabled={busy}
+        className="mt-1.5 block min-h-10.5 w-full min-w-0 cursor-pointer rounded-md border border-shell bg-surface text-sm text-muted outline-none transition file:mr-3 file:cursor-pointer file:border-0 file:border-r file:border-shell file:bg-surface-muted file:px-3 file:py-2.5 file:text-sm file:font-medium file:text-foreground hover:border-accent/50 focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
+        onChange={(event) => {
+          const files = Array.from(event.target.files ?? []);
+          event.target.value = "";
+          if (!files.length) return;
+          if (
+            warning === "show" &&
+            files.some((file) => file.size >= largeAttachmentWarningBytes)
+          ) {
+            setRemember(false);
+            setSelection(files);
+          } else upload(files);
+        }}
+      />
+      <ul className="mt-2 space-y-1 empty:hidden">
         {value.map((fileId) => {
           const file = state.files[fileId];
           const name = file?.filename ?? t("attachments.unavailable");
           return (
             <li
               key={fileId}
-              className="flex min-w-0 items-center gap-2 text-sm"
+              className="flex min-w-0 items-center gap-2 rounded-md border border-shell bg-surface-muted px-3 py-2 text-sm"
             >
               {file ? (
                 <a
@@ -126,26 +146,6 @@ export function AttachmentFieldInput({
           );
         })}
       </ul>
-      <input
-        id={id}
-        aria-label={field.name}
-        type="file"
-        multiple
-        disabled={busy}
-        className="mt-2 block max-w-full cursor-pointer text-xs text-muted file:mr-2 file:cursor-pointer file:rounded-sm file:border file:border-shell file:bg-surface file:px-2 file:py-1 file:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-        onChange={(event) => {
-          const files = Array.from(event.target.files ?? []);
-          event.target.value = "";
-          if (!files.length) return;
-          if (
-            warning === "show" &&
-            files.some((file) => file.size >= largeAttachmentWarningBytes)
-          ) {
-            setRemember(false);
-            setSelection(files);
-          } else upload(files);
-        }}
-      />
       {state.busy && state.target === id && (
         <p role="status" className="mt-1 text-xs text-muted">
           {t("attachments.uploading")}
