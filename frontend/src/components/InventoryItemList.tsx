@@ -798,6 +798,7 @@ export function InventoryItemList({
         }
         disabled={controlsDisabled}
       />
+      {/* Cell borders repaint reliably when previews change the heights of the separate tables. */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start overflow-hidden rounded-b-md border border-shell bg-surface">
         <div
           ref={dataViewport}
@@ -808,7 +809,7 @@ export function InventoryItemList({
         >
           <table
             ref={dataTable}
-            className={`table-fixed border-collapse text-left text-sm ${resizing ? "select-none" : ""}`}
+            className={`table-fixed border-separate border-spacing-0 text-left text-sm ${resizing ? "select-none" : ""}`}
             style={{ width: tableWidth }}
           >
             <caption className="sr-only">{t("table.sortHint")}</caption>
@@ -933,7 +934,7 @@ export function InventoryItemList({
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-shell">
+            <tbody className="[&>tr:not(:last-child)>td]:border-b [&>tr:not(:last-child)>td]:border-b-shell">
               {displayedItems.map((item) => {
                 const valuesByField = new Map(
                   item.values.map((value) => [value.field_id, value]),
@@ -1105,7 +1106,7 @@ export function InventoryItemList({
         <div className="self-stretch border-l border-shell bg-surface">
           <table
             aria-label={t("table.actions")}
-            className="border-collapse text-sm"
+            className="border-separate border-spacing-0 text-sm"
           >
             <thead className="bg-surface-muted text-xs font-semibold uppercase tracking-wider text-muted">
               <tr style={{ height: rowHeights.header }}>
@@ -1117,7 +1118,7 @@ export function InventoryItemList({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-shell">
+            <tbody className="[&>tr:not(:last-child)>td]:border-b [&>tr:not(:last-child)>td]:border-b-shell">
               {displayedItems.map((item) => (
                 <tr
                   key={item.id}
