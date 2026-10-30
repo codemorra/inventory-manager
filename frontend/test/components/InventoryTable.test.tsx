@@ -8,7 +8,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import { saveInventoryConfiguration } from "../../src/services/inventoryEditor";
 vi.mock("../../src/services/inventoryEditor", () => ({
@@ -55,7 +55,16 @@ function renderInventoryTable() {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <InventoryTable inventories={[inventory]} />
+        <Routes>
+          <Route
+            path="/"
+            element={<InventoryTable inventories={[inventory]} />}
+          />
+          <Route
+            path="/inventories/:id/items"
+            element={<p>Inventory opened</p>}
+          />
+        </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -68,6 +77,38 @@ afterEach(() => {
 });
 
 describe("InventoryTable", () => {
+  test.each(["description", "row"])(
+    "opens an inventory by clicking its %s",
+    async (target) => {
+      const user = userEvent.setup();
+      renderInventoryTable();
+      const description = screen.getByText("Cable collection");
+
+      await user.click(
+        target === "row" ? description.closest("tr")! : description,
+      );
+
+      expect(screen.getByText("Inventory opened")).toBeInTheDocument();
+    },
+  );
+
+  test("keeps keyboard navigation through the title link without a separate items action", async () => {
+    const user = userEvent.setup();
+    renderInventoryTable();
+    expect(
+      screen.queryByRole("link", { name: "Items" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Items" }),
+    ).not.toBeInTheDocument();
+
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Cables" })).toHaveFocus();
+    await user.keyboard("{Enter}");
+
+    expect(screen.getByText("Inventory opened")).toBeInTheDocument();
+  });
+
   // Test that inventory actions use the same enabled-only hover treatment as item actions.
   test("uses a distinct hover surface for inventory editing", () => {
     renderInventoryTable();

@@ -1,7 +1,7 @@
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useDeleteInventory } from "../hooks/useInventories";
 import { ApiError } from "../services/api";
@@ -21,6 +21,7 @@ interface InventoryTableProps {
 export function InventoryTable({ inventories }: InventoryTableProps) {
   const [deletingTarget, setDeletingTarget] = useState<Inventory | null>(null);
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [editingInventoryId, setEditingInventoryId] = useState<string | null>(
     null,
   );
@@ -76,12 +77,16 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
             <tbody className="divide-y divide-shell">
               {inventories.map((inventory) => (
                 <tr
-                  className="transition-colors hover:bg-surface-hover/60"
+                  className="cursor-pointer transition-colors hover:bg-surface-hover/60"
+                  onClick={(event) => {
+                    if ((event.target as Element).closest("a, button")) return;
+                    void navigate(`/inventories/${inventory.id}/items`);
+                  }}
                   key={inventory.id}
                 >
                   <td className="px-5 py-4 font-semibold text-foreground">
                     <Link
-                      className="transition-colors hover:text-accent-text"
+                      className="rounded-sm transition-colors hover:text-accent-text focus-visible:outline-2 focus-visible:outline-accent"
                       to={`/inventories/${inventory.id}/items`}
                     >
                       {inventory.name}
@@ -92,29 +97,52 @@ export function InventoryTable({ inventories }: InventoryTableProps) {
                   </td>
                   <td className="whitespace-nowrap px-5 py-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <Link
-                        className="rounded-lg bg-accent-soft px-3 py-2 font-medium text-accent-text transition hover:bg-control-hover"
-                        to={`/inventories/${inventory.id}/items`}
-                      >
-                        {t("inventories.actions.items")}
-                      </Link>
                       <button
-                        className="rounded-lg border border-shell px-3 py-2 font-medium transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex size-8 cursor-pointer items-center justify-center rounded-sm border border-shell transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label={t("common.actions.edit")}
+                        title={t("common.actions.edit")}
                         disabled={isMutating}
                         onClick={() => startEditing(inventory)}
                         type="button"
                       >
-                        {t("common.actions.edit")}
+                        <svg
+                          aria-hidden="true"
+                          className="size-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15Z" />
+                        </svg>
                       </button>
                       <button
-                        className="rounded-lg bg-danger-soft px-3 py-2 font-medium text-danger transition enabled:hover:bg-danger/25 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex size-8 cursor-pointer items-center justify-center rounded-sm bg-danger-soft text-danger transition enabled:hover:bg-danger/25 focus-visible:outline-2 focus-visible:outline-danger disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label={t(
+                          deleteInventory.isPending
+                            ? "common.actions.deleting"
+                            : "common.actions.delete",
+                        )}
+                        title={t("common.actions.delete")}
+                        aria-busy={deleteInventory.isPending || undefined}
                         disabled={isMutating}
                         onClick={() => handleDelete(inventory)}
                         type="button"
                       >
-                        {deleteInventory.isPending
-                          ? t("common.actions.deleting")
-                          : t("common.actions.delete")}
+                        <svg
+                          aria-hidden="true"
+                          className="size-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" />
+                        </svg>
                       </button>
                     </div>
                   </td>

@@ -12,14 +12,11 @@ export function InventoryOverviewPage() {
   return (
     <div>
       <div className="min-w-0 w-full">
-        <header className="mb-8">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent-text">
-            {t("app.name")}
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight text-heading sm:text-4xl">
+        <header className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight text-heading sm:text-3xl">
             {t("inventories.title")}
           </h1>
-          <p className="mt-3 max-w-2xl leading-relaxed text-muted">
+          <p className="mt-2 text-sm text-muted">
             {t("inventories.description")}
           </p>
         </header>
