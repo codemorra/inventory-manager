@@ -15,6 +15,8 @@ export function configureWindow(
   language: () => string,
   report: (error: unknown) => void,
 ) {
+  window.removeMenu();
+
   /**
    * Open ordinary web links outside the application.
    * @param url The requested navigation target.
