@@ -469,7 +469,7 @@
   },
   "archives": {
     "export": "Inventar exportieren",
-    "exportHelp": "Enthält alle gespeicherten Einträge und Anhänge, unabhängig von Tabellenansicht oder Filtern.",
+    "exportHelp": "Enthält alle gespeicherten Einträge und Anhänge.",
     "preparingExport": "Archiv wird erstellt…",
     "download": "ZIP herunterladen",
     "exportFailed": "Das Archiv konnte nicht erstellt werden. Versuche es erneut.",
@@ -479,7 +479,7 @@
     "exportExpired": "Dieser Export ist abgelaufen. Erstelle ihn erneut.",
     "saveFirst": "Speichere oder verwirf deine Änderungen, bevor du ein Inventar importierst oder exportierst.",
     "import": "Inventar importieren",
-    "importHelp": "Wähle ein Inventararchiv im ZIP-Format. Der Import erstellt ein neues Inventar mit seinen Anhängen.",
+    "importHelp": "Wähle ein Inventararchiv im ZIP-Format.",
     "archiveFile": "Archivdatei (.zip)",
     "checking": "Archiv wird kopiert und geprüft…",
     "checkFailed": "Das Archiv konnte nicht geprüft werden. Wähle die Datei erneut aus, um es noch einmal zu versuchen.",
@@ -607,7 +607,6 @@
       "daily": "Täglich",
       "weekly": "Wöchentlich"
     },
-    "weeklyHelp": "Ein automatisches Backup pro Kalenderwoche, Montag bis Sonntag.",
     "retention": "Anzahl aufzubewahrender automatischer Backups",
     "retentionHelp": "Die Anzahl gilt nur für automatische Backups. Ältere werden nach einer erfolgreichen neuen Sicherung entfernt.",
     "scheduleLoading": "Backup-Einstellungen werden geladen…",

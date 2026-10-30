@@ -469,7 +469,7 @@
   },
   "archives": {
     "export": "Export inventory",
-    "exportHelp": "Includes all saved items and attached files, regardless of the current table view or filters.",
+    "exportHelp": "Includes all saved items and attached files.",
     "preparingExport": "Preparing archive…",
     "download": "Download ZIP",
     "exportFailed": "The archive could not be prepared. Please try again.",
@@ -479,7 +479,7 @@
     "exportExpired": "This export has expired. Prepare it again.",
     "saveFirst": "Save or discard your changes before importing or exporting an inventory.",
     "import": "Import inventory",
-    "importHelp": "Choose an inventory ZIP archive. Import creates a new inventory with its attached files.",
+    "importHelp": "Choose an inventory ZIP archive.",
     "archiveFile": "Archive file (.zip)",
     "checking": "Copying and checking archive…",
     "checkFailed": "The archive could not be checked. Choose the file again to retry.",
@@ -607,7 +607,6 @@
       "daily": "Daily",
       "weekly": "Weekly"
     },
-    "weeklyHelp": "One automatic backup per calendar week, Monday to Sunday.",
     "retention": "Automatic backups to keep",
     "retentionHelp": "This number applies only to automatic backups. Older ones are removed after a successful new backup.",
     "scheduleLoading": "Loading backup settings…",
