@@ -306,7 +306,9 @@ export function InventoryItemCreateForm({
   return (
     <>
       <button
-        className={`inline-flex cursor-pointer items-center justify-center gap-2 bg-accent text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50 ${compact ? "rounded-sm px-2.5 py-1.5" : "rounded-lg px-4 py-2.5"}`}
+        className={`inline-flex cursor-pointer items-center justify-center gap-2 bg-accent text-sm font-semibold text-surface transition enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50 ${compact ? "size-8 shrink-0 rounded-sm" : "rounded-lg px-4 py-2.5"}`}
+        aria-label={t("items.actions.new")}
+        title={t("items.actions.new")}
         disabled={disabled || fields.length === 0}
         onClick={() => {
           attachments.controller.begin();
@@ -317,7 +319,7 @@ export function InventoryItemCreateForm({
         <span aria-hidden="true" className="text-lg leading-none">
           +
         </span>
-        {t("items.actions.new")}
+        {!compact && t("items.actions.new")}
       </button>
 
       {fields.length === 0 && (

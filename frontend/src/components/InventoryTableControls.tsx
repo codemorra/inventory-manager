@@ -37,6 +37,47 @@ interface InventoryTableControlsProps {
 }
 
 /**
+ * Render an accent-colored symbol for a table view option.
+ * @param kind The display option represented by the symbol.
+ * @returns A decorative icon matching the sidebar menu style.
+ */
+function ViewOptionIcon({
+  kind,
+}: {
+  kind: "wrap" | "previews" | "columns" | "widths";
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="size-4 shrink-0 text-accent-text"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      viewBox="0 0 24 24"
+    >
+      {kind === "wrap" ? (
+        <path d="M4 6h16M4 10h12a4 4 0 0 1 0 8h-5m3-3-3 3 3 3M4 14h3" />
+      ) : kind === "previews" ? (
+        <>
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="8" cy="8" r="1" />
+          <path d="m3 17 5-5 4 4 4-6 5 7" />
+        </>
+      ) : kind === "columns" ? (
+        <>
+          <rect x="3" y="4" width="18" height="16" rx="1" />
+          <path d="M9 4v16m6-16v16" />
+        </>
+      ) : (
+        <path d="M3 4v16M21 4v16M6 12h12m-9-3-3 3 3 3m6-6 3 3-3 3" />
+      )}
+    </svg>
+  );
+}
+
+/**
  * Render search and filters on the left, with the count, view options, and actions on the right.
  * @param props The item count, actions, text wrapping, and visible columns.
  * @returns A compact action row with a keyboard-accessible View dropdown.
@@ -303,11 +344,13 @@ export function InventoryTableControls({
         <button
           ref={trigger}
           type="button"
+          aria-label={t("table.menu.view")}
+          title={t("table.menu.view")}
           aria-haspopup="menu"
           aria-expanded={expanded}
           aria-controls={expanded ? `${id}-menu` : undefined}
           disabled={!available}
-          className={`cursor-pointer rounded-sm px-2.5 py-1.5 text-sm font-medium transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${expanded ? "bg-control-hover text-heading" : ""}`}
+          className={`flex cursor-pointer items-center justify-center rounded-sm px-2.5 py-1.5 text-sm font-medium transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${expanded ? "bg-control-hover text-heading" : ""}`}
           onKeyDown={handleKeyDown}
           onClick={() => {
             focusLast.current = false;
@@ -316,6 +359,12 @@ export function InventoryTableControls({
         >
           {t("table.menu.view")}
         </button>
+        {actions && (
+          <span
+            aria-hidden="true"
+            className="h-5 shrink-0 border-l border-shell"
+          />
+        )}
         {actions}
       </div>
       {expanded &&
@@ -335,7 +384,7 @@ export function InventoryTableControls({
                   role="menuitemcheckbox"
                   aria-checked={wrapText}
                   tabIndex={-1}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-left outline-none hover:bg-control-hover focus:bg-control-hover"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover"
                   onPointerEnter={(event) => {
                     if (event.pointerType === "mouse") setColumnsOpen(false);
                   }}
@@ -344,10 +393,16 @@ export function InventoryTableControls({
                     close();
                   }}
                 >
-                  <span aria-hidden="true" className="w-4 text-accent-text">
+                  <span
+                    aria-hidden="true"
+                    className="w-4 shrink-0 text-accent-text"
+                  >
                     {wrapText ? "✓" : ""}
                   </span>
-                  {t("table.menu.wrapText")}
+                  <ViewOptionIcon kind="wrap" />
+                  <span className="min-w-0 wrap-break-word">
+                    {t("table.menu.wrapText")}
+                  </span>
                 </button>
               )}
               {onAttachmentPreviewsChange && (
@@ -356,7 +411,7 @@ export function InventoryTableControls({
                   role="menuitemcheckbox"
                   aria-checked={attachmentPreviews}
                   tabIndex={-1}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-left outline-none hover:bg-control-hover focus:bg-control-hover"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover"
                   onPointerEnter={(event) => {
                     if (event.pointerType === "mouse") setColumnsOpen(false);
                   }}
@@ -365,15 +420,50 @@ export function InventoryTableControls({
                     close();
                   }}
                 >
-                  <span aria-hidden="true" className="w-4 text-accent-text">
+                  <span
+                    aria-hidden="true"
+                    className="w-4 shrink-0 text-accent-text"
+                  >
                     {attachmentPreviews ? "✓" : ""}
                   </span>
-                  {t("attachments.showPreviews")}
+                  <ViewOptionIcon kind="previews" />
+                  <span className="min-w-0 wrap-break-word">
+                    {t("attachments.showPreviews")}
+                  </span>
+                </button>
+              )}
+              {onAutomaticWidths && (
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={allColumnsAutomatic}
+                  tabIndex={-1}
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  onPointerEnter={(event) => {
+                    if (event.pointerType === "mouse") setColumnsOpen(false);
+                  }}
+                  onClick={() => {
+                    onAutomaticWidths();
+                    close();
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="w-4 shrink-0 text-accent-text"
+                  >
+                    {allColumnsAutomatic ? "✓" : ""}
+                  </span>
+                  <ViewOptionIcon kind="widths" />
+                  <span className="min-w-0 wrap-break-word">
+                    {t("table.menu.automaticWidths")}
+                  </span>
                 </button>
               )}
               {hasColumns && (
                 <>
-                  {onWrapTextChange && (
+                  {(onWrapTextChange ||
+                    onAttachmentPreviewsChange ||
+                    onAutomaticWidths) && (
                     <div
                       role="separator"
                       className="my-1 border-t border-shell"
@@ -389,13 +479,19 @@ export function InventoryTableControls({
                       columnsExpanded ? `${id}-columns` : undefined
                     }
                     tabIndex={-1}
-                    className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-sm px-3 py-2 text-left outline-none hover:bg-control-hover focus:bg-control-hover"
+                    className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover"
                     onPointerEnter={(event) => {
                       if (event.pointerType === "mouse") openColumns(false);
                     }}
                     onClick={() => openColumns(true)}
                   >
-                    {t("table.menu.columns")}
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span aria-hidden="true" className="w-4 shrink-0" />
+                      <ViewOptionIcon kind="columns" />
+                      <span className="min-w-0 wrap-break-word">
+                        {t("table.menu.columns")}
+                      </span>
+                    </span>
                     <svg
                       aria-hidden="true"
                       className="size-3.5 shrink-0"
@@ -408,30 +504,6 @@ export function InventoryTableControls({
                     </svg>
                   </button>
                 </>
-              )}
-              {onAutomaticWidths && (
-                <button
-                  type="button"
-                  role="menuitemcheckbox"
-                  aria-checked={allColumnsAutomatic}
-                  tabIndex={-1}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-left outline-none enabled:hover:bg-control-hover focus:bg-control-hover disabled:cursor-not-allowed disabled:opacity-50"
-                  onPointerEnter={(event) => {
-                    if (event.pointerType === "mouse") setColumnsOpen(false);
-                  }}
-                  onClick={() => {
-                    onAutomaticWidths();
-                    close();
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="w-4 shrink-0 text-accent-text"
-                  >
-                    {allColumnsAutomatic ? "✓" : ""}
-                  </span>
-                  {t("table.menu.automaticWidths")}
-                </button>
               )}
             </div>
             {columnsExpanded && (
@@ -456,7 +528,7 @@ export function InventoryTableControls({
                         : undefined
                     }
                     tabIndex={-1}
-                    className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-left outline-none enabled:hover:bg-control-hover focus:bg-control-hover disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
                     onClick={() => onToggleColumn?.(column.id)}
                   >
                     <span
