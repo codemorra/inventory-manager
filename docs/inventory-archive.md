@@ -1,6 +1,6 @@
 # Inventory archive format
 
-Format version 1 is a ZIP containing one UTF-8 `inventory.json` at the root and zero or more regular file entries named `attachments/<key>`. ZIP64 is used automatically when needed. Attachment bodies are original managed copies, not previews or base64 strings. The sidebar inventory context menu exports saved inventory archives; the import icon beside New inventory opens archive checking, preview and confirmation.
+Format version 1 is a ZIP containing one UTF-8 `inventory.json` at the root and zero or more regular file entries named `attachments/<key>`. ZIP64 is used automatically when needed. Attachment bodies are original managed copies, not previews or base64 strings. The sidebar inventory context menu exports saved inventory archives; **New > Import inventory** opens archive checking, preview and confirmation.
 
 ## Manifest
 

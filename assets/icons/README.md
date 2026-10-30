@@ -2,9 +2,9 @@
 
 `app-logo.svg` is the shared source artwork for Inventory Manager. The 512x512 `app-logo.png` and multi-resolution `app-logo.ico` are derived from it for desktop builds.
 
-The desktop runtime also uses the PNG as its Linux window icon. Runtime preparation copies it into `icons/`, which is included and verified in both packaged build formats.
+The Linux desktop window uses the PNG at runtime; both build formats include it. The frontend uses the SVG with the selected accent color applied to its background.
 
-The frontend uses the SVG directly and applies the selected accent color to its background when rendering. Keep the Inkscape object label `background` so the color mapping continues to work when editing the artwork.
+Keep the SVG’s Inkscape object label `background` so frontend color mapping continues to work after artwork changes.
 
 After changing the SVG, regenerate the desktop icons with Inkscape and ImageMagick:
 
