@@ -7,6 +7,7 @@ import {
   updateInventoryItem,
 } from "../services/inventoryItems";
 import type {
+  InventoryItem,
   InventoryItemInput,
   UpdateInventoryItemInput,
 } from "../types/inventoryItem";
@@ -60,17 +61,20 @@ export function useCreateInventoryItem() {
   });
 }
 
-/** Replace an inventory item's values and refresh its item list. */
+/** Replace an inventory item's values and cache the saved item and revision. */
 export function useUpdateInventoryItem() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ inventoryId, itemId, data }: UpdateInventoryItemVariables) =>
       updateInventoryItem(inventoryId, itemId, data),
-    onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({
-        queryKey: getInventoryItemsQueryKey(variables.inventoryId),
-      });
+    onSuccess: async (saved, variables) => {
+      const queryKey = getInventoryItemsQueryKey(variables.inventoryId);
+      // An older in-flight list response must not overwrite the saved revision.
+      await queryClient.cancelQueries({ queryKey, exact: true });
+      queryClient.setQueryData<InventoryItem[]>(queryKey, (items) =>
+        items?.map((item) => (item.id === saved.id ? saved : item)),
+      );
     },
   });
 }

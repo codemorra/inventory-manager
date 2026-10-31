@@ -39,7 +39,6 @@ test("tracks source header and item heights when wrapping or resizing changes th
   const ref = { current: table };
   const items: InventoryItem[] = [];
   const { result } = renderHook(() => useTableRowHeights(ref, items));
-  act(() => onResize());
   expect(result.current).toEqual({
     header: 41,
     rows: { first: 100, second: 52 },

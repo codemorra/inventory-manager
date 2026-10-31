@@ -235,7 +235,10 @@ export function InventoryItemList({
   const [availableWidth, setAvailableWidth] = useState(0);
   useLayoutEffect(() => {
     const element = dataViewport.current;
-    if (!element || typeof ResizeObserver === "undefined") return;
+    if (!element) return;
+    // Fill the viewport before the first paint rather than waiting for observer delivery.
+    setAvailableWidth(element.clientWidth);
+    if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(([entry]) => {
       if (entry) setAvailableWidth(entry.contentRect.width);
     });
@@ -396,16 +399,16 @@ export function InventoryItemList({
   } | null>(null);
   const deleteItem = useDeleteInventoryItem();
   const reloadItems = useReloadInventoryItems();
-  const isMutating =
+  const isBlockingMutation =
     tableEdit.loading ||
     tableEdit.saving ||
     updateItem.isPending ||
     deleteItem.isPending ||
-    checkboxUpdate.isPending ||
     reloadItems.isPending;
+  const isMutating = isBlockingMutation || checkboxUpdate.isPending;
   const controlsDisabled =
     tableEdit.active ||
-    isMutating ||
+    isBlockingMutation ||
     editingItem !== null ||
     deletingTarget !== null ||
     resizing !== null;
@@ -517,7 +520,7 @@ export function InventoryItemList({
       itemId: item.id,
       fieldId: field.id,
     });
-    // Block rapid consecutive toggles until persistence and the item query refresh have both finished.
+    // Block rapid consecutive toggles until the saved item and its revision reach the cache.
     checkboxInFlight.current = true;
     checkboxUpdate.mutate(
       {
@@ -761,10 +764,11 @@ export function InventoryItemList({
                   )}
                   disabled={
                     controlsDisabled ||
+                    checkboxUpdate.isPending ||
                     items.length === 0 ||
                     !fields.some((field) => field.field_type !== "id")
                   }
-                  className="flex size-8 cursor-pointer items-center justify-center rounded-sm text-muted transition enabled:hover:bg-control-hover enabled:hover:text-accent-text focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`flex size-8 cursor-pointer items-center justify-center rounded-sm text-muted transition enabled:hover:bg-control-hover enabled:hover:text-accent-text focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
                   onClick={() => {
                     setColumnMenu(null);
                     beginTableEditing();
@@ -1011,7 +1015,7 @@ export function InventoryItemList({
                             <div className="min-h-6">
                               <input
                                 type="checkbox"
-                                className="size-4 cursor-pointer accent-accent transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+                                className={`size-4 cursor-pointer accent-accent transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
                                 aria-label={t("items.checkbox.toggle", {
                                   field: field.name,
                                 })}
@@ -1136,7 +1140,7 @@ export function InventoryItemList({
                   >
                     <div className="flex justify-end gap-2 whitespace-nowrap">
                       <button
-                        className="flex size-8 cursor-pointer items-center justify-center rounded-sm border border-shell transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+                        className={`flex size-8 cursor-pointer items-center justify-center rounded-sm border border-shell transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
                         aria-label={t("common.actions.edit")}
                         title={t("common.actions.edit")}
                         aria-describedby={`${tableId}-${item.id}`}
@@ -1158,7 +1162,7 @@ export function InventoryItemList({
                         </svg>
                       </button>
                       <button
-                        className="flex size-8 cursor-pointer items-center justify-center rounded-sm bg-danger-soft text-danger transition enabled:hover:bg-danger/25 focus-visible:outline-2 focus-visible:outline-danger disabled:cursor-not-allowed disabled:opacity-50"
+                        className={`flex size-8 cursor-pointer items-center justify-center rounded-sm bg-danger-soft text-danger transition enabled:hover:bg-danger/25 focus-visible:outline-2 focus-visible:outline-danger disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
                         aria-label={t(
                           deleteItem.isPending
                             ? "common.actions.deleting"
