@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useState } from "react";
@@ -124,7 +124,10 @@ describe("InventoryItemsPage", () => {
       },
     ]);
     const { client } = renderInventoryItemsPage();
-    await user.click(await screen.findByRole("button", { name: "Edit table" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Edit table" })).toBeEnabled(),
+    );
+    await user.click(screen.getByRole("button", { name: "Edit table" }));
     const input = await screen.findByRole("textbox", { name: "Title" });
     await user.clear(input);
     await user.type(input, "Local draft");
@@ -184,7 +187,10 @@ describe("InventoryItemsPage", () => {
       },
     ]);
     renderInventoryItemsPage();
-    await user.click(await screen.findByRole("button", { name: "Edit table" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Edit table" })).toBeEnabled(),
+    );
+    await user.click(screen.getByRole("button", { name: "Edit table" }));
     expect(await screen.findByRole("textbox", { name: "Title" })).toHaveValue(
       "Game",
     );
@@ -214,7 +220,9 @@ describe("InventoryItemsPage", () => {
     mockedGetInventoryFields.mockResolvedValue(fields);
     mockedGetInventoryItems.mockResolvedValue([]);
     renderInventoryItemsPage();
-    await screen.findByRole("button", { name: "New item" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "New item" })).toBeEnabled(),
+    );
     const header = screen
       .getByRole("heading", { name: "Games" })
       .closest("header")!;
@@ -222,9 +230,13 @@ describe("InventoryItemsPage", () => {
       name: "Inventory settings",
     });
     expect(settings).toHaveAttribute("title", "Inventory settings");
-    expect(
-      screen.queryByRole("group", { name: "Inventory table controls" }),
-    ).not.toBeInTheDocument();
+    const controls = screen.getByRole("group", {
+      name: "Inventory table controls",
+    });
+    expect(within(controls).getByRole("searchbox")).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "Filters" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "View" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "Edit table" })).toBeDisabled();
     await user.click(settings);
     expect(
       screen.getByRole("dialog", { name: "Edit inventory" }),
@@ -240,8 +252,8 @@ describe("InventoryItemsPage", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
-  // Test that an empty table retains its context and creation action without a toolbar.
-  test("shows the inventory name and description without an empty table toolbar", async () => {
+  // Test that empty inventories show the toolbar and enable only item creation once fields exist.
+  test("shows a disabled empty table toolbar while allowing item creation", async () => {
     vi.mocked(getInventories).mockResolvedValueOnce([
       {
         configuration_revision: 1,
@@ -265,9 +277,13 @@ describe("InventoryItemsPage", () => {
       .closest("header")!;
     expect(header.querySelectorAll("p")).toHaveLength(1);
     expect(within(header).queryByText("Inventories")).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("group", { name: "Inventory table controls" }),
-    ).not.toBeInTheDocument();
+    const controls = screen.getByRole("group", {
+      name: "Inventory table controls",
+    });
+    expect(within(controls).getByRole("searchbox")).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "Filters" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "View" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "Edit table" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "New item" })).toBeEnabled();
     expect(
       screen.getByRole("columnheader", { name: "Title" }),
@@ -321,9 +337,14 @@ describe("InventoryItemsPage", () => {
     mockedGetInventoryItems.mockResolvedValue([]);
     renderInventoryItemsPage();
     await screen.findByRole("heading", { name: "No fields configured" });
-    expect(
-      screen.queryByRole("group", { name: "Inventory table controls" }),
-    ).not.toBeInTheDocument();
+    const controls = screen.getByRole("group", {
+      name: "Inventory table controls",
+    });
+    expect(within(controls).getByRole("searchbox")).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "Filters" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "View" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "Edit table" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "New item" })).toBeDisabled();
     await user.click(
       screen.getByRole("button", { name: "Inventory settings" }),
     );
@@ -347,7 +368,7 @@ describe("InventoryItemsPage", () => {
 
     renderInventoryItemsPage();
 
-    expect(screen.getByRole("status")).toHaveTextContent("Loading inventory…");
+    expect(screen.getByText("Loading inventory…")).toHaveAttribute("role", "status");
   });
 
   // Test that an API error message is displayed when the item request fails
@@ -387,7 +408,9 @@ describe("InventoryItemsPage", () => {
     renderInventoryItemsPage();
 
     expect(await screen.findByText("No items yet.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "New item" })).toBeEnabled();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "New item" })).toBeEnabled(),
+    );
   });
 
   // Test that returned inventory items are displayed correctly in the field table

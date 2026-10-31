@@ -83,6 +83,24 @@ export function InventoryItemsPage() {
           )}
         </header>
 
+        {!hasTable && (
+          <div className="mb-4 rounded-md border-b border-shell">
+            <InventoryItemList
+              inventoryId={inventoryId}
+              fields={[]}
+              items={[]}
+              actions={
+                <InventoryItemCreateForm
+                  inventoryId={inventoryId}
+                  fields={[]}
+                  compact
+                  disabled
+                />
+              }
+            />
+          </div>
+        )}
+
         {isPending && !tableEditing && (
           <p
             className="rounded-xl border border-shell bg-surface p-5 text-muted shadow-soft"
