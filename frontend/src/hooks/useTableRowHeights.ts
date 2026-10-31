@@ -52,9 +52,8 @@ export function useTableRowHeights(
         : new ResizeObserver(measureRows);
     for (const row of Array.from(element.querySelectorAll("tr")))
       observer?.observe(row);
-    const frame = requestAnimationFrame(measureRows);
+    measureRows();
     return () => {
-      cancelAnimationFrame(frame);
       observer?.disconnect();
     };
   }, [table, items]);

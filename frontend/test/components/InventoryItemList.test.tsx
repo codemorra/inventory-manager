@@ -569,6 +569,13 @@ test("locks table actions while a checkbox update is pending", async () => {
   expect(input).toHaveAttribute("aria-busy", "true");
   expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Edit table" })).toBeDisabled();
+  expect(screen.getByRole("searchbox")).toBeEnabled();
+  expect(screen.getByRole("button", { name: "View" })).toBeEnabled();
+  expect(input).not.toHaveClass("disabled:opacity-50");
+  expect(screen.getByRole("button", { name: "Edit" })).not.toHaveClass(
+    "disabled:opacity-50",
+  );
   await user.click(input);
   expect(mockedUpdateInventoryItem).toHaveBeenCalledTimes(1);
   await act(async () => finish(items[0]));
@@ -1047,6 +1054,17 @@ describe("InventoryItemList", () => {
     ).toBeDisabled();
     await user.keyboard("{Escape}");
     expect(title).toHaveFocus();
+  });
+
+  test("fills an empty table before ResizeObserver delivers its first measurement", () => {
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(
+      function (this: HTMLElement) {
+        return this.getAttribute("role") === "region" ? 960 : 0;
+      },
+    );
+    renderInventoryItemList([]);
+    const viewport = screen.getByRole("region", { name: "Inventory items" });
+    expect(within(viewport).getByRole("table")).toHaveStyle({ width: "960px" });
   });
 
   // Test runtime surplus never writes preferences, including when manual and Auto columns coexist.

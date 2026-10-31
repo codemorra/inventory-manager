@@ -1,4 +1,4 @@
-import { act, cleanup, renderHook } from "@testing-library/react";
+import { cleanup, renderHook } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { useAutomaticColumnWidths } from "../../src/hooks/useAutomaticColumnWidths";
 import type { InventoryField } from "../../src/types/inventoryField";
@@ -11,11 +11,6 @@ afterEach(() => {
 
 // Test the real label measurement overrides a smaller ancestor-font estimate for a short numeric title.
 test("fits a short heading using its actual label rather than the table font", () => {
-  let frame: FrameRequestCallback | undefined;
-  vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
-    frame = callback;
-    return 1;
-  });
   vi.stubGlobal("CanvasRenderingContext2D", undefined);
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
     function (this: HTMLElement) {
@@ -45,7 +40,6 @@ test("fits a short heading using its actual label rather than the table font", (
   const { result } = renderHook(() =>
     useAutomaticColumnWidths(columns, ref, "numbers"),
   );
-  act(() => frame?.(0));
   expect(result.current.numbers).toBeGreaterThanOrEqual(29 + 40 + 4);
   expect(
     document.querySelector('span[aria-hidden="true"]'),
