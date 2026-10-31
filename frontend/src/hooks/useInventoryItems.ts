@@ -37,13 +37,18 @@ function getInventoryItemsQueryKey(inventoryId: string) {
   return ["inventories", inventoryId, "items"];
 }
 
-/** Retrieve active items for an inventory. */
-export function useInventoryItems(inventoryId: string) {
-  return useQuery({
+/** Share the same inventory item cache between navigation and rendering. */
+export function inventoryItemsQueryOptions(inventoryId: string) {
+  return {
     queryKey: getInventoryItemsQueryKey(inventoryId),
     queryFn: () => getInventoryItems(inventoryId),
     enabled: Boolean(inventoryId),
-  });
+  };
+}
+
+/** Retrieve active items for an inventory. */
+export function useInventoryItems(inventoryId: string) {
+  return useQuery(inventoryItemsQueryOptions(inventoryId));
 }
 
 /** Create an inventory item and refresh its item list. */
