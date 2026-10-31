@@ -6,7 +6,6 @@ import { TableEditSessionContext } from "../components/tableEditSession";
 import { InventoryItemCreateForm } from "../components/InventoryItemCreateForm";
 import { InventoryItemList } from "../components/InventoryItemList";
 import { InventoryEditDialog } from "../components/InventoryEditDialog";
-import { InventoryTableControls } from "../components/InventoryTableControls";
 import { useInventoryFields } from "../hooks/useInventoryFields";
 import { useInventoryItems } from "../hooks/useInventoryItems";
 import { useInventories } from "../hooks/useInventories";
@@ -83,12 +82,6 @@ export function InventoryItemsPage() {
             </p>
           )}
         </header>
-
-        {!hasTable && (
-          <div className="mb-4 rounded-md border-b border-shell">
-            <InventoryTableControls />
-          </div>
-        )}
 
         {isPending && !tableEditing && (
           <p
