@@ -60,13 +60,18 @@ function getInventoryFieldsQueryKey(inventoryId: string) {
   return ["inventories", inventoryId, "fields"];
 }
 
-/** Retrieve active fields for an inventory. */
-export function useInventoryFields(inventoryId: string) {
-  return useQuery({
+/** Share the same inventory field cache between navigation and rendering. */
+export function inventoryFieldsQueryOptions(inventoryId: string) {
+  return {
     queryKey: getInventoryFieldsQueryKey(inventoryId),
     queryFn: () => getInventoryFields(inventoryId),
     enabled: Boolean(inventoryId),
-  });
+  };
+}
+
+/** Retrieve active fields for an inventory. */
+export function useInventoryFields(inventoryId: string) {
+  return useQuery(inventoryFieldsQueryOptions(inventoryId));
 }
 
 /** Create an inventory field and refresh its field list. */

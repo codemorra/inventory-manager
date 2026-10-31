@@ -40,10 +40,16 @@ const router = createBrowserRouter([
       },
       {
         path: "/inventories/:inventoryId/items",
-        lazy: async () => ({
-          Component: (await import("./pages/InventoryItemsPage"))
-            .InventoryItemsPage,
-        }),
+        lazy: async () => {
+          const [page, loader] = await Promise.all([
+            import("./pages/InventoryItemsPage"),
+            import("./loaders/inventoryItems"),
+          ]);
+          return {
+            Component: page.InventoryItemsPage,
+            loader: loader.inventoryItemsLoader,
+          };
+        },
       },
       {
         path: "/inventories/:inventoryId/fields",
