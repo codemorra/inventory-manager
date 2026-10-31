@@ -115,6 +115,7 @@ export function InventoryItemFieldInput({
   if (field.field_type === "boolean" && field.is_required) {
     return (
       <ChoiceSelect
+        portal
         id={inputId}
         label={field.name}
         required
@@ -176,6 +177,7 @@ export function InventoryItemFieldInput({
       <div className="min-w-0">
         {field.field_type === "multiselect" ? (
           <ChoiceSelect
+            portal
             id={inputId}
             label={field.name}
             describedBy={`${inputId}-help`}
@@ -189,6 +191,7 @@ export function InventoryItemFieldInput({
           />
         ) : (
           <ChoiceSelect
+            portal
             id={inputId}
             label={field.name}
             required={field.is_required}
