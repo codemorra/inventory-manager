@@ -1016,10 +1016,12 @@ export function InventoryItemList({
                             <div className="min-h-6">
                               <input
                                 type="checkbox"
-                                className={`size-4 cursor-pointer accent-accent transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
+                                className="size-4 cursor-pointer accent-accent transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-disabled:cursor-not-allowed disabled:cursor-not-allowed disabled:opacity-50"
                                 aria-label={t("items.checkbox.toggle", {
                                   field: field.name,
                                 })}
+                                // The change handler rejects concurrent writes without changing native appearance.
+                                aria-disabled={checkboxUpdate.isPending || undefined}
                                 aria-busy={
                                   (checkboxUpdate.isPending &&
                                     checkboxTarget?.itemId === item.id &&
@@ -1037,7 +1039,7 @@ export function InventoryItemList({
                                       true
                                 }
                                 disabled={
-                                  isMutating ||
+                                  isBlockingMutation ||
                                   checkboxConflict ||
                                   editingItemId !== null ||
                                   deletingTarget !== null

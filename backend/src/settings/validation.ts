@@ -35,13 +35,21 @@ export type StorageLocations = z.output<typeof storageLocationsSchema>;
 export const preferenceSchema = z.strictObject({
   language: z.enum(["system", "de", "en"]),
   theme: z.enum(["system", "light", "dark"]),
-  accent: z.enum(["brand", "cyan", "blue", "purple", "orange", "slate"]),
+  accent: z.enum([
+    "turquoise",
+    "cyan",
+    "blue",
+    "purple",
+    "orange",
+    "green",
+    "slate",
+  ]),
   attachmentWarnings: z.enum(["show", "hide"]),
 });
 export const defaultPreferences: z.output<typeof preferenceSchema> = {
   language: "system",
   theme: "system",
-  accent: "brand",
+  accent: "turquoise",
   attachmentWarnings: "show",
 };
 export const revisionSchema = z
@@ -68,13 +76,15 @@ export const settingsDocumentSchema = z.strictObject({
   preferences: preferenceSchema
     .partial()
     .extend({
-      // Read retired accents as the default; public writes remain strict.
+      // Normalize the previous name and retired accents when reading; public writes remain strict.
       accent: z
         .preprocess(
           (value) =>
-            value === "rose" || value === "green" || value === "teal"
-              ? defaultPreferences.accent
-              : value,
+            value === "brand"
+              ? "turquoise"
+              : value === "rose" || value === "teal"
+                ? defaultPreferences.accent
+                : value,
           preferenceSchema.shape.accent,
         )
         .optional(),

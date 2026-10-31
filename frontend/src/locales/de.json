@@ -6,11 +6,12 @@
     "loading": "Wird geladen…",
     "accent": {
       "label": "Akzentfarbe",
-      "brand": "Grün",
+      "turquoise": "Türkis",
       "blue": "Blau",
       "purple": "Violett",
       "orange": "Orange",
       "cyan": "Cyan",
+      "green": "Grün",
       "slate": "Graphit"
     },
     "actions": {

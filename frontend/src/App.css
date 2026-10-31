@@ -96,8 +96,8 @@
     0 8px 18px rgb(0 0 0 / 22%), 0 24px 56px rgb(0 0 0 / 38%);
 }
 
-:root[data-accent="brand"],
-.accent-swatch[data-accent="brand"] {
+:root[data-accent="turquoise"],
+.accent-swatch[data-accent="turquoise"] {
   --app-logo-background: #0f766e;
   --app-accent: #0f766e;
   --app-accent-hover: #0b5f59;
@@ -136,6 +136,14 @@
   --app-accent-soft: #f5dcc6;
 }
 
+:root[data-accent="green"],
+.accent-swatch[data-accent="green"] {
+  --app-logo-background: #237a35;
+  --app-accent: #237a35;
+  --app-accent-hover: #185e28;
+  --app-accent-soft: #cfe9d4;
+}
+
 :root[data-accent="slate"],
 .accent-swatch[data-accent="slate"] {
   --app-logo-background: #526174;
@@ -144,8 +152,8 @@
   --app-accent-soft: #d7dfe9;
 }
 
-:root[data-theme="dark"][data-accent="brand"],
-:root[data-theme="dark"] .accent-swatch[data-accent="brand"] {
+:root[data-theme="dark"][data-accent="turquoise"],
+:root[data-theme="dark"] .accent-swatch[data-accent="turquoise"] {
   --app-accent: #2abca9;
   --app-accent-hover: #47d3bf;
   --app-accent-soft: #202a28;
@@ -177,6 +185,13 @@
   --app-accent: #f49b46;
   --app-accent-hover: #ffb46c;
   --app-accent-soft: #2d2721;
+}
+
+:root[data-theme="dark"][data-accent="green"],
+:root[data-theme="dark"] .accent-swatch[data-accent="green"] {
+  --app-accent: #63ce75;
+  --app-accent-hover: #87df95;
+  --app-accent-soft: #222b23;
 }
 
 :root[data-theme="dark"][data-accent="slate"],
