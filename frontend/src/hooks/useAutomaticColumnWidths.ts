@@ -107,10 +107,9 @@ export function useAutomaticColumnWidths(
         probe.remove();
       }
     }
-    const frame = requestAnimationFrame(measureWidths);
+    measureWidths();
     document.fonts?.addEventListener("loadingdone", measureWidths);
     return () => {
-      cancelAnimationFrame(frame);
       document.fonts?.removeEventListener("loadingdone", measureWidths);
     };
   }, [columns, table, visibleFields]);
