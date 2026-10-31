@@ -294,7 +294,7 @@ test("finds selection labels in hidden columns", async () => {
 });
 
 // Test no matches differs from a genuinely empty inventory and clears both table panes.
-test("keeps controls for no search results and hides them in empty inventories", async () => {
+test("keeps controls active for no search results and disables them in empty inventories", async () => {
   const user = userEvent.setup();
   const view = renderInventoryItemList();
   await user.type(screen.getByRole("searchbox"), "missing");
@@ -307,9 +307,10 @@ test("keeps controls for no search results and hides them in empty inventories",
   view.unmount();
   renderInventoryItemList([]);
   expect(screen.getByText("No items yet.")).toBeVisible();
-  expect(
-    screen.queryByRole("group", { name: "Inventory table controls" }),
-  ).not.toBeInTheDocument();
+  expect(screen.getByRole("searchbox")).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Filters" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "View" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Edit table" })).toBeDisabled();
 });
 
 // Test background refreshes cannot replace an open draft's concurrency precondition.

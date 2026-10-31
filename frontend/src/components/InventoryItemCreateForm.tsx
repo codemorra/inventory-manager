@@ -343,7 +343,7 @@ export function InventoryItemCreateForm({
         {!compact && t("items.actions.new")}
       </button>
 
-      {fields.length === 0 && (
+      {!compact && fields.length === 0 && (
         <p className="mt-2 text-sm text-muted">{t("items.noFields.hint")}</p>
       )}
 
