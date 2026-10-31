@@ -151,8 +151,9 @@ test("validates public settings writes and returns structured conflicts and no-s
     { expected_revision: false, preferences: { theme: "dark" } },
     { expected_revision: 0, preferences: { accent: "pink" } },
     { expected_revision: 0, preferences: { accent: "rose" } },
-    { expected_revision: 0, preferences: { accent: "green" } },
+    { expected_revision: 0, preferences: { accent: "yellow" } },
     { expected_revision: 0, preferences: { accent: "teal" } },
+    { expected_revision: 0, preferences: { accent: "brand" } },
     { expected_revision: 0, preferences: {} },
     { expected_revision: 0, preferences: { theme: "dark" }, path: "/other" },
   ])
@@ -204,7 +205,15 @@ test("refuses to listen with an invalid settings file and preserves its contents
 
 test("persists all supported accent palettes through HTTP and settings reconstruction", async (context) => {
   const f = await fixture(context);
-  const accents = ["brand", "cyan", "blue", "purple", "orange", "slate"];
+  const accents = [
+    "turquoise",
+    "cyan",
+    "blue",
+    "purple",
+    "orange",
+    "green",
+    "slate",
+  ];
   let revision = 0;
   for (const accent of accents) {
     const saved = await f.api
@@ -227,7 +236,7 @@ test("persists all supported accent palettes through HTTP and settings reconstru
 
 test("defaults missing and retired accents to the original palette without rewriting existing settings", async (context) => {
   const f = await fixture(context);
-  for (const accent of [undefined, "rose", "green", "teal"]) {
+  for (const accent of [undefined, "rose", "teal"]) {
     const bytes = JSON.stringify({
       version: 1,
       revision: 4,
@@ -239,10 +248,36 @@ test("defaults missing and retired accents to the original palette without rewri
     });
     await writeFile(f.config.settingsPath, bytes);
     const settings = await f.settings.read();
-    assert.equal(settings.preferences.accent, "brand");
+    assert.equal(settings.preferences.accent, "turquoise");
     assert.equal(settings.preferences.language, "de");
     assert.equal(settings.preferences.theme, "dark");
     assert.equal(settings.revision, 4);
     assert.equal(await readFile(f.config.settingsPath, "utf8"), bytes);
   }
+});
+
+// Preserve existing selections while using the canonical name for future writes.
+test("reads brand as turquoise and normalizes it on the next settings write", async (context) => {
+  const f = await fixture(context);
+  const bytes = JSON.stringify({
+    version: 1,
+    revision: 4,
+    preferences: { accent: "brand", language: "de" },
+  });
+  await writeFile(f.config.settingsPath, bytes);
+  const read = await f.api.get("/application-settings").expect(200);
+  assert.equal(read.body.preferences.accent, "turquoise");
+  assert.equal(read.body.revision, 4);
+  assert.equal(await readFile(f.config.settingsPath, "utf8"), bytes);
+  const saved = await f.api
+    .patch("/application-settings")
+    .send({
+      expected_revision: 4,
+      preferences: { theme: "dark" },
+    })
+    .expect(200);
+  assert.equal(saved.body.preferences.accent, "turquoise");
+  assert.equal(saved.body.preferences.language, "de");
+  const document = JSON.parse(await readFile(f.config.settingsPath, "utf8"));
+  assert.equal(document.preferences.accent, "turquoise");
 });

@@ -560,27 +560,39 @@ test("locks table actions while a checkbox update is pending", async () => {
     }),
   );
   renderInventoryItemList(
-    [{ ...items[0], values: [] }],
+    [
+      { ...items[0], values: [] },
+      { ...items[0], id: "item-2", values: [] },
+    ],
     [{ ...fields[2], name: "Checked", field_type: "checkbox" }],
   );
-  const input = screen.getByRole("checkbox", { name: "Toggle Checked" });
+  const [input, other] = screen.getAllByRole("checkbox", { name: "Toggle Checked" });
   await user.click(input);
-  await waitFor(() => expect(input).toBeDisabled());
+  await waitFor(() => expect(input).toHaveAttribute("aria-disabled", "true"));
+  expect(input).toBeEnabled();
+  expect(other).toBeEnabled();
+  expect(other).toHaveAttribute("aria-disabled", "true");
   expect(input).toBeChecked();
   expect(input).toHaveAttribute("aria-busy", "true");
-  expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
+  for (const button of screen.getAllByRole("button", { name: /^(Edit|Delete)$/ }))
+    expect(button).toBeDisabled();
   expect(screen.getByRole("button", { name: "Edit table" })).toBeDisabled();
   expect(screen.getByRole("searchbox")).toBeEnabled();
   expect(screen.getByRole("button", { name: "View" })).toBeEnabled();
-  expect(input).not.toHaveClass("disabled:opacity-50");
-  expect(screen.getByRole("button", { name: "Edit" })).not.toHaveClass(
+  expect(screen.getAllByRole("button", { name: "Edit" })[0]).not.toHaveClass(
     "disabled:opacity-50",
   );
   await user.click(input);
+  expect(input).toBeChecked();
+  await user.click(other);
+  expect(other).not.toBeChecked();
+  other.focus();
+  await user.keyboard(" ");
+  expect(other).not.toBeChecked();
   expect(mockedUpdateInventoryItem).toHaveBeenCalledTimes(1);
   await act(async () => finish(items[0]));
-  await waitFor(() => expect(input).toBeEnabled());
+  await waitFor(() => expect(input).not.toHaveAttribute("aria-disabled"));
+  expect(other).not.toHaveAttribute("aria-disabled");
 });
 
 // Test failed persistence restores the original state, displays an error, and permits a retry.
