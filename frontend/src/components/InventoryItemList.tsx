@@ -687,119 +687,123 @@ export function InventoryItemList({
           ))}
         </div>
       )}
-      <InventoryTableControls
-        columns={fields.map((field) => ({
-          id: field.id,
-          name: field.name,
-          visible: !hiddenFieldIds.includes(field.id),
-        }))}
-        onToggleColumn={toggleField}
-        onAutomaticWidths={() => setAutomaticColumnWidth()}
-        allColumnsAutomatic={allVisibleColumnsAutomatic}
-        itemCount={displayedItems.length}
-        totalItemCount={
-          searchQuery.trim() || activeFilters.length ? items.length : undefined
-        }
-        searchQuery={searchQuery}
-        onSearchQueryChange={setSearchQuery}
-        filterControl={
-          <InventoryItemFilters
-            fields={fields}
-            filters={activeFilters}
-            onApply={setFilters}
-            disabled={controlsDisabled}
-          />
-        }
-        actions={
-          <>
-            {tableEdit.draft ? (
-              <>
-                <span
-                  className="text-xs text-muted"
-                  title={t("table.edit.stableView")}
-                >
-                  {t("table.edit.changedCount", {
-                    count: tableEdit.changedCount,
-                  })}
-                </span>
+      {items.length > 0 || tableEdit.active ? (
+        <InventoryTableControls
+          columns={fields.map((field) => ({
+            id: field.id,
+            name: field.name,
+            visible: !hiddenFieldIds.includes(field.id),
+          }))}
+          onToggleColumn={toggleField}
+          onAutomaticWidths={() => setAutomaticColumnWidth()}
+          allColumnsAutomatic={allVisibleColumnsAutomatic}
+          itemCount={displayedItems.length}
+          totalItemCount={
+            searchQuery.trim() || activeFilters.length ? items.length : undefined
+          }
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          filterControl={
+            <InventoryItemFilters
+              fields={fields}
+              filters={activeFilters}
+              onApply={setFilters}
+              disabled={controlsDisabled}
+            />
+          }
+          actions={
+            <>
+              {tableEdit.draft ? (
+                <>
+                  <span
+                    className="text-xs text-muted"
+                    title={t("table.edit.stableView")}
+                  >
+                    {t("table.edit.changedCount", {
+                      count: tableEdit.changedCount,
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    className="rounded-sm border border-shell px-2.5 py-1.5 text-sm enabled:hover:bg-control-hover disabled:opacity-50"
+                    disabled={tableEdit.loading || tableEdit.saving}
+                    onClick={tableEdit.cancel}
+                  >
+                    {t("common.actions.cancel")}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-sm bg-accent px-2.5 py-1.5 text-sm font-semibold text-surface enabled:hover:bg-accent-hover disabled:opacity-50"
+                    disabled={
+                      tableEdit.loading ||
+                      tableEdit.saving ||
+                      tableEdit.uploading ||
+                      tableEdit.conflict ||
+                      !tableEdit.dirty ||
+                      tableEdit.errors.length > 0
+                    }
+                    onClick={tableEdit.commit}
+                  >
+                    {t(
+                      tableEdit.saving
+                        ? "common.actions.saving"
+                        : "common.actions.saveChanges",
+                    )}
+                  </button>
+                </>
+              ) : (
                 <button
+                  id={`${tableId}-edit`}
                   type="button"
-                  className="rounded-sm border border-shell px-2.5 py-1.5 text-sm enabled:hover:bg-control-hover disabled:opacity-50"
-                  disabled={tableEdit.loading || tableEdit.saving}
-                  onClick={tableEdit.cancel}
-                >
-                  {t("common.actions.cancel")}
-                </button>
-                <button
-                  type="button"
-                  className="rounded-sm bg-accent px-2.5 py-1.5 text-sm font-semibold text-surface enabled:hover:bg-accent-hover disabled:opacity-50"
-                  disabled={
-                    tableEdit.loading ||
-                    tableEdit.saving ||
-                    tableEdit.uploading ||
-                    tableEdit.conflict ||
-                    !tableEdit.dirty ||
-                    tableEdit.errors.length > 0
-                  }
-                  onClick={tableEdit.commit}
-                >
-                  {t(
-                    tableEdit.saving
-                      ? "common.actions.saving"
-                      : "common.actions.saveChanges",
+                  title={t("table.edit.start")}
+                  aria-label={t(
+                    tableEdit.loading ? "table.edit.loading" : "table.edit.start",
                   )}
-                </button>
-              </>
-            ) : (
-              <button
-                id={`${tableId}-edit`}
-                type="button"
-                title={t("table.edit.start")}
-                aria-label={t(
-                  tableEdit.loading ? "table.edit.loading" : "table.edit.start",
-                )}
-                disabled={
-                  controlsDisabled ||
-                  items.length === 0 ||
-                  !fields.some((field) => field.field_type !== "id")
-                }
-                className="flex size-8 cursor-pointer items-center justify-center rounded-sm text-muted transition enabled:hover:bg-control-hover enabled:hover:text-accent-text focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => {
-                  setColumnMenu(null);
-                  beginTableEditing();
-                }}
-              >
-                <svg
-                  aria-hidden="true"
-                  className="size-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                  disabled={
+                    controlsDisabled ||
+                    items.length === 0 ||
+                    !fields.some((field) => field.field_type !== "id")
+                  }
+                  className="flex size-8 cursor-pointer items-center justify-center rounded-sm text-muted transition enabled:hover:bg-control-hover enabled:hover:text-accent-text focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => {
+                    setColumnMenu(null);
+                    beginTableEditing();
+                  }}
                 >
-                  <path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15Z" />
-                </svg>
-              </button>
-            )}
-            <fieldset disabled={tableEdit.active} className="contents">
-              {actions}
-            </fieldset>
-          </>
-        }
-        wrapText={wrapText}
-        onWrapTextChange={setWrapText}
-        attachmentPreviews={view.attachmentPreviews}
-        onAttachmentPreviewsChange={
-          fields.some((field) => field.field_type === "attachment")
-            ? setAttachmentPreviews
-            : undefined
-        }
-        disabled={controlsDisabled}
-      />
+                  <svg
+                    aria-hidden="true"
+                    className="size-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15Z" />
+                  </svg>
+                </button>
+              )}
+              <fieldset disabled={tableEdit.active} className="contents">
+                {actions}
+              </fieldset>
+            </>
+          }
+          wrapText={wrapText}
+          onWrapTextChange={setWrapText}
+          attachmentPreviews={view.attachmentPreviews}
+          onAttachmentPreviewsChange={
+            fields.some((field) => field.field_type === "attachment")
+              ? setAttachmentPreviews
+              : undefined
+          }
+          disabled={controlsDisabled}
+        />
+      ) : (
+        actions && <div className="mb-3 flex justify-end">{actions}</div>
+      )}
       {/* Cell borders repaint reliably when previews change the heights of the separate tables. */}
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start overflow-hidden rounded-b-md border border-shell bg-surface">
+      <div className={`grid grid-cols-[minmax(0,1fr)_auto] items-start overflow-hidden border border-shell bg-surface ${items.length > 0 || tableEdit.active ? "rounded-b-md" : "rounded-md"}`}>
         <div
           ref={dataViewport}
           className="min-w-0 overflow-x-auto"

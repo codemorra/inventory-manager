@@ -294,7 +294,7 @@ test("finds selection labels in hidden columns", async () => {
 });
 
 // Test no matches differs from a genuinely empty inventory and clears both table panes.
-test("shows a distinct no-results state and keeps search available in empty inventories", async () => {
+test("keeps controls for no search results and hides them in empty inventories", async () => {
   const user = userEvent.setup();
   const view = renderInventoryItemList();
   await user.type(screen.getByRole("searchbox"), "missing");
@@ -307,7 +307,9 @@ test("shows a distinct no-results state and keeps search available in empty inve
   view.unmount();
   renderInventoryItemList([]);
   expect(screen.getByText("No items yet.")).toBeVisible();
-  expect(screen.getByRole("searchbox")).toBeEnabled();
+  expect(
+    screen.queryByRole("group", { name: "Inventory table controls" }),
+  ).not.toBeInTheDocument();
 });
 
 // Test background refreshes cannot replace an open draft's concurrency precondition.
@@ -1218,7 +1220,11 @@ describe("InventoryItemList", () => {
     );
     first.unmount();
 
-    const second = renderInventoryItemList([], fields, "inventory-2");
+    const second = renderInventoryItemList(
+      [{ ...items[0], inventory_id: "inventory-2" }],
+      fields,
+      "inventory-2",
+    );
     expect(screen.getByRole("columnheader", { name: "Genre" })).toBeVisible();
     expect(
       screen.getByRole("columnheader", { name: "Title" }),

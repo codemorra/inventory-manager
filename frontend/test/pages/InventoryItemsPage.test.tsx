@@ -222,15 +222,9 @@ describe("InventoryItemsPage", () => {
       name: "Inventory settings",
     });
     expect(settings).toHaveAttribute("title", "Inventory settings");
-    const controls = screen.getByRole("group", {
-      name: "Inventory table controls",
-    });
     expect(
-      within(controls).queryByRole("button", { name: "Inventory settings" }),
+      screen.queryByRole("group", { name: "Inventory table controls" }),
     ).not.toBeInTheDocument();
-    expect(
-      within(controls).getByRole("button", { name: "View" }),
-    ).toBeEnabled();
     await user.click(settings);
     expect(
       screen.getByRole("dialog", { name: "Edit inventory" }),
@@ -246,8 +240,8 @@ describe("InventoryItemsPage", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
-  // Test that the inventory context and creation action remain visible above an empty table.
-  test("shows the inventory name, description, and empty table toolbar", async () => {
+  // Test that an empty table retains its context and creation action without a toolbar.
+  test("shows the inventory name and description without an empty table toolbar", async () => {
     vi.mocked(getInventories).mockResolvedValueOnce([
       {
         configuration_revision: 1,
@@ -271,7 +265,9 @@ describe("InventoryItemsPage", () => {
       .closest("header")!;
     expect(header.querySelectorAll("p")).toHaveLength(1);
     expect(within(header).queryByText("Inventories")).not.toBeInTheDocument();
-    expect(await screen.findByText("0 items")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: "Inventory table controls" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New item" })).toBeEnabled();
     expect(
       screen.getByRole("columnheader", { name: "Title" }),
@@ -325,6 +321,9 @@ describe("InventoryItemsPage", () => {
     mockedGetInventoryItems.mockResolvedValue([]);
     renderInventoryItemsPage();
     await screen.findByRole("heading", { name: "No fields configured" });
+    expect(
+      screen.queryByRole("group", { name: "Inventory table controls" }),
+    ).not.toBeInTheDocument();
     await user.click(
       screen.getByRole("button", { name: "Inventory settings" }),
     );
