@@ -10,7 +10,7 @@ import type * as Api from "../../src/services/preferences";
 const defaults: ApplicationPreferences = {
   language: "system",
   theme: "system",
-  accent: "brand",
+  accent: "turquoise",
   attachmentWarnings: "show",
 };
 const initialView: InventoryViewPreferences = {

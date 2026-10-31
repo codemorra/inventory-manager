@@ -13,22 +13,22 @@ afterEach(() => {
 });
 
 describe("AccentPicker", () => {
-  test("orders the remaining palettes from green to graphite", () => {
+  test("orders the palettes with turquoise first and graphite last", () => {
     render(<AccentPicker />);
     expect(
       screen
         .getAllByRole("button")
         .map((button) => button.getAttribute("aria-label")),
-    ).toEqual(["Green", "Cyan", "Blue", "Purple", "Orange", "Graphite"]);
+    ).toEqual(["Turquoise", "Cyan", "Blue", "Purple", "Orange", "Green", "Graphite"]);
   });
 
-  test("defaults to the logo green palette when no preference has been loaded", () => {
+  test("defaults to the logo turquoise palette when no preference has been loaded", () => {
     preferenceStore.dispose();
     render(<AccentPicker />);
-    expect(screen.getAllByRole("button")[0]).toHaveAccessibleName("Green");
-    expect(getInitialAccent()).toBe("brand");
-    expect(document.documentElement.dataset.accent).toBe("brand");
-    expect(screen.getByRole("button", { name: "Green" })).toHaveAttribute(
+    expect(screen.getAllByRole("button")[0]).toHaveAccessibleName("Turquoise");
+    expect(getInitialAccent()).toBe("turquoise");
+    expect(document.documentElement.dataset.accent).toBe("turquoise");
+    expect(screen.getByRole("button", { name: "Turquoise" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -70,12 +70,13 @@ describe("AccentPicker", () => {
   });
 
   test.each([
-    ["brand", "Green"],
+    ["turquoise", "Turquoise"],
     ["cyan", "Cyan"],
+    ["green", "Green"],
     ["slate", "Graphite"],
   ] as const)("persists and restores the %s palette", async (accent, name) => {
     const user = userEvent.setup();
-    await seedPreference({ accent: accent === "brand" ? "blue" : "brand" });
+    await seedPreference({ accent: accent === "turquoise" ? "blue" : "turquoise" });
     const first = render(<AccentPicker />);
     await user.click(screen.getByRole("button", { name }));
     expect(document.documentElement.dataset.accent).toBe(accent);

@@ -30,7 +30,7 @@ const initial: ApplicationSettings = {
   preferences: {
     language: "system",
     theme: "system",
-    accent: "brand",
+    accent: "turquoise",
     attachmentWarnings: "show",
   },
 };

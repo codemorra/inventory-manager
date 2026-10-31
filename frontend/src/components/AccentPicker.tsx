@@ -8,7 +8,7 @@ import { accentColors, applyAccent } from "../appearance/accent";
 export function AccentPicker() {
   const { t } = useTranslation();
   const [saved, setAccent] = useStoredPreference("accent");
-  const accent = saved ?? "brand";
+  const accent = saved ?? "turquoise";
 
   useEffect(() => {
     applyAccent(accent);
