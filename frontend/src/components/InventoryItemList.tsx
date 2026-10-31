@@ -828,7 +828,7 @@ export function InventoryItemList({
             </colgroup>
             <thead className="bg-surface-muted text-xs font-semibold uppercase tracking-wider text-muted">
               <tr>
-                {visibleColumns.map(({ field, baseWidth }) => (
+                {visibleColumns.map(({ field, baseWidth, width }) => (
                   <th
                     data-field-id={field.id}
                     aria-label={field.name}
@@ -919,6 +919,7 @@ export function InventoryItemList({
                     <ColumnResizeHandle
                       fieldName={field.name}
                       width={baseWidth}
+                      displayWidth={width}
                       disabled={
                         tableEdit.active ||
                         isMutating ||
