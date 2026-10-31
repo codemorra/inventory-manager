@@ -19,6 +19,7 @@ interface ResizeSession {
 interface ColumnResizeHandleProps {
   fieldName: string;
   width: number;
+  displayWidth?: number;
   disabled?: boolean;
   onPreview: (width: number | null) => void;
   onCommit: (width: number) => void;
@@ -33,6 +34,7 @@ interface ColumnResizeHandleProps {
 export function ColumnResizeHandle({
   fieldName,
   width,
+  displayWidth = width,
   disabled = false,
   onPreview,
   onCommit,
@@ -79,8 +81,8 @@ export function ColumnResizeHandle({
         if (disabled || event.button !== 0 || session.current) return;
         event.preventDefault();
         event.stopPropagation();
-        // Pointer movement edits the base; viewport surplus is never an input to persistence.
-        const startWidth = width;
+        // Start at the visible edge, including surplus allocated to an automatic column.
+        const startWidth = displayWidth;
         session.current = {
           pointerId: event.pointerId,
           startX: event.clientX,

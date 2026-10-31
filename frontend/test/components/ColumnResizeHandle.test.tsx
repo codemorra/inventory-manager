@@ -8,17 +8,15 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// Test a wider DOM presentation is never copied into the stored base during pointer resizing.
-test("previews the base width without surplus and commits only on release", () => {
+// Test pointer resizing starts at the visible edge rather than a smaller automatic base.
+test("previews the displayed width plus pointer movement and commits only on release", () => {
   const preview = vi.fn();
   const commit = vi.fn();
-  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
-    width: 600,
-  } as DOMRect);
   render(
     <ColumnResizeHandle
       fieldName="Title"
       width={240}
+      displayWidth={600}
       onPreview={preview}
       onCommit={commit}
       onReset={vi.fn()}
@@ -27,10 +25,10 @@ test("previews the base width without surplus and commits only on release", () =
   const handle = screen.getByRole("separator", { name: "Resize Title" });
   fireEvent.pointerDown(handle, { pointerId: 1, button: 0, clientX: 100 });
   fireEvent.pointerMove(handle, { pointerId: 1, clientX: 160 });
-  expect(preview).toHaveBeenLastCalledWith(300);
+  expect(preview).toHaveBeenLastCalledWith(660);
   expect(commit).not.toHaveBeenCalled();
   fireEvent.pointerUp(handle, { pointerId: 1, clientX: 160 });
-  expect(commit).toHaveBeenCalledExactlyOnceWith(300);
+  expect(commit).toHaveBeenCalledExactlyOnceWith(660);
   expect(preview).toHaveBeenLastCalledWith(null);
 });
 

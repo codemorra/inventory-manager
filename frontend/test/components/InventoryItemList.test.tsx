@@ -1068,6 +1068,35 @@ describe("InventoryItemList", () => {
     expect(within(viewport).getByRole("table")).toHaveStyle({ width: "960px" });
   });
 
+  test("drags an automatic column from its displayed width without collapsing it", async () => {
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(
+      function (this: HTMLElement) {
+        return this.getAttribute("role") === "region" ? 960 : 0;
+      },
+    );
+    renderInventoryItemList();
+    const viewport = screen.getByRole("region", { name: "Inventory items" });
+    const table = within(viewport).getByRole("table");
+    const column = table.querySelector("col")!;
+    const originalWidth = Number.parseFloat(column.style.width);
+    const handle = screen.getByRole("separator", { name: "Resize Title" });
+    expect(originalWidth).toBeGreaterThan(
+      Number(handle.getAttribute("aria-valuenow")),
+    );
+    fireEvent.pointerDown(handle, { pointerId: 1, button: 0, clientX: 100 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 124 });
+    expect(column).toHaveStyle({ width: `${originalWidth + 24}px` });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 88 });
+    expect(column).toHaveStyle({ width: `${originalWidth - 12}px` });
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 88 });
+    await waitFor(() =>
+      expect(savedView("inventory-1")!.columnWidths).toEqual({
+        "title-field": originalWidth - 12,
+      }),
+    );
+    expect(column).toHaveStyle({ width: `${originalWidth - 12}px` });
+  });
+
   // Test runtime surplus never writes preferences, including when manual and Auto columns coexist.
   test("keeps window surplus out of persistence and saves only the resized column's base", async () => {
     const user = userEvent.setup();
