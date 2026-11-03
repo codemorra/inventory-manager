@@ -1,6 +1,7 @@
 import { apiBaseUrl, request } from "./api";
 import type { Inventory } from "../types/inventory";
 import type {
+  InventoryExportFormat,
   InventoryImportInput,
   InventoryImportPreview,
   PreparedInventoryExport,
@@ -11,13 +12,15 @@ const exportPath = (inventoryId: string) =>
 const importPath = (id: string) =>
   `/inventory-imports/${encodeURIComponent(id)}`;
 
-/** Prepare a complete saved inventory archive without fetching its large binary body. */
+/** Prepare a saved inventory in the selected format without fetching its download body. */
 export function prepareInventoryExport(
   inventoryId: string,
   signal?: AbortSignal,
+  format: InventoryExportFormat = "zip",
 ): Promise<PreparedInventoryExport> {
   return request(exportPath(inventoryId), {
     method: "POST",
+    body: JSON.stringify({ format }),
     ...(signal ? { signal } : {}),
   });
 }
