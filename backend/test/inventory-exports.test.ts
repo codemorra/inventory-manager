@@ -585,3 +585,248 @@ test("returns structured checksum failures and preserves unrelated inventory act
   assert.deepEqual(f.errors, []);
   assert.deepEqual(await readdir(join(f.directory, ".exchange")), []);
 });
+
+// Tables flatten every non-file type without accessing excluded managed originals or mutating saved data.
+test("exports readable CSV and Markdown values in saved field order without attachments", async (context) => {
+  const f = await fixture(context);
+  const definitions = [
+    ["ID", "id", undefined],
+    ["Text", "text", 'Prüfung, "quoted" | <script> & *text*\\\nnext'],
+    ["Number", "number", 0],
+    ["Boolean", "boolean", false],
+    ["Checkbox", "checkbox", true],
+    ["Date", "date", "2026-10-27"],
+    ["Time", "time", "12:34"],
+    ["Datetime", "datetime", "2026-10-27T12:34"],
+    ["Duration", "duration", 61],
+    ["Link", "url", { url: "https://example.com", label: "Example" }],
+    ["Bare link", "url", { url: "https://example.org" }],
+    ["Select", "select", undefined],
+    ["Multiselect", "multiselect", undefined],
+    ["Missing", "text", undefined],
+  ] as const;
+  const fields = definitions.map(([name, field_type]) =>
+    f.services.fields.create(f.inventory.id, {
+      name,
+      field_type,
+      ...(field_type === "select" || field_type === "multiselect"
+        ? { options: [{ name: "One" }, { name: "Two" }] }
+        : {}),
+    }),
+  );
+  const { file, item } = await withFile(f);
+  // Excluded files must not make a table depend on the availability of attachment bytes.
+  await rm(join(f.directory, `${file.id}.blob`));
+  const saved = f.services.items.update(f.inventory.id, item.id, {
+    expected_revision: item.revision,
+    values: [
+      ...item.values
+        .filter((value) => value.fieldId !== fields[0]!.id)
+        .map((value) => ({
+          field_id: value.fieldId,
+          value: value.value,
+        })),
+      ...fields.flatMap((field, index) => {
+        if (field.fieldType === "id" || field.name === "Missing") return [];
+        const value =
+          field.fieldType === "select"
+            ? field.options[0]!.id
+            : field.fieldType === "multiselect"
+              ? field.options.map((option) => option.id)
+              : definitions[index]![2];
+        return [{ field_id: field.id, value }];
+      }),
+    ],
+  });
+  const before = f.services.items.read(f.inventory.id, saved.id);
+  const csv = await f.exports.createTable(f.inventory.id, "csv");
+  assert.equal(csv.filename, "Prüfung _ Geräte.csv");
+  assert.equal(csv.omittedAttachmentFields, 1);
+  const csvText = await readFile(csv.path, "utf8");
+  assert.equal(csv.byteSize, Buffer.byteLength(csvText));
+  assert.equal(
+    csvText,
+    '"ID","Text","Number","Boolean","Checkbox","Date","Time","Datetime","Duration","Link","Bare link","Select","Multiselect","Missing"\r\n' +
+      '"1","Prüfung, ""quoted"" | <script> & *text*\\\nnext","0","false","true","2026-10-27","12:34","2026-10-27T12:34","61","Example (https://example.com)","https://example.org","One","One; Two",""\r\n',
+  );
+  const markdown = await f.exports.createTable(f.inventory.id, "markdown");
+  assert.equal(markdown.filename, "Prüfung _ Geräte.md");
+  const markdownText = await readFile(markdown.path, "utf8");
+  assert.deepEqual(
+    markdownText
+      .split("\n")[0]!
+      .split("|")
+      .slice(1, -1)
+      .map((cell) => cell.trim()),
+    fields.map((field) => field.name),
+  );
+  assert.match(markdownText.split("\n")[1]!, /^\| (?:-{3,} \| )*-{3,} \|$/);
+  assert.ok(
+    markdownText.includes(
+      'Prüfung, "quoted" \\| &lt;script&gt; &amp; \\*text\\*\\\\<br>next',
+    ),
+  );
+  assert.match(markdownText, /\| 0 +\| false +\| true +\|/);
+  assert.match(markdownText, /\| One +\| One; Two +\| +\|/);
+  assert.ok(!markdownText.includes("Files"));
+  assert.deepEqual(f.services.items.read(f.inventory.id, saved.id), before);
+  await csv.dispose();
+  await markdown.dispose();
+});
+
+// Header escaping and historical empty or deleted selection values remain readable in both encodings.
+test("escapes table headers and preserves row order, missing values and unavailable options", async (context) => {
+  const f = await fixture(context);
+  const field = f.services.fields.create(f.inventory.id, {
+    name: 'Choice | "name"',
+    field_type: "select",
+    options: [{ name: "Removed" }],
+  });
+  const first = f.services.items.create(f.inventory.id, {
+    values: [{ field_id: field.id, value: field.options[0]!.id }],
+  });
+  const second = f.services.items.create(f.inventory.id, { values: [] });
+  f.db
+    .update(inventoryItems)
+    .set({ createdAt: "2026-01-01T00:00:00.000Z" })
+    .where(eq(inventoryItems.id, first.id))
+    .run();
+  f.db
+    .update(inventoryItems)
+    .set({ createdAt: "2026-01-02T00:00:00.000Z" })
+    .where(eq(inventoryItems.id, second.id))
+    .run();
+  f.services.options.delete(f.inventory.id, field.id, field.options[0]!.id);
+  const csv = await f.exports.createTable(f.inventory.id, "csv");
+  assert.equal(
+    await readFile(csv.path, "utf8"),
+    '"Choice | ""name"""\r\n""\r\n"[unavailable]"\r\n',
+  );
+  const markdown = await f.exports.createTable(f.inventory.id, "markdown");
+  assert.equal(
+    await readFile(markdown.path, "utf8"),
+    '| Choice \\| "name" |\n| ---------------- |\n|                  |\n| \\[unavailable\\]  |\n',
+  );
+  await csv.dispose();
+  await markdown.dispose();
+});
+
+// Empty schemas cannot form useful tables, while fields with no items still provide a valid header.
+test("requires a non-attachment table column and exports headers for inventories without items", async (context) => {
+  const f = await fixture(context);
+  await assert.rejects(
+    f.exports.createTable(f.inventory.id, "csv"),
+    /at least one field/,
+  );
+  f.services.fields.create(f.inventory.id, {
+    name: "Files",
+    field_type: "attachment",
+  });
+  await assert.rejects(
+    f.exports.createTable(f.inventory.id, "markdown"),
+    /at least one field/,
+  );
+  f.services.fields.create(f.inventory.id, {
+    name: "Text",
+    field_type: "text",
+  });
+  for (const format of ["csv", "markdown"] as const) {
+    await assert.rejects(
+      f.exports.createTable(f.inventory.id, format, AbortSignal.abort()),
+      /abort/i,
+    );
+    const artifact = await f.exports.createTable(f.inventory.id, format);
+    assert.equal(
+      await readFile(artifact.path, "utf8"),
+      format === "csv" ? '"Text"\r\n' : "| Text |\n| ---- |\n",
+    );
+    await artifact.dispose();
+  }
+  assert.deepEqual(await readdir(join(f.directory, ".exchange")), []);
+});
+
+// New formats share inventory-scoped, single-use downloads and cancellation with existing ZIP exports.
+test("serves table media types and validates format requests before preparing exports", async (context) => {
+  const f = await fixture(context);
+  f.services.fields.create(f.inventory.id, {
+    name: "Text",
+    field_type: "text",
+  });
+  f.services.fields.create(f.inventory.id, {
+    name: "Files",
+    field_type: "attachment",
+  });
+  const path = `/inventories/${f.inventory.id}/exports`;
+  for (const body of [
+    { format: "pdf" },
+    { format: null },
+    { format: "csv", extra: true },
+    [],
+  ])
+    await f.api.post(path).send(body).expect(422);
+  const other = f.services.inventories.create({ name: "Other" });
+  for (const format of ["csv", "markdown"] as const) {
+    const prepared = await f.api.post(path).send({ format }).expect(201);
+    assert.equal(prepared.body.omitted_attachment_fields, 1);
+    assert.equal(prepared.body.path, undefined);
+    const download = `${path}/${prepared.body.id}/download`;
+    await f.api
+      .get(`/inventories/${other.id}/exports/${prepared.body.id}/download`)
+      .expect(404);
+    await f.api.head(download).expect(405);
+    const result = await f.api.get(download).expect(200);
+    assert.match(
+      result.headers["content-type"]!,
+      format === "csv"
+        ? /^text\/csv; charset=utf-8$/
+        : /^text\/markdown; charset=utf-8$/,
+    );
+    assert.equal(
+      result.text,
+      format === "csv" ? '"Text"\r\n' : "| Text |\n| ---- |\n",
+    );
+    assert.equal(
+      Number(result.headers["content-length"]),
+      Buffer.byteLength(result.text),
+    );
+    assert.equal(result.headers["cache-control"], "no-store");
+    assert.equal(result.headers["x-content-type-options"], "nosniff");
+    assert.match(result.headers["content-disposition"]!, /attachment;/);
+    await f.api.get(download).expect(404);
+    const canceled = await f.api.post(path).send({ format }).expect(201);
+    await f.api.delete(`${path}/${canceled.body.id}`).expect(204);
+    await f.api.get(`${path}/${canceled.body.id}/download`).expect(404);
+    const expired = await f.api.post(path).send({ format }).expect(201);
+    await f.exports.cleanup(Date.now() + 16 * 60 * 1000);
+    await f.api.get(`${path}/${expired.body.id}/download`).expect(404);
+  }
+  assert.deepEqual(f.errors, []);
+});
+
+// Escaped headers and values determine source widths; short and empty cells keep every column aligned.
+test("aligns Markdown columns to the longest escaped header or value with at least three dashes", async (context) => {
+  const f = await fixture(context);
+  const cable = f.services.fields.create(f.inventory.id, {
+    name: "Cable",
+    field_type: "text",
+  });
+  const length = f.services.fields.create(f.inventory.id, {
+    name: "Length (m)",
+    field_type: "number",
+  });
+  f.services.fields.create(f.inventory.id, { name: "X", field_type: "text" });
+  f.services.items.create(f.inventory.id, {
+    values: [
+      { field_id: cable.id, value: "DisplayPort to DisplayPort" },
+      { field_id: length.id, value: 1.5 },
+    ],
+  });
+  const artifact = await f.exports.createTable(f.inventory.id, "markdown");
+  assert.equal(
+    await readFile(artifact.path, "utf8"),
+    "| Cable                      | Length \\(m\\) | X   |\n" +
+      "| -------------------------- | ------------ | --- |\n" +
+      "| DisplayPort to DisplayPort | 1.5          |     |\n",
+  );
+  await artifact.dispose();
+});
