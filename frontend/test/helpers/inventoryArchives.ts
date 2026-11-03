@@ -18,6 +18,7 @@ export const archiveExport: PreparedInventoryExport = {
   id: "export",
   filename: "Cables.zip",
   byte_size: 1024,
+  omitted_attachment_fields: 0,
   expires_at: "2099-01-01T00:00:00.000Z",
 };
 export const importedInventory: Inventory = {
