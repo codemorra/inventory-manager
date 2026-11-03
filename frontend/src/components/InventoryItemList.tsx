@@ -1021,7 +1021,9 @@ export function InventoryItemList({
                                   field: field.name,
                                 })}
                                 // The change handler rejects concurrent writes without changing native appearance.
-                                aria-disabled={checkboxUpdate.isPending || undefined}
+                                aria-disabled={
+                                  checkboxUpdate.isPending || undefined
+                                }
                                 aria-busy={
                                   (checkboxUpdate.isPending &&
                                     checkboxTarget?.itemId === item.id &&
