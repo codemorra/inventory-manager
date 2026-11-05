@@ -231,7 +231,7 @@ try {
     });
     const preview = await fetch(`${origin}/api${path}/${file.id}/preview`);
     assert.equal(preview.status, 200);
-    assert.equal(preview.headers.get("content-type"), "image/webp");
+    assert.equal(preview.headers.get("content-type"), "image/png");
     const backup = await api(origin, "/backups", {
       method: "POST",
       status: 201,
@@ -251,7 +251,7 @@ try {
     );
   });
   console.log(
-    "PASS: packaged startup, native image preview, attachment, backup, clean shutdown and restart.",
+    "PASS: packaged startup, original image preview endpoint, attachment, backup, clean shutdown and restart.",
   );
   if (second !== first)
     console.log(
