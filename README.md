@@ -124,11 +124,13 @@ npm run dev:desktop
 
 This builds the application and opens Electron with its own backend on a free loopback port. Stop any development backend using the same data directory first.
 
-Run the full quality check from the repository root:
+Pull requests to `main` and `dev` automatically run type checking, linting, tests, builds and formatting checks through GitHub Actions. Run the same checks locally from the repository root before pushing:
 
 ```bash
 npm run check
 ```
+
+If formatting fails, run `npx prettier --write <file>` for each reported file, then repeat `npm run check`.
 
 See the [development guide](docs/development.md) for project structure, individual checks and desktop smoke tests, and the [backend README](backend/README.md) for migrations and API maintenance.
 
