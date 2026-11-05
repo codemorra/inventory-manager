@@ -455,6 +455,8 @@
     "deleteNamed": "Delete template {{name}}"
   },
   "attachments": {
+    "previewLoading": "Loading image…",
+    "previewFailed": "Image preview unavailable. You can still download the original file.",
     "title": "Files",
     "unavailable": "File unavailable",
     "remove": "Remove {{name}}",
@@ -466,8 +468,7 @@
     "continue": "Add files",
     "more_one": "+ {{count}} more",
     "more_other": "+ {{count}} more",
-    "saveAs": "Save as…",
-    "showPreviews": "Image previews"
+    "saveAs": "Save as…"
   },
   "archives": {
     "export": "Export inventory",
