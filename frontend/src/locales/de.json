@@ -455,6 +455,8 @@
     "deleteNamed": "Vorlage {{name}} löschen"
   },
   "attachments": {
+    "previewLoading": "Bild wird geladen …",
+    "previewFailed": "Keine Bildvorschau verfügbar. Du kannst die Originaldatei weiterhin herunterladen.",
     "title": "Dateien",
     "unavailable": "Datei nicht verfügbar",
     "remove": "{{name}} entfernen",
@@ -466,8 +468,7 @@
     "continue": "Dateien hinzufügen",
     "more_one": "+ {{count}} weitere",
     "more_other": "+ {{count}} weitere",
-    "saveAs": "Speichern unter …",
-    "showPreviews": "Bildvorschauen"
+    "saveAs": "Speichern unter …"
   },
   "archives": {
     "export": "Inventar exportieren",

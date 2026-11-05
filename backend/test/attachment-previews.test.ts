@@ -3,14 +3,14 @@ import { mkdtemp, readFile, rm, writeFile, symlink } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Readable } from "node:stream";
+import { finished } from "node:stream/promises";
 import test, { type TestContext } from "node:test";
 import request from "supertest";
-import sharp from "sharp";
 import { createApp } from "../src/app.js";
 import { openDatabase } from "../src/db/connection.js";
 import { createServices } from "../src/services.js";
 import { inventoryAttachments } from "../src/db/schema.js";
-import { queuePreview } from "../src/attachments/preview.js";
+import { maxPreviewBytes } from "../src/attachments/preview.js";
 
 /**
  * Create real isolated managed storage and a preview-capable HTTP app.
@@ -77,94 +77,50 @@ async function stage(
   );
 }
 
-// Public previews fit the original aspect ratio, strip metadata, and leave original bytes/revisions untouched.
-test("serves bounded raster previews without modifying originals, item data, or download behavior", async (context) => {
-  const f = await fixture(context);
-  const original = await sharp({
-    create: {
-      width: 800,
-      height: 400,
-      channels: 4,
-      background: { r: 80, g: 20, b: 150, alpha: 0.5 },
-    },
-  })
-    .png()
-    .withMetadata()
-    .toBuffer();
-  const file = await stage(f, original);
-  const item = f.services.items.create(f.inventory.id, {
-    values: [{ field_id: f.field.id, value: [file.id] }],
-  });
-  const metadata = f.db.select().from(inventoryAttachments).all();
-  const configuration = f.services.inventoryEditor.read(f.inventory.id);
-  const result = await f.api.get(`${f.base}/${file.id}/preview`).expect(200);
-  assert.equal(result.headers["content-type"], "image/webp");
-  assert.match(
-    result.headers["content-disposition"]!,
-    /^inline;.*preview.webp/,
+// Fixtures are synthetic 32 × 16 rasters generated once, independent of the runtime header inspector.
+async function image(format = "png") {
+  return readFile(
+    new URL(`./fixtures/preview/image.${format}`, import.meta.url),
   );
-  assert.equal(result.headers["x-content-type-options"], "nosniff");
-  assert.equal(result.headers["cache-control"], "no-store");
-  const preview = await sharp(result.body).metadata();
-  assert.equal(preview.format, "webp");
-  assert.equal(preview.width, 320);
-  assert.equal(preview.height, 160);
-  assert.equal(preview.exif, undefined);
-  assert.equal(preview.icc, undefined);
-  assert.equal(preview.hasAlpha, true);
-  assert.deepEqual(
-    await readFile(join(f.directory, `${file.id}.blob`)),
-    original,
-  );
-  assert.deepEqual(f.db.select().from(inventoryAttachments).all(), metadata);
-  assert.deepEqual(f.services.items.read(f.inventory.id, item.id), item);
-  assert.deepEqual(
-    f.services.inventoryEditor.read(f.inventory.id),
-    configuration,
-  );
-  const download = await f.api.get(`${f.base}/${file.id}/download`).expect(200);
-  assert.match(download.headers["content-disposition"]!, /^attachment;/);
-  assert.equal(download.headers["content-type"], "application/octet-stream");
-  assert.deepEqual(download.body, original);
-});
+}
 
-// Supported file bytes, rather than MIME declarations, decide eligibility; small images stay unscaled.
-test("supports JPEG, GIF, and WebP bytes and never enlarges small originals", async (context) => {
+test("streams exact original bytes with signature-derived types and safe headers for all supported formats", async (context) => {
   const f = await fixture(context);
-  for (const format of ["jpeg", "gif", "webp"] as const) {
-    const source = await sharp({
-      create: { width: 32, height: 16, channels: 3, background: "red" },
-    })
-      .toFormat(format)
-      .toBuffer();
-    const file = await stage(f, source, `image.${format}`);
+  for (const format of ["png", "jpeg", "gif", "webp"]) {
+    const original = await image(format);
+    const file = await stage(f, original, "misleading.html");
+    const item = f.services.items.create(f.inventory.id, {
+      values: [{ field_id: f.field.id, value: [file.id] }],
+    });
+    const metadata = f.db.select().from(inventoryAttachments).all();
     const result = await f.api.get(`${f.base}/${file.id}/preview`).expect(200);
-    const image = await sharp(result.body).metadata();
-    assert.equal(image.width, 32);
-    assert.equal(image.height, 16);
-    assert.equal(image.pages ?? 1, 1);
+    assert.equal(result.headers["content-type"], `image/${format}`);
+    assert.equal(result.headers["content-length"], String(original.length));
+    assert.match(result.headers["content-disposition"]!, /^inline;/);
+    assert.equal(result.headers["x-content-type-options"], "nosniff");
+    assert.equal(result.headers["cache-control"], "no-store");
+    assert.equal(
+      result.headers["content-security-policy"],
+      "default-src 'none'; sandbox",
+    );
+    assert.deepEqual(result.body, original);
+    assert.deepEqual(
+      await readFile(join(f.directory, `${file.id}.blob`)),
+      original,
+    );
+    assert.deepEqual(f.db.select().from(inventoryAttachments).all(), metadata);
+    assert.deepEqual(f.services.items.read(f.inventory.id, item.id), item);
+    const download = await f.api
+      .get(`${f.base}/${file.id}/download`)
+      .expect(200);
+    assert.match(download.headers["content-disposition"]!, /^attachment;/);
+    assert.equal(download.headers["content-type"], "application/octet-stream");
+    assert.deepEqual(download.body, original);
   }
 });
 
-// Camera orientation is applied to the image pixels while private EXIF metadata is removed from the derivative.
-test("orients camera photos before fitting the thumbnail", async (context) => {
-  const f = await fixture(context);
-  const source = await sharp({
-    create: { width: 640, height: 320, channels: 3, background: "blue" },
-  })
-    .jpeg()
-    .withMetadata({ orientation: 6 })
-    .toBuffer();
-  const file = await stage(f, source, "camera.jpg");
-  const result = await f.api.get(`${f.base}/${file.id}/preview`).expect(200);
-  const image = await sharp(result.body).metadata();
-  assert.equal(image.width, 120);
-  assert.equal(image.height, 240);
-  assert.equal(image.orientation, undefined);
-});
-
 // Documents and forged/corrupt image data are never embedded as arbitrary original content.
-test("rejects unsupported and corrupt originals while keeping them downloadable and the queue usable", async (context) => {
+test("rejects unsupported and corrupt originals while keeping them downloadable", async (context) => {
   const f = await fixture(context);
   for (const content of [
     Buffer.from(
@@ -182,29 +138,14 @@ test("rejects unsupported and corrupt originals while keeping them downloadable 
       .expect(200);
     assert.deepEqual(download.body, content);
   }
-  const valid = await stage(
-    f,
-    await sharp({
-      create: { width: 2, height: 2, channels: 3, background: "white" },
-    })
-      .png()
-      .toBuffer(),
-  );
+  const valid = await stage(f, await image());
   await f.api.get(`${f.base}/${valid.id}/preview`).expect(200);
   assert.deepEqual(f.errors, []);
 });
 
-// A queued preview reads its current ownership/lifecycle when it actually runs, rather than retaining stale access.
-test("rejects foreign, deleted, and stale queued preview targets", async (context) => {
+test("rejects foreign, deleted, and missing preview targets", async (context) => {
   const f = await fixture(context);
-  const file = await stage(
-    f,
-    await sharp({
-      create: { width: 2, height: 2, channels: 3, background: "red" },
-    })
-      .png()
-      .toBuffer(),
-  );
+  const file = await stage(f, await image());
   const other = f.services.inventories.create({ name: "Other" });
   const field = f.services.fields.create(other.id, {
     name: "Files",
@@ -216,39 +157,34 @@ test("rejects foreign, deleted, and stale queued preview targets", async (contex
     )
     .expect(404);
   await f.api.get(`${f.base}/missing/preview`).expect(404);
-  let release!: () => void;
-  let started!: () => void;
-  const ready = new Promise<void>((resolve) => {
-    started = resolve;
-  });
-  const blocking = queuePreview(
-    () =>
-      new Promise<void>((resolve) => {
-        release = resolve;
-        started();
-      }),
-  );
-  await ready;
-  const queued = f.services.attachments!.preview(
+  const pending = f.services.attachments!.preview(
     f.inventory.id,
     f.field.id,
     file.id,
   );
   f.services.attachments!.discard(f.inventory.id, f.field.id, file.id);
-  release();
-  await blocking;
-  await assert.rejects(queued, /not found/);
+  await assert.rejects(pending, /not found/);
   await f.api.get(`${f.base}/${file.id}/preview`).expect(404);
+});
+
+test("rejects oversized bytes and dimensions before loading an original", async (context) => {
+  const f = await fixture(context);
+  const huge = Buffer.alloc(maxPreviewBytes + 1);
+  const file = await stage(f, huge);
+  await f.api.get(`${f.base}/${file.id}/preview`).expect(415);
+  const dimensions = await image();
+  dimensions.writeUInt32BE(100_000, 16);
+  const large = await stage(f, dimensions);
+  await f.api.get(`${f.base}/${large.id}/preview`).expect(415);
+  const mismatch = await stage(f, await image());
+  await writeFile(join(f.directory, `${mismatch.id}.blob`), "changed");
+  await f.api.get(`${f.base}/${mismatch.id}/preview`).expect(415);
 });
 
 // Existing storage verification also protects the inline derivative path from path substitution and missing content.
 test("does not preview missing files or substituted symlinks", async (context) => {
   const f = await fixture(context);
-  const bytes = await sharp({
-    create: { width: 2, height: 2, channels: 3, background: "green" },
-  })
-    .png()
-    .toBuffer();
+  const bytes = await image();
   const file = await stage(f, bytes);
   const path = join(f.directory, `${file.id}.blob`);
   await rm(path);
@@ -259,4 +195,19 @@ test("does not preview missing files or substituted symlinks", async (context) =
   await f.api
     .get(`${f.base}/${file.id}/preview`)
     .expect(500, { detail: "Internal Server Error" });
+});
+
+// A disconnected client owns only a stream; destroying it must close the verified descriptor.
+test("closes the managed file stream when its consumer aborts", async (context) => {
+  const f = await fixture(context);
+  const file = await stage(f, await image());
+  const result = await f.services.attachments!.preview(
+    f.inventory.id,
+    f.field.id,
+    file.id,
+  );
+  const done = finished(result.stream);
+  result.stream.destroy(new Error("Consumer disconnected"));
+  await assert.rejects(done, /Consumer disconnected/);
+  assert.equal(result.stream.closed, true);
 });

@@ -189,14 +189,17 @@ test("ignores invalid saved widths and clamps new resize requests", async () => 
   expect(result.current.view.columnWidths).toEqual({});
 });
 
-// Existing preferences default to filenames only, and preview choices remain isolated per inventory.
-test("persists image previews independently per inventory and validates old or malformed flags", async () => {
+// Retired thumbnail flags survive unrelated edits without becoming an active view control.
+test("preserves legacy preview flags while validating old or malformed views", async () => {
   const { result, rerender } = renderHook(
     ({ id }) => useInventoryView(id, fields),
     { initialProps: { id: "first-inventory" } },
   );
   expect(result.current.view.attachmentPreviews).toBe(false);
-  act(() => result.current.setAttachmentPreviews(true));
+  await act(async () => {
+    await seedView("first-inventory", { attachmentPreviews: true });
+  });
+  act(() => result.current.setWrapText(false));
   expect(savedView("first-inventory")!.attachmentPreviews).toBe(true);
   rerender({ id: "second-inventory" });
   expect(result.current.view.attachmentPreviews).toBe(false);
