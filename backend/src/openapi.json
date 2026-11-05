@@ -2474,9 +2474,9 @@
     "/inventories/{inventory_id}/exports": {
       "post": {
         "tags": ["inventory exchange"],
-        "summary": "Prepare a complete inventory ZIP export",
+        "summary": "Prepare a saved inventory export",
         "operationId": "prepare_inventory_export",
-        "description": "Creates a version-1 ZIP containing inventory.json and all referenced managed originals. Files stream to private scratch storage and are verified against saved sizes/SHA-256. Rejects source changes during preparation. Returns only after completion; the opaque single-use download token expires after 15 minutes. No inventory or item data/revisions are changed. Client disconnection cancels preparation.",
+        "description": "Creates a version-1 ZIP containing inventory.json and all referenced managed originals. Files stream to private scratch storage and are verified against saved sizes/SHA-256. Rejects source changes during preparation. Returns only after completion; the opaque single-use download token expires after 15 minutes. No inventory or item data/revisions are changed. Client disconnection cancels preparation. Optional format selects zip (default), csv or markdown. Table exports include all saved items in field order, independently of views and filters. Attachment columns and bodies are omitted; omitted_attachment_fields reports their count. Tables require at least one non-attachment field. CSV uses UTF-8, comma delimiters, quoted cells and CRLF. Markdown uses escaped pipe tables. IDs and durations are numeric (duration in seconds), booleans are true/false, temporal strings are retained, links use label (URL), and multiple option names are separated by semicolon-space. Deleted options appear as [unavailable]. Missing values are empty cells. Tables contain no field-type metadata.",
         "parameters": [
           {
             "name": "inventory_id",
@@ -2492,7 +2492,7 @@
         ],
         "responses": {
           "201": {
-            "description": "Completed inventory archive ready for a native download.",
+            "description": "Completed inventory export ready for a native download.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2543,13 +2543,31 @@
           "500": {
             "description": "Unexpected storage error; incomplete archives are removed."
           }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "enum": ["zip", "csv", "markdown"],
+                    "default": "zip"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
     "/inventories/{inventory_id}/exports/{export_id}/download": {
       "get": {
         "tags": ["inventory exchange"],
-        "summary": "Download a prepared inventory archive once",
+        "summary": "Download a prepared inventory export once",
         "operationId": "download_inventory_export",
         "description": "Claims an unexpired inventory-scoped export token for a single download and disposes scratch files after completion or disconnection. A deleted source inventory cannot be downloaded. HEAD returns 405 without consuming the token.",
         "parameters": [
@@ -2572,9 +2590,21 @@
         ],
         "responses": {
           "200": {
-            "description": "Complete ZIP archive containing the versioned manifest and referenced original files.",
+            "description": "Complete inventory ZIP, CSV or Markdown table.",
             "content": {
               "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "text/markdown": {
                 "schema": {
                   "type": "string",
                   "format": "binary"
@@ -3038,6 +3068,9 @@
           "422": {
             "description": "Invalid preference values, unknown properties or missing revision."
           },
+          "500": {
+            "description": "Settings file write failed; previous contents preserved."
+          },
           "503": {
             "description": "application_settings_unavailable: invalid/unreadable/unsupported settings file, preserved without reset.",
             "content": {
@@ -3047,9 +3080,6 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Settings file write failed; previous contents preserved."
           }
         },
         "parameters": [
@@ -3279,9 +3309,6 @@
               }
             }
           },
-          "503": {
-            "description": "application_settings_unavailable: invalid or unavailable settings file."
-          },
           "409": {
             "description": "application_settings_conflict or storage_location_conflict: stale revision, existing relocation/cleanup or independent database override."
           },
@@ -3290,6 +3317,9 @@
           },
           "500": {
             "description": "Settings file write failed; reload the state before retrying."
+          },
+          "503": {
+            "description": "application_settings_unavailable: invalid or unavailable settings file."
           }
         },
         "requestBody": {
@@ -3358,9 +3388,6 @@
               }
             }
           },
-          "503": {
-            "description": "application_settings_unavailable: invalid or unavailable settings file."
-          },
           "409": {
             "description": "application_settings_conflict or storage_location_conflict: stale revision, existing relocation/cleanup or independent database override."
           },
@@ -3369,6 +3396,9 @@
           },
           "500": {
             "description": "Settings file write failed; reload the state before retrying."
+          },
+          "503": {
+            "description": "application_settings_unavailable: invalid or unavailable settings file."
           }
         },
         "requestBody": {
@@ -3539,11 +3569,11 @@
           "404": {
             "description": "backup_not_found: invalid name, missing archive or nonregular file."
           },
-          "500": {
-            "description": "Backup storage access failed."
-          },
           "409": {
             "description": "backup_conflict: the selected archive is being deleted."
+          },
+          "500": {
+            "description": "Backup storage access failed."
           }
         }
       },
@@ -3592,11 +3622,11 @@
           "404": {
             "description": "backup_not_found: invalid name, missing archive or nonregular file."
           },
-          "500": {
-            "description": "Backup storage access failed."
-          },
           "409": {
             "description": "backup_conflict: the selected archive is being deleted."
+          },
+          "500": {
+            "description": "Backup storage access failed."
           }
         }
       }
@@ -3954,11 +3984,11 @@
           "422": {
             "description": "Invalid frequency, retention count or revision."
           },
-          "503": {
-            "description": "Settings or scheduler status is unavailable; existing state is preserved."
-          },
           "500": {
             "description": "Policy publication failed; reload to check the accepted configuration."
+          },
+          "503": {
+            "description": "Settings or scheduler status is unavailable; existing state is preserved."
           }
         }
       }
@@ -5291,7 +5321,13 @@
       "PreparedInventoryExport": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "filename", "byte_size", "expires_at"],
+        "required": [
+          "id",
+          "filename",
+          "byte_size",
+          "expires_at",
+          "omitted_attachment_fields"
+        ],
         "properties": {
           "id": {
             "type": "string"
@@ -5306,6 +5342,11 @@
           "expires_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "omitted_attachment_fields": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Attachment columns excluded from a table export; zero for ZIP archives."
           }
         }
       },

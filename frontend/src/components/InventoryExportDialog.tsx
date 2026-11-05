@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Inventory } from "../types/inventory";
 import {
@@ -6,11 +6,16 @@ import {
   downloadInventoryExport,
   prepareInventoryExport,
 } from "../services/inventoryArchives";
-import type { PreparedInventoryExport } from "../types/inventoryArchive";
+import type {
+  InventoryExportFormat,
+  PreparedInventoryExport,
+} from "../types/inventoryArchive";
+import { ApiError } from "../services/api";
+import { ChoiceSelect } from "./ChoiceSelect";
 import { archiveErrorKey, archiveSize } from "./archiveMessages";
 import { Modal } from "./Modal";
 
-/** Prepare a saved inventory ZIP, then hand its completed artifact to the browser's native download. */
+/** Prepare the selected saved inventory format for a native download, explaining omitted attachments. */
 export function InventoryExportDialog({
   inventory,
   onClose,
@@ -19,6 +24,8 @@ export function InventoryExportDialog({
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
+  const id = useId();
+  const [format, setFormat] = useState<InventoryExportFormat>("zip");
   const [prepared, setPrepared] = useState<PreparedInventoryExport | null>(
     null,
   );
@@ -30,7 +37,11 @@ export function InventoryExportDialog({
 
   async function run(abort: AbortController, version: number) {
     try {
-      const result = await prepareInventoryExport(inventory.id, abort.signal);
+      const result = await prepareInventoryExport(
+        inventory.id,
+        abort.signal,
+        format,
+      );
       if (version !== generation.current || abort.signal.aborted) {
         void discardInventoryExport(inventory.id, result.id).catch(() => {});
         return;
@@ -39,7 +50,13 @@ export function InventoryExportDialog({
       setPrepared(result);
     } catch (error) {
       if (version === generation.current && !abort.signal.aborted)
-        setError(archiveErrorKey(error, "archives.exportFailed"));
+        setError(
+          format !== "zip" &&
+            error instanceof ApiError &&
+            error.code === "inventory_export_unavailable"
+            ? "archives.tableUnavailable"
+            : archiveErrorKey(error, "archives.exportFailed"),
+        );
     } finally {
       if (version === generation.current) setBusy(false);
     }
@@ -68,9 +85,9 @@ export function InventoryExportDialog({
         );
       current.current = null;
     };
-    // Each context action mounts a fresh export session for this immutable source identity.
+    // A format change disposes the old artifact; late replies are rejected by their generation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inventory.id]);
+  }, [inventory.id, format]);
 
   function download() {
     if (!prepared || !current.current) return;
@@ -90,7 +107,32 @@ export function InventoryExportDialog({
       <p className="wrap-break-word font-medium text-heading">
         {inventory.name}
       </p>
-      <p className="mt-2 text-sm text-muted">{t("archives.exportHelp")}</p>
+      <div className="mt-4">
+        <ChoiceSelect
+          id={`${id}-format`}
+          label={t("archives.exportFormat")}
+          portal
+          describedBy={`${id}-help`}
+          options={[
+            { value: "zip", label: t("archives.formatZip") },
+            { value: "csv", label: t("archives.formatCsv") },
+            { value: "markdown", label: t("archives.formatMarkdown") },
+          ]}
+          value={format}
+          onChange={(value) => {
+            if (value === format) return;
+            setPrepared(null);
+            setError("");
+            setBusy(true);
+            setFormat(value as InventoryExportFormat);
+          }}
+        />
+      </div>
+      <p id={`${id}-help`} className="mt-2 text-sm text-muted">
+        {t(
+          format === "zip" ? "archives.exportHelp" : "archives.tableExportHelp",
+        )}
+      </p>
       {busy && (
         <p role="status" className="mt-4 text-sm text-muted">
           {t("archives.preparingExport")}
@@ -102,6 +144,16 @@ export function InventoryExportDialog({
           {archiveSize(prepared.byte_size, i18n.resolvedLanguage ?? "en")}
         </p>
       )}
+      {format !== "zip" &&
+        prepared &&
+        prepared.omitted_attachment_fields > 0 && (
+          <p
+            role="status"
+            className="mt-4 rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger"
+          >
+            {t("archives.attachmentsOmitted")}
+          </p>
+        )}
       {error && (
         <p
           role="alert"
@@ -134,7 +186,13 @@ export function InventoryExportDialog({
             onClick={download}
             className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-surface hover:bg-accent-hover"
           >
-            {t("archives.download")}
+            {t(
+              format === "zip"
+                ? "archives.download"
+                : format === "csv"
+                  ? "archives.downloadCsv"
+                  : "archives.downloadMarkdown",
+            )}
           </button>
         )}
       </div>

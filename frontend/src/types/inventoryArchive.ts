@@ -1,10 +1,14 @@
 import type { CreateInventoryInput } from "./inventory";
 
+// Define the supported saved inventory export formats.
+export type InventoryExportFormat = "zip" | "csv" | "markdown";
+
 // Preview information for an inventory export
 export interface PreparedInventoryExport {
   id: string;
   filename: string;
   byte_size: number;
+  omitted_attachment_fields: number;
   expires_at: string;
 }
 
