@@ -11,8 +11,8 @@ Run it in a desktop window on Linux or Windows, or in your browser with Docker. 
 - **Custom inventories:** Define the fields you need for each list, such as an item's name, quantity, purchase date or storage location. Choose from text, numbers, dates, times, durations, selections, checkboxes, links, files and automatic IDs.
 - **Organization and templates:** Arrange inventories in groups and reuse their field structures as templates for new lists.
 - **Search and editing:** Find items using text search and field-specific filters, sort by columns, and edit individual items or several table cells together.
-- **Table layouts:** Choose visible columns, adjust their widths, wrap long text and show image previews. Each inventory keeps its own view settings.
-- **Attachments and exchange:** Keep copies of documents and photos with your items. Export an inventory with its attached files as a ZIP archive and import it into another installation.
+- **Table layouts:** Choose visible columns, adjust their widths, and wrap long text. Each inventory keeps its own view settings.
+- **Attachments and exchange:** Keep copies of documents and photos with your items, and click supported images to preview them in a modal. Export an inventory with its attached files as a ZIP archive and import it into another installation.
 - **Backups and storage:** Create and restore data backups, schedule daily or weekly backups, and choose where data and backup files are stored.
 - **Appearance and language:** Switch between German and English, light and dark themes, and several accent colors.
 
