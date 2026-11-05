@@ -1,3 +1,4 @@
+import { exerciseImagePreview } from "../scripts/image-preview-smoke.mjs";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -122,11 +123,21 @@ async function run() {
           values: [{ field_id: field.id, value: [file.id] }],
         }),
       });
-      const preview = await fetch(
-        origin + "/api" + path + `/${file.id}/preview`,
+      let previewRequests = 0;
+      window.webContents.session.webRequest.onBeforeRequest(
+        { urls: [origin + "/api/*/preview"] },
+        (_details, callback) => {
+          previewRequests++;
+          callback({});
+        },
       );
-      assert.equal(preview.status, 200);
-      assert.equal(preview.headers.get("content-type"), "image/webp");
+      await window.loadURL(`${origin}/inventories/${inventory.id}/items`);
+      await exerciseImagePreview(
+        (expression) => window.webContents.executeJavaScript(expression),
+        { filename: "test.png", width: 12, height: 8 },
+        () => previewRequests,
+      );
+      window.webContents.session.webRequest.onBeforeRequest(null);
       const downloaded = new Promise((resolve, reject) => {
         window.webContents.session.once("will-download", (_event, item) => {
           assert.ok(
@@ -138,11 +149,37 @@ async function run() {
           );
         });
       });
-      window.webContents.downloadURL(
-        origin + "/api" + path + `/${file.id}/download`,
+      await window.webContents.executeJavaScript(
+        `document.querySelector('a[download="test.png"]').click(); void 0`,
+      );
+      for (let attempt = 0; attempt < 100; attempt++) {
+        if (
+          await window.webContents.executeJavaScript(
+            `!!document.querySelector('[role="dialog"] img')?.naturalWidth`,
+          )
+        )
+          break;
+        await delay(50);
+      }
+      await window.webContents.executeJavaScript(
+        `document.querySelector('[role="dialog"] img').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 100 })); void 0`,
+      );
+      for (let attempt = 0; attempt < 100; attempt++) {
+        if (
+          await window.webContents.executeJavaScript(
+            `!!document.querySelector('[role="menuitem"]')`,
+          )
+        )
+          break;
+        await delay(50);
+      }
+      await window.webContents.executeJavaScript(
+        `document.querySelector('[role="menuitem"]').click(); void 0`,
       );
       await downloaded;
       assert.deepEqual(await readFile(join(root, "download.png")), bytes);
+      window.webContents.sendInputEvent({ type: "keyDown", keyCode: "Escape" });
+      window.webContents.sendInputEvent({ type: "keyUp", keyCode: "Escape" });
       const settings = await api("/application-settings");
       await api("/application-settings", {
         method: "PATCH",
