@@ -2378,9 +2378,9 @@
     "/inventories/{inventory_id}/fields/{field_id}/attachments/{attachment_id}/preview": {
       "get": {
         "tags": ["attachments"],
-        "summary": "Render a transient image preview",
+        "summary": "Preview an original raster image",
         "operationId": "preview_inventory_attachment",
-        "description": "Validates PNG, JPEG, GIF, or WebP bytes and returns a static, proportionally fitted WebP no larger than 320 by 240 pixels. Original files remain download-only. Native decoding is serialized, bounded to 100 million source pixels and five seconds; these preview limits do not limit file copying. Unsupported, corrupt, or impractical images return attachment_preview_unavailable. Derivatives strip metadata and are not stored.",
+        "description": "Streams unchanged PNG, JPEG, GIF or WebP original bytes after signature and canvas-dimension inspection, independent of filename and uploaded MIME type. Preview bounds: 25 MiB, 40 million canvas pixels, 32768 pixels per axis and at most 256 KiB of inspected header bytes (JPEG dimensions must be found within that bound). Original EXIF/GPS/ICC and animation data are retained. No re-encoding, metadata stripping or stored derivative. A valid header does not guarantee successful browser decoding; clients must handle image decode errors even after HTTP 200. These limits do not restrict original upload/download, export or backup. SVG, HTML, PDF and other formats are not embedded.",
         "parameters": [
           {
             "name": "inventory_id",
@@ -2409,8 +2409,26 @@
         ],
         "responses": {
           "200": {
-            "description": "Transient metadata-free thumbnail.",
+            "description": "Unchanged original raster bytes with signature-derived media type; use only in an image context.",
             "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/gif": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
               "image/webp": {
                 "schema": {
                   "type": "string",
@@ -2433,7 +2451,8 @@
               },
               "Content-Disposition": {
                 "schema": {
-                  "type": "string"
+                  "type": "string",
+                  "const": "inline; filename=\"preview\""
                 }
               },
               "X-Inventory-Generation": {
@@ -2441,6 +2460,19 @@
                 "schema": {
                   "type": "string",
                   "format": "uuid"
+                }
+              },
+              "Content-Length": {
+                "description": "Original attachment byte length.",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                }
+              },
+              "Content-Security-Policy": {
+                "schema": {
+                  "type": "string",
+                  "const": "default-src 'none'; sandbox"
                 }
               }
             }
@@ -2456,7 +2488,7 @@
             }
           },
           "415": {
-            "description": "attachment_preview_unavailable: unsupported, corrupt, or impractical image.",
+            "description": "attachment_preview_unavailable: unsupported/invalid raster header, unavailable dimensions, size inconsistency or exceeded preview bounds. Other decode errors may only be detected by the browser after HTTP 200.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2466,7 +2498,7 @@
             }
           },
           "500": {
-            "description": "Unexpected storage error."
+            "description": "Unexpected storage error; no filesystem paths are exposed."
           }
         }
       }
@@ -5536,7 +5568,9 @@
             "type": "boolean"
           },
           "attachmentPreviews": {
-            "type": "boolean"
+            "type": "boolean",
+            "deprecated": true,
+            "description": "Legacy version-1 flag retained for saved-view compatibility. Has no presentation effect; image modals require no preference flag."
           },
           "columnWidths": {
             "type": "object",
