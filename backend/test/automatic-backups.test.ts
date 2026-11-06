@@ -413,6 +413,18 @@ test("runs at startup and checks new periods while the runtime is open, retainin
         policy: { frequency: "daily", retention: 2 },
       })
       .expect(409);
+  } catch (error) {
+    // Include the real server failure before temporary runtime/log cleanup, especially on Windows.
+    await runtime?.stop();
+    runtime = undefined;
+    const log = await readFile(
+      join(config.logsDirectory, "inventory-manager.log"),
+      "utf8",
+    ).catch(() => "No runtime log available.");
+    throw new Error(
+      `Automatic-backup runtime test failed. Server log:\n${log}`,
+      { cause: error },
+    );
   } finally {
     await runtime?.stop();
     await rm(root, { recursive: true, force: true });
