@@ -1,7 +1,15 @@
 import { attachmentMetadataSchema } from "./validation.js";
 import { randomUUID, createHash } from "node:crypto";
 import { constants, createWriteStream } from "node:fs";
-import { mkdir, open, readdir, rename, stat, unlink } from "node:fs/promises";
+import {
+  lstat,
+  mkdir,
+  open,
+  readdir,
+  rename,
+  stat,
+  unlink,
+} from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -109,9 +117,22 @@ export function createAttachmentService(
     if (preview && metadata.byteSize > maxPreviewBytes) previewUnavailable();
     let handle;
     try {
+      // Windows has no O_NOFOLLOW flag. Inspect the directory entry as well as the opened file.
+      const before = await lstat(path(id), { bigint: true });
+      if (!before.isFile())
+        throw new Error("Managed attachment must be a regular file.");
       handle = await open(path(id), constants.O_RDONLY | constants.O_NOFOLLOW);
-      const details = await handle.stat();
-      if (!details.isFile() || details.size !== metadata.byteSize) {
+      const details = await handle.stat({ bigint: true });
+      const after = await lstat(path(id), { bigint: true });
+      if (
+        !after.isFile() ||
+        before.dev !== details.dev ||
+        before.ino !== details.ino ||
+        after.dev !== details.dev ||
+        after.ino !== details.ino
+      )
+        throw new Error("Managed attachment changed while opening.");
+      if (!details.isFile() || details.size !== BigInt(metadata.byteSize)) {
         if (preview) previewUnavailable();
         throw new Error("Managed attachment content is unavailable.");
       }

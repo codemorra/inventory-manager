@@ -2498,7 +2498,7 @@
             }
           },
           "500": {
-            "description": "Unexpected storage error; no filesystem paths are exposed."
+            "description": "Unexpected storage error, including rejected symlink/file-identity substitution; no filesystem paths are exposed."
           }
         }
       }
