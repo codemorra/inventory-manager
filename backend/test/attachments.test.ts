@@ -545,10 +545,12 @@ test("rejects missing, substituted, or corrupt file content without exposing fil
   const f = await fixture(context);
   const file = await stage(f);
   const path = join(f.directory, `${file.id}.blob`);
+  const original = await readFile(path);
   await rm(path);
   await f.api.get(`${f.base}/${file.id}/download`).expect(404);
   const outside = join(f.directory, "unmanaged.txt");
-  await writeFile(outside, "private");
+  // Use identical bytes so size validation alone cannot accidentally pass the symlink test.
+  await writeFile(outside, original);
   await symlink(outside, path);
   await f.api
     .get(`${f.base}/${file.id}/download`)
