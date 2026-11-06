@@ -954,10 +954,20 @@ test("frontend clients complete configuration and item CRUD against Express", as
     if (child && exited) {
       const forceStop = setTimeout(() => child?.kill("SIGKILL"), 3000);
       try {
-        if (child.exitCode === null && child.signalCode === null)
-          child.kill("SIGTERM");
-        const [code] = await exited;
-        expect(code).toBe(0);
+        const terminationRequested =
+          child.exitCode === null && child.signalCode === null
+            ? child.kill("SIGTERM")
+            : false;
+        const [code, signal] = await exited;
+        // Windows kill() terminates abruptly; it cannot deliver a catchable POSIX SIGTERM.
+        // Graceful Windows shutdown is exercised separately through the desktop IPC lifecycle.
+        if (process.platform === "win32" && terminationRequested) {
+          expect(code).toBeNull();
+          expect(signal).toBe("SIGTERM");
+        } else {
+          expect(code).toBe(0);
+          expect(signal).toBeNull();
+        }
       } finally {
         clearTimeout(forceStop);
       }
