@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  open,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { type TestContext } from "node:test";
@@ -43,6 +50,97 @@ async function fixture(context: TestContext) {
 }
 const code = (expected: string) => (error: unknown) =>
   error instanceof Error && "code" in error && error.code === expected;
+
+// Exercise real handles across independent scheduler, preferences and storage callers.
+test("saves settings while independent services continuously read the shared file", async (context) => {
+  const f = await fixture(context);
+  const reader = createSettingsService(f.config.settingsPath);
+  const writer = createSettingsService(f.config.settingsPath);
+  let reading = true;
+  const readers = Array.from({ length: 3 }, async () => {
+    while (reading) {
+      await Promise.all([
+        reader.read(),
+        reader.readBackupPolicy(),
+        reader.readStorage(),
+        reader.readStorageState(),
+      ]);
+    }
+  });
+  const writes = (async () => {
+    try {
+      for (let index = 0; index < 10; index++) {
+        const revision = index * 3;
+        await writer.update({
+          expected_revision: revision,
+          preferences: { theme: "dark", language: "de" },
+        });
+        await writer.updateBackupPolicy({
+          expected_revision: revision + 1,
+          policy: { frequency: "daily", retention: 2 },
+        });
+        await writer.updateStorage(revision + 2, async (storage) => ({
+          ...storage,
+          moveFailed: true,
+        }));
+      }
+    } finally {
+      reading = false;
+    }
+  })();
+  // Drain every reader before reporting a failure or removing the fixture.
+  const results = await Promise.allSettled([...readers, writes]);
+  for (const result of results) {
+    if (result.status === "rejected") throw result.reason;
+  }
+  assert.equal((await reader.read()).revision, 30);
+  assert.equal((await reader.read()).preferences.theme, "dark");
+  assert.equal((await reader.read()).preferences.language, "de");
+  assert.deepEqual((await reader.readBackupPolicy()).policy, {
+    frequency: "daily",
+    retention: 2,
+  });
+  assert.deepEqual(await reader.readStorage(), { moveFailed: true });
+  assert.deepEqual(await readdir(f.config.configDirectory), ["settings.json"]);
+});
+
+// An external handle is outside the service queue: Windows must report the real
+// replacement failure, preserve the original, clean the temporary and recover.
+test("handles an externally opened settings destination without losing data or blocking later writes", async (context) => {
+  const f = await fixture(context);
+  const before = await readFile(f.config.settingsPath, "utf8");
+  const externalReader = await open(f.config.settingsPath, "r");
+  try {
+    const update = f.settings.update({
+      expected_revision: 0,
+      preferences: { theme: "dark" },
+    });
+    if (process.platform === "win32") {
+      await assert.rejects(update, code("EPERM"));
+      assert.equal(await readFile(f.config.settingsPath, "utf8"), before);
+      assert.equal((await f.settings.read()).revision, 0);
+    } else {
+      // POSIX permits replacing a destination while an old read handle is open.
+      assert.equal((await update).revision, 1);
+    }
+    assert.deepEqual(await readdir(f.config.configDirectory), [
+      "settings.json",
+    ]);
+  } finally {
+    await externalReader.close();
+  }
+  const revision = (await f.settings.read()).revision;
+  const saved = await f.settings.update({
+    expected_revision: revision,
+    preferences: { theme: "light" },
+  });
+  assert.equal(saved.revision, revision + 1);
+  assert.equal(saved.preferences.theme, "light");
+  assert.deepEqual(
+    await createSettingsService(f.config.settingsPath).read(),
+    saved,
+  );
+});
 
 // Placeholder settings acquire defaults without being rewritten merely by reading them.
 test("reads effective defaults and persists partial preferences across service reconstruction", async (context) => {

@@ -13,7 +13,8 @@ import {
   type StorageLocations,
 } from "./validation.js";
 
-// Serialize all callers for a path, including independently composed services within one backend process.
+// Serialize reads and writes for a path across independently composed services.
+// On Windows an open destination read handle prevents rename from replacing it.
 const queues = new Map<string, Promise<unknown>>();
 const maximumSettingsBytes = 64 * 1024;
 
@@ -114,7 +115,7 @@ export function createSettingsService(settingsPath: string) {
      * @throws {DomainError} When the settings document is unavailable or invalid.
      */
     async readBackupPolicy() {
-      const document = await readDocument();
+      const document = await serialize(readDocument);
       return {
         revision: document.revision,
         policy: document.backups ?? { ...defaultBackupPolicy },
@@ -145,7 +146,7 @@ export function createSettingsService(settingsPath: string) {
       });
     },
     async readStorageState() {
-      const document = await readDocument();
+      const document = await serialize(readDocument);
       return { revision: document.revision, storage: document.storage ?? {} };
     },
     /** Serialize internal storage changes with ordinary preference writes. */
@@ -171,10 +172,10 @@ export function createSettingsService(settingsPath: string) {
     },
     /** Read startup locations without exposing filesystem paths through preference responses. */
     async readStorage() {
-      return (await readDocument()).storage ?? {};
+      return (await serialize(readDocument)).storage ?? {};
     },
     async read() {
-      return response(await readDocument());
+      return response(await serialize(readDocument));
     },
     async update(input: unknown) {
       const data = settingsUpdateSchema.parse(input);
