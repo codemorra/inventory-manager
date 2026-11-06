@@ -16,25 +16,12 @@ import { DomainError } from "../errors.js";
  * Read one coherent inventory snapshot and replace source identities with local archive keys.
  * @param db The source connection; every query belongs to a single synchronous read transaction.
  * @param inventoryId The active inventory to export.
- * @param includeAttachments Whether managed attachment fields and references belong to the snapshot.
- * @returns The portable manifest, private file identities, omitted attachment count and a source-change fingerprint.
+ * @returns The portable manifest, private file identities, and a source-change fingerprint.
  */
-export function readExportSnapshot(
-  db: AppDatabase,
-  inventoryId: string,
-  includeAttachments = true,
-) {
+export function readExportSnapshot(db: AppDatabase, inventoryId: string) {
   return db.transaction((transaction) => {
     const inventory = createInventoryService(transaction).get(inventoryId);
-    const allFields = createFieldRepository(transaction).list(inventoryId);
-    const omittedFields = new Set(
-      allFields
-        .filter(
-          (field) => !includeAttachments && field.fieldType === "attachment",
-        )
-        .map((field) => field.id),
-    );
-    const fields = allFields.filter((field) => !omittedFields.has(field.id));
+    const fields = createFieldRepository(transaction).list(inventoryId);
     const repository = createItemRepository(transaction);
     const items = repository.list(inventoryId);
     const values = repository.valuesForInventory(inventoryId);
@@ -57,18 +44,16 @@ export function readExportSnapshot(
       )
       .all()
       .map((row) => row.option);
-    const files = includeAttachments
-      ? transaction
-          .select()
-          .from(inventoryAttachments)
-          .where(
-            and(
-              eq(inventoryAttachments.inventoryId, inventoryId),
-              isNull(inventoryAttachments.deletedAt),
-            ),
-          )
-          .all()
-      : [];
+    const files = transaction
+      .select()
+      .from(inventoryAttachments)
+      .where(
+        and(
+          eq(inventoryAttachments.inventoryId, inventoryId),
+          isNull(inventoryAttachments.deletedAt),
+        ),
+      )
+      .all();
     const fieldKeys = new Map(fields.map((f, i) => [f.id, `f${i + 1}`]));
     const orderedOptions = fields.flatMap((field) =>
       options.filter((option) => option.fieldId === field.id),
@@ -85,7 +70,6 @@ export function readExportSnapshot(
     const fieldById = new Map(fields.map((field) => [field.id, field]));
     const valuesByItem = new Map<string, typeof values>();
     for (const value of values) {
-      if (omittedFields.has(value.fieldId)) continue;
       const row = valuesByItem.get(value.itemId) ?? [];
       row.push(value);
       valuesByItem.set(value.itemId, row);
@@ -188,7 +172,6 @@ export function readExportSnapshot(
     if (!validated.success) throw unavailable();
     return {
       manifest: validated.data,
-      omittedAttachmentFields: omittedFields.size,
       sources,
       fingerprint: createHash("sha256")
         .update(

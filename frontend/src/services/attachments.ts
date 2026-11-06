@@ -56,9 +56,9 @@ export function attachmentDownloadUrl(file: InventoryAttachment): string {
 }
 
 /**
- * Request a signature-checked original raster image without changing the original file's download behavior.
+ * Request a generated raster thumbnail without changing the original file's download behavior.
  * @param file The file's public metadata.
- * @returns Its preview endpoint; load only after an explicit user action.
+ * @returns Its preview endpoint, which returns only a small re-encoded image.
  */
 export function attachmentPreviewUrl(file: InventoryAttachment): string {
   return `${apiBaseUrl}${attachmentPath(file.inventory_id, file.field_id)}/${encodeURIComponent(file.id)}/preview`;

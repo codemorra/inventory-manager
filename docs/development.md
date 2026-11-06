@@ -70,8 +70,6 @@ To test a local build:
 npm --prefix desktop run smoke:package -- path/to/application
 ```
 
-The packaged smoke test uses the built application's frontend, backend and embedded Node runtime with isolated temporary data.
-
 Pass two application paths to check data preservation when replacing one build with another. These tests use temporary data and remove it afterward.
 
 ## Maintenance references

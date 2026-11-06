@@ -10,13 +10,10 @@ import type { createAttachmentService } from "../attachments/service.js";
 import { readExportSnapshot } from "./snapshot.js";
 import { createInventoryService } from "../inventories/service.js";
 import { maxArchiveEntries, maxManifestBytes } from "./limits.js";
-import { tableExportLines, type TableExportFormat } from "./table.js";
 import { DomainError } from "../errors.js";
 
 interface ExportArtifact {
   path: string;
-  mediaType: string;
-  omittedAttachmentFields: number;
   filename: string;
   byteSize: number;
   dispose: () => Promise<void>;
@@ -183,8 +180,6 @@ export function createExportService(
           );
         return {
           path,
-          mediaType: "application/zip",
-          omittedAttachmentFields: 0,
           filename: archiveFilename(snapshot.manifest.inventory.name),
           byteSize: (await stat(path)).size,
           dispose,
@@ -202,86 +197,13 @@ export function createExportService(
       }
     },
     /**
-     * Write a readable UTF-8 table without accessing or copying managed attachment bodies.
-     * @param inventoryId The saved inventory to export in field and item order.
-     * @param format The table encoding, independent of interface language and table views.
-     * @param signal Cancellation from a disconnected client.
-     * @returns A completed table artifact using the existing private download lifecycle.
-     */
-    async createTable(
-      inventoryId: string,
-      format: TableExportFormat,
-      signal?: AbortSignal,
-    ) {
-      signal?.throwIfAborted();
-      const snapshot = readExportSnapshot(db, inventoryId, false);
-      if (!snapshot.manifest.fields.length)
-        throw new DomainError(
-          "inventory_export_unavailable",
-          "A table export requires at least one field other than attachments.",
-        );
-      await mkdir(directory, { recursive: true, mode: 0o700 });
-      const workspace = await mkdtemp(join(directory, "export-"));
-      active.add(workspace);
-      const extension = format === "markdown" ? "md" : "csv";
-      const path = join(workspace, `inventory.${extension}`);
-      const dispose = async () => {
-        try {
-          await rm(workspace, { recursive: true, force: true });
-        } finally {
-          active.delete(workspace);
-        }
-      };
-      try {
-        await pipeline(
-          Readable.from(tableExportLines(snapshot.manifest, format)),
-          createWriteStream(path, { flags: "wx", mode: 0o600, flush: true }),
-          { signal },
-        );
-        signal?.throwIfAborted();
-        if (
-          readExportSnapshot(db, inventoryId, false).fingerprint !==
-          snapshot.fingerprint
-        )
-          throw new DomainError(
-            "inventory_export_conflict",
-            "The inventory changed during export. Please export it again.",
-          );
-        return {
-          path,
-          filename: archiveFilename(snapshot.manifest.inventory.name).replace(
-            /\.zip$/,
-            `.${extension}`,
-          ),
-          mediaType:
-            format === "markdown"
-              ? "text/markdown; charset=utf-8"
-              : "text/csv; charset=utf-8",
-          omittedAttachmentFields: snapshot.omittedAttachmentFields,
-          byteSize: (await stat(path)).size,
-          dispose,
-        };
-      } catch (error) {
-        await dispose();
-        throw error;
-      }
-    },
-    /**
      * Prepare a short-lived download without exposing its managed scratch path.
      * @param inventoryId The saved inventory to export.
-     * @param signal Cancellation of export preparation.
-     * @param format The requested encoding; omitted requests retain ZIP archive behavior.
+     * @param signal Cancellation of archive preparation.
      * @returns An opaque single-use download identity and display metadata.
      */
-    async prepare(
-      inventoryId: string,
-      signal?: AbortSignal,
-      format: "zip" | TableExportFormat = "zip",
-    ) {
-      const artifact =
-        format === "zip"
-          ? await this.create(inventoryId, signal)
-          : await this.createTable(inventoryId, format, signal);
+    async prepare(inventoryId: string, signal?: AbortSignal) {
+      const artifact = await this.create(inventoryId, signal);
       const id = randomUUID();
       const expires = Date.now() + exportLifetime;
       prepared.set(id, { inventoryId, artifact, expires });
@@ -290,7 +212,6 @@ export function createExportService(
         filename: artifact.filename,
         byte_size: artifact.byteSize,
         expires_at: new Date(expires).toISOString(),
-        omitted_attachment_fields: artifact.omittedAttachmentFields,
       };
     },
     /**

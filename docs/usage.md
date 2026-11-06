@@ -33,15 +33,13 @@ Use **New item** to add an entry. Edit individual items through their row action
 
 Click a sortable column heading to cycle through ascending, descending and original order. Search and field filters narrow the displayed items. Search and filter state is temporary.
 
-Use **View** to show or hide columns and wrap text. Drag the right edge of a heading to resize it. Right-click a heading to restore automatic width or hide the column. Table preferences are saved separately for each inventory.
+Use **View** to show or hide columns, wrap text and enable image previews for file columns. Drag the right edge of a heading to resize it. Right-click a heading to restore automatic width or hide the column. Table preferences are saved separately for each inventory.
 
 If another window changes the same data, the application preserves your draft and reports a conflict. Load the current saved version before trying again. Unsaved changes require confirmation before leaving.
 
 ## Attachments
 
-Add files to an item's **Files** field and save the item. The application keeps a managed copy; the original stays unchanged. Click a PNG, JPEG, GIF or WebP filename to preview the image. Other file types download directly.
-
-To download an image, right-click its filename or the preview and choose **Save as…**. On desktop, choose the destination in the Save As dialog. This also works when a preview is unavailable. Close the preview with its close button or **Escape**.
+Adding a file creates a managed copy; the original stays unchanged. Click a filename to download that copy. Desktop downloads use a Save As dialog. Optional image previews do not change the original file.
 
 There is no application-imposed file-size limit. **Settings > General** can warn before adding files of 100 MiB or more. Large files and archives still require enough disk space.
 

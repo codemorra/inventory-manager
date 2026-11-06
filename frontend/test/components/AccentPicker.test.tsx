@@ -19,15 +19,7 @@ describe("AccentPicker", () => {
       screen
         .getAllByRole("button")
         .map((button) => button.getAttribute("aria-label")),
-    ).toEqual([
-      "Turquoise",
-      "Cyan",
-      "Blue",
-      "Purple",
-      "Orange",
-      "Green",
-      "Graphite",
-    ]);
+    ).toEqual(["Turquoise", "Cyan", "Blue", "Purple", "Orange", "Green", "Graphite"]);
   });
 
   test("defaults to the logo turquoise palette when no preference has been loaded", () => {
@@ -84,9 +76,7 @@ describe("AccentPicker", () => {
     ["slate", "Graphite"],
   ] as const)("persists and restores the %s palette", async (accent, name) => {
     const user = userEvent.setup();
-    await seedPreference({
-      accent: accent === "turquoise" ? "blue" : "turquoise",
-    });
+    await seedPreference({ accent: accent === "turquoise" ? "blue" : "turquoise" });
     const first = render(<AccentPicker />);
     await user.click(screen.getByRole("button", { name }));
     expect(document.documentElement.dataset.accent).toBe(accent);
