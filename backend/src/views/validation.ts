@@ -14,7 +14,6 @@ export const viewPreferencesSchema = z.strictObject({
     .nullable(),
   hiddenFieldIds: z.array(z.string().min(1)),
   wrapText: z.boolean(),
-  // Legacy version-1 field: accepted and retained, never used to load table images.
   attachmentPreviews: z.boolean(),
   columnWidths: z.record(
     z.string().min(1),

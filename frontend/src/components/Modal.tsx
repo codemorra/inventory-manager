@@ -1,10 +1,4 @@
-import {
-  type CSSProperties,
-  type ReactNode,
-  useEffect,
-  useId,
-  useRef,
-} from "react";
+import { type ReactNode, useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
@@ -15,8 +9,6 @@ interface ModalProps {
   title: string;
   size?: "small" | "medium" | "large";
   contentClassName?: string;
-  dialogClassName?: string;
-  dialogStyle?: CSSProperties;
   closeDisabled?: boolean;
 }
 
@@ -27,8 +19,6 @@ interface ModalProps {
  * @param title The title of the modal dialog.
  * @param size The content width appropriate for the form.
  * @param contentClassName Optional layout classes for independently scrolling content.
- * @param dialogClassName Optional dialog sizing classes.
- * @param dialogStyle Optional dimensions for content-dependent dialogs.
  * @param closeDisabled Prevent dismissal while a durable operation is awaiting its result.
  * @returns The modal overlay and dialog content.
  */
@@ -38,8 +28,6 @@ export function Modal({
   title,
   size = "large",
   contentClassName = "",
-  dialogClassName = "",
-  dialogStyle,
   closeDisabled = false,
 }: ModalProps) {
   const { t } = useTranslation();
@@ -83,10 +71,9 @@ export function Modal({
     >
       <section
         ref={dialogRef}
-        style={dialogStyle}
         aria-labelledby={titleId}
         aria-modal="true"
-        className={`flex max-h-[90dvh] w-full flex-col overflow-y-auto rounded-2xl border border-shell bg-surface shadow-raised ${width} ${dialogClassName}`}
+        className={`flex max-h-[90dvh] w-full flex-col overflow-y-auto rounded-2xl border border-shell bg-surface shadow-raised ${width}`}
         role="dialog"
       >
         <div className="flex shrink-0 items-center justify-between gap-4 border-b border-shell bg-surface-muted px-5 py-4">

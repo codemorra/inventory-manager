@@ -90,7 +90,7 @@ export function attachmentRoutes({ attachments }: Services) {
     });
     await pipeline(file.stream, response);
   });
-  // Only signature-checked raster originals may be used as images.
+  // Only re-encoded raster thumbnails are displayed inline; originals always remain downloads.
   router.get(`${path}/:attachment_id/preview`, async (request, response) => {
     const image = await attachments.preview(
       request.params.inventory_id,
@@ -98,18 +98,13 @@ export function attachmentRoutes({ attachments }: Services) {
       request.params.attachment_id,
     );
     response.set({
-      "Content-Type": image.mediaType,
-      "Content-Length": String(image.metadata.byteSize),
-      "Content-Disposition": 'inline; filename="preview"',
+      "Content-Type": "image/webp",
+      "Content-Disposition": 'inline; filename="preview.webp"',
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
       "Content-Security-Policy": "default-src 'none'; sandbox",
     });
-    if (response.destroyed) {
-      image.stream.destroy();
-      return;
-    }
-    await pipeline(image.stream, response);
+    response.send(image);
   });
   router.delete(`${path}/:attachment_id`, (request, response) => {
     attachments.discard(

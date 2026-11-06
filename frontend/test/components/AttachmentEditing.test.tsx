@@ -405,32 +405,34 @@ test("cleans a staged upload that finishes after its parent form unmounts", asyn
   expect(api.createInventoryItem).not.toHaveBeenCalled();
 });
 
-// Old saved views must retain other settings without activating any table image requests.
-test("ignores legacy thumbnail preferences across table remounts", async () => {
+// The real table wires View to the persisted preference and keeps thumbnail loading opt-in.
+test("toggles image previews from View and restores the choice when the inventory remounts", async () => {
   const user = userEvent.setup();
-  await seedView("inventory", { attachmentPreviews: true, wrapText: false });
-  const fetch = vi.fn();
-  vi.stubGlobal("fetch", fetch);
-  try {
-    rows[0]!.attachments = [
-      { ...savedAttachment, filename: "photo.png", media_type: "image/png" },
-    ];
-    show();
-    await screen.findByRole("link", { name: "photo.png" });
-    expect(document.querySelector("img")).toBeNull();
-    await user.click(screen.getByRole("button", { name: "View" }));
-    expect(
-      screen.queryByRole("menuitemcheckbox", { name: "Image previews" }),
-    ).toBeNull();
-    expect(
-      screen.getByRole("menuitemcheckbox", { name: "Wrap text" }),
-    ).toHaveAttribute("aria-checked", "false");
-    cleanup();
-    show();
-    await screen.findByRole("link", { name: "photo.png" });
-    expect(document.querySelector("img")).toBeNull();
-    expect(fetch).not.toHaveBeenCalled();
-  } finally {
-    vi.unstubAllGlobals();
-  }
+
+  rows[0]!.attachments = [
+    { ...savedAttachment, filename: "photo.png", media_type: "image/png" },
+  ];
+  show();
+  await screen.findByRole("link", { name: "photo.png" });
+  expect(document.querySelector("img")).toBeNull();
+  await user.click(screen.getByRole("button", { name: "View" }));
+  await user.click(
+    screen.getByRole("menuitemcheckbox", { name: "Image previews" }),
+  );
+  expect(document.querySelector("img")).toHaveAttribute(
+    "src",
+    expect.stringContaining("/preview"),
+  );
+  cleanup();
+  show();
+  await screen.findByRole("link", { name: "photo.png" });
+  expect(document.querySelector("img")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "View" }));
+  expect(
+    screen.getByRole("menuitemcheckbox", { name: "Image previews" }),
+  ).toHaveAttribute("aria-checked", "true");
+  await user.click(
+    screen.getByRole("menuitemcheckbox", { name: "Image previews" }),
+  );
+  expect(document.querySelector("img")).toBeNull();
 });

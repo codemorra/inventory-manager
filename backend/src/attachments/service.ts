@@ -12,12 +12,7 @@ import { createInventoryService } from "../inventories/service.js";
 import { createFieldService } from "../fields/service.js";
 import { DomainError } from "../errors.js";
 import { tombstoneAttachments } from "./metadata.js";
-import {
-  inspectPreview,
-  maxPreviewBytes,
-  previewHeaderBytes,
-  previewUnavailable,
-} from "./preview.js";
+import { isPreviewRaster, queuePreview, renderPreview } from "./preview.js";
 
 import { stagedAttachmentLifetime } from "./constants.js";
 export { stagedAttachmentLifetime } from "./constants.js";
@@ -96,36 +91,6 @@ export function createAttachmentService(
         "Attachment not found.",
       );
     return file;
-  }
-
-  /** Share descriptor, size, symlink and lifecycle checks between download and inline access. */
-  async function openManaged(
-    inventoryId: string,
-    fieldId: string,
-    id: string,
-    preview = false,
-  ) {
-    const metadata = get(inventoryId, fieldId, id);
-    if (preview && metadata.byteSize > maxPreviewBytes) previewUnavailable();
-    let handle;
-    try {
-      handle = await open(path(id), constants.O_RDONLY | constants.O_NOFOLLOW);
-      const details = await handle.stat();
-      if (!details.isFile() || details.size !== metadata.byteSize) {
-        if (preview) previewUnavailable();
-        throw new Error("Managed attachment content is unavailable.");
-      }
-      get(inventoryId, fieldId, id);
-      return { metadata, handle };
-    } catch (error) {
-      await handle?.close();
-      if ((error as NodeJS.ErrnoException).code === "ENOENT")
-        throw new DomainError(
-          "inventory_attachment_not_found",
-          "Attachment content not found.",
-        );
-      throw error;
-    }
   }
 
   return {
@@ -221,34 +186,74 @@ export function createAttachmentService(
      * @returns Verified metadata and a binary stream owned by the caller.
      */
     async download(inventoryId: string, fieldId: string, id: string) {
-      const { metadata, handle } = await openManaged(inventoryId, fieldId, id);
-      return { metadata, stream: handle.createReadStream() };
-    },
-
-    /** Open a bounded original raster through the same verified descriptor used for streaming. */
-    async preview(inventoryId: string, fieldId: string, id: string) {
-      const { metadata, handle } = await openManaged(
-        inventoryId,
-        fieldId,
-        id,
-        true,
-      );
+      const metadata = get(inventoryId, fieldId, id);
+      let handle;
       try {
-        const header = Buffer.alloc(
-          Math.min(metadata.byteSize, previewHeaderBytes),
+        handle = await open(
+          path(id),
+          constants.O_RDONLY | constants.O_NOFOLLOW,
         );
-        const read = await handle.read(header, 0, header.length, 0);
-        const mediaType = inspectPreview(header.subarray(0, read.bytesRead));
+        const details = await handle.stat();
+        if (!details.isFile() || details.size !== metadata.byteSize)
+          throw new Error("Managed attachment content is unavailable.");
+        // A deletion during the asynchronous open must not expose content from a cleared record.
         get(inventoryId, fieldId, id);
-        return {
-          metadata,
-          mediaType,
-          stream: handle.createReadStream({ start: 0 }),
-        };
+        return { metadata, stream: handle.createReadStream() };
       } catch (error) {
-        await handle.close();
+        await handle?.close();
+        if ((error as NodeJS.ErrnoException).code === "ENOENT")
+          throw new DomainError(
+            "inventory_attachment_not_found",
+            "Attachment content not found.",
+          );
         throw error;
       }
+    },
+
+    /**
+     * Generate a transient raster thumbnail while preserving download-only original endpoints.
+     * @param inventoryId The file's parent inventory.
+     * @param fieldId The file's attachment field.
+     * @param id The opaque managed file identity.
+     * @returns Small WebP bytes; missing/deleted/unsupported files never expose their original bytes inline.
+     */
+    preview(inventoryId: string, fieldId: string, id: string) {
+      return queuePreview(async () => {
+        const metadata = get(inventoryId, fieldId, id);
+        let handle;
+        try {
+          handle = await open(
+            path(id),
+            constants.O_RDONLY | constants.O_NOFOLLOW,
+          );
+          const details = await handle.stat();
+          if (!details.isFile() || details.size !== metadata.byteSize)
+            throw new DomainError(
+              "attachment_preview_unavailable",
+              "Attachment content is unavailable.",
+            );
+          const header = Buffer.alloc(12);
+          const read = await handle.read(header, 0, header.length, 0);
+          if (!isPreviewRaster(header.subarray(0, read.bytesRead)))
+            throw new DomainError(
+              "attachment_preview_unavailable",
+              "This file does not support image previews.",
+            );
+          const buffer = await renderPreview(path(id));
+          // Deletion during native processing must take effect before any thumbnail is returned.
+          get(inventoryId, fieldId, id);
+          return buffer;
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === "ENOENT")
+            throw new DomainError(
+              "inventory_attachment_not_found",
+              "Attachment content not found.",
+            );
+          throw error;
+        } finally {
+          await handle?.close();
+        }
+      });
     },
 
     /**

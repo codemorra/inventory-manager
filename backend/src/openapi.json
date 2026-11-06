@@ -2378,9 +2378,9 @@
     "/inventories/{inventory_id}/fields/{field_id}/attachments/{attachment_id}/preview": {
       "get": {
         "tags": ["attachments"],
-        "summary": "Preview an original raster image",
+        "summary": "Render a transient image preview",
         "operationId": "preview_inventory_attachment",
-        "description": "Streams unchanged PNG, JPEG, GIF or WebP original bytes after signature and canvas-dimension inspection, independent of filename and uploaded MIME type. Preview bounds: 25 MiB, 40 million canvas pixels, 32768 pixels per axis and at most 256 KiB of inspected header bytes (JPEG dimensions must be found within that bound). Original EXIF/GPS/ICC and animation data are retained. No re-encoding, metadata stripping or stored derivative. A valid header does not guarantee successful browser decoding; clients must handle image decode errors even after HTTP 200. These limits do not restrict original upload/download, export or backup. SVG, HTML, PDF and other formats are not embedded.",
+        "description": "Validates PNG, JPEG, GIF, or WebP bytes and returns a static, proportionally fitted WebP no larger than 320 by 240 pixels. Original files remain download-only. Native decoding is serialized, bounded to 100 million source pixels and five seconds; these preview limits do not limit file copying. Unsupported, corrupt, or impractical images return attachment_preview_unavailable. Derivatives strip metadata and are not stored.",
         "parameters": [
           {
             "name": "inventory_id",
@@ -2409,26 +2409,8 @@
         ],
         "responses": {
           "200": {
-            "description": "Unchanged original raster bytes with signature-derived media type; use only in an image context.",
+            "description": "Transient metadata-free thumbnail.",
             "content": {
-              "image/png": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              },
-              "image/jpeg": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              },
-              "image/gif": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              },
               "image/webp": {
                 "schema": {
                   "type": "string",
@@ -2451,8 +2433,7 @@
               },
               "Content-Disposition": {
                 "schema": {
-                  "type": "string",
-                  "const": "inline; filename=\"preview\""
+                  "type": "string"
                 }
               },
               "X-Inventory-Generation": {
@@ -2460,19 +2441,6 @@
                 "schema": {
                   "type": "string",
                   "format": "uuid"
-                }
-              },
-              "Content-Length": {
-                "description": "Original attachment byte length.",
-                "schema": {
-                  "type": "string",
-                  "pattern": "^[0-9]+$"
-                }
-              },
-              "Content-Security-Policy": {
-                "schema": {
-                  "type": "string",
-                  "const": "default-src 'none'; sandbox"
                 }
               }
             }
@@ -2488,7 +2456,7 @@
             }
           },
           "415": {
-            "description": "attachment_preview_unavailable: unsupported/invalid raster header, unavailable dimensions, size inconsistency or exceeded preview bounds. Other decode errors may only be detected by the browser after HTTP 200.",
+            "description": "attachment_preview_unavailable: unsupported, corrupt, or impractical image.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2498,7 +2466,7 @@
             }
           },
           "500": {
-            "description": "Unexpected storage error; no filesystem paths are exposed."
+            "description": "Unexpected storage error."
           }
         }
       }
@@ -2506,9 +2474,9 @@
     "/inventories/{inventory_id}/exports": {
       "post": {
         "tags": ["inventory exchange"],
-        "summary": "Prepare a saved inventory export",
+        "summary": "Prepare a complete inventory ZIP export",
         "operationId": "prepare_inventory_export",
-        "description": "Creates a version-1 ZIP containing inventory.json and all referenced managed originals. Files stream to private scratch storage and are verified against saved sizes/SHA-256. Rejects source changes during preparation. Returns only after completion; the opaque single-use download token expires after 15 minutes. No inventory or item data/revisions are changed. Client disconnection cancels preparation. Optional format selects zip (default), csv or markdown. Table exports include all saved items in field order, independently of views and filters. Attachment columns and bodies are omitted; omitted_attachment_fields reports their count. Tables require at least one non-attachment field. CSV uses UTF-8, comma delimiters, quoted cells and CRLF. Markdown uses escaped pipe tables. IDs and durations are numeric (duration in seconds), booleans are true/false, temporal strings are retained, links use label (URL), and multiple option names are separated by semicolon-space. Deleted options appear as [unavailable]. Missing values are empty cells. Tables contain no field-type metadata.",
+        "description": "Creates a version-1 ZIP containing inventory.json and all referenced managed originals. Files stream to private scratch storage and are verified against saved sizes/SHA-256. Rejects source changes during preparation. Returns only after completion; the opaque single-use download token expires after 15 minutes. No inventory or item data/revisions are changed. Client disconnection cancels preparation.",
         "parameters": [
           {
             "name": "inventory_id",
@@ -2524,7 +2492,7 @@
         ],
         "responses": {
           "201": {
-            "description": "Completed inventory export ready for a native download.",
+            "description": "Completed inventory archive ready for a native download.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2575,31 +2543,13 @@
           "500": {
             "description": "Unexpected storage error; incomplete archives are removed."
           }
-        },
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "format": {
-                    "type": "string",
-                    "enum": ["zip", "csv", "markdown"],
-                    "default": "zip"
-                  }
-                }
-              }
-            }
-          }
         }
       }
     },
     "/inventories/{inventory_id}/exports/{export_id}/download": {
       "get": {
         "tags": ["inventory exchange"],
-        "summary": "Download a prepared inventory export once",
+        "summary": "Download a prepared inventory archive once",
         "operationId": "download_inventory_export",
         "description": "Claims an unexpired inventory-scoped export token for a single download and disposes scratch files after completion or disconnection. A deleted source inventory cannot be downloaded. HEAD returns 405 without consuming the token.",
         "parameters": [
@@ -2622,21 +2572,9 @@
         ],
         "responses": {
           "200": {
-            "description": "Complete inventory ZIP, CSV or Markdown table.",
+            "description": "Complete ZIP archive containing the versioned manifest and referenced original files.",
             "content": {
               "application/zip": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              },
-              "text/csv": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              },
-              "text/markdown": {
                 "schema": {
                   "type": "string",
                   "format": "binary"
@@ -3100,9 +3038,6 @@
           "422": {
             "description": "Invalid preference values, unknown properties or missing revision."
           },
-          "500": {
-            "description": "Settings file write failed; previous contents preserved."
-          },
           "503": {
             "description": "application_settings_unavailable: invalid/unreadable/unsupported settings file, preserved without reset.",
             "content": {
@@ -3112,6 +3047,9 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Settings file write failed; previous contents preserved."
           }
         },
         "parameters": [
@@ -3341,6 +3279,9 @@
               }
             }
           },
+          "503": {
+            "description": "application_settings_unavailable: invalid or unavailable settings file."
+          },
           "409": {
             "description": "application_settings_conflict or storage_location_conflict: stale revision, existing relocation/cleanup or independent database override."
           },
@@ -3349,9 +3290,6 @@
           },
           "500": {
             "description": "Settings file write failed; reload the state before retrying."
-          },
-          "503": {
-            "description": "application_settings_unavailable: invalid or unavailable settings file."
           }
         },
         "requestBody": {
@@ -3420,6 +3358,9 @@
               }
             }
           },
+          "503": {
+            "description": "application_settings_unavailable: invalid or unavailable settings file."
+          },
           "409": {
             "description": "application_settings_conflict or storage_location_conflict: stale revision, existing relocation/cleanup or independent database override."
           },
@@ -3428,9 +3369,6 @@
           },
           "500": {
             "description": "Settings file write failed; reload the state before retrying."
-          },
-          "503": {
-            "description": "application_settings_unavailable: invalid or unavailable settings file."
           }
         },
         "requestBody": {
@@ -3601,11 +3539,11 @@
           "404": {
             "description": "backup_not_found: invalid name, missing archive or nonregular file."
           },
-          "409": {
-            "description": "backup_conflict: the selected archive is being deleted."
-          },
           "500": {
             "description": "Backup storage access failed."
+          },
+          "409": {
+            "description": "backup_conflict: the selected archive is being deleted."
           }
         }
       },
@@ -3654,11 +3592,11 @@
           "404": {
             "description": "backup_not_found: invalid name, missing archive or nonregular file."
           },
-          "409": {
-            "description": "backup_conflict: the selected archive is being deleted."
-          },
           "500": {
             "description": "Backup storage access failed."
+          },
+          "409": {
+            "description": "backup_conflict: the selected archive is being deleted."
           }
         }
       }
@@ -4016,11 +3954,11 @@
           "422": {
             "description": "Invalid frequency, retention count or revision."
           },
-          "500": {
-            "description": "Policy publication failed; reload to check the accepted configuration."
-          },
           "503": {
             "description": "Settings or scheduler status is unavailable; existing state is preserved."
+          },
+          "500": {
+            "description": "Policy publication failed; reload to check the accepted configuration."
           }
         }
       }
@@ -5353,13 +5291,7 @@
       "PreparedInventoryExport": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "id",
-          "filename",
-          "byte_size",
-          "expires_at",
-          "omitted_attachment_fields"
-        ],
+        "required": ["id", "filename", "byte_size", "expires_at"],
         "properties": {
           "id": {
             "type": "string"
@@ -5374,11 +5306,6 @@
           "expires_at": {
             "type": "string",
             "format": "date-time"
-          },
-          "omitted_attachment_fields": {
-            "type": "integer",
-            "minimum": 0,
-            "description": "Attachment columns excluded from a table export; zero for ZIP archives."
           }
         }
       },
@@ -5568,9 +5495,7 @@
             "type": "boolean"
           },
           "attachmentPreviews": {
-            "type": "boolean",
-            "deprecated": true,
-            "description": "Legacy version-1 flag retained for saved-view compatibility. Has no presentation effect; image modals require no preference flag."
+            "type": "boolean"
           },
           "columnWidths": {
             "type": "object",

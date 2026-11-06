@@ -11,8 +11,8 @@ Run it in a desktop window on Linux or Windows, or in your browser with Docker. 
 - **Custom inventories:** Define the fields you need for each list, such as an item's name, quantity, purchase date or storage location. Choose from text, numbers, dates, times, durations, selections, checkboxes, links, files and automatic IDs.
 - **Organization and templates:** Arrange inventories in groups and reuse their field structures as templates for new lists.
 - **Search and editing:** Find items using text search and field-specific filters, sort by columns, and edit individual items or several table cells together.
-- **Table layouts:** Choose visible columns, adjust their widths, and wrap long text. Each inventory keeps its own view settings.
-- **Attachments and exchange:** Keep copies of documents and photos with your items, and click supported images to preview them in a modal. Export an inventory with its attached files as a ZIP archive and import it into another installation.
+- **Table layouts:** Choose visible columns, adjust their widths, wrap long text and show image previews. Each inventory keeps its own view settings.
+- **Attachments and exchange:** Keep copies of documents and photos with your items. Export an inventory with its attached files as a ZIP archive and import it into another installation.
 - **Backups and storage:** Create and restore data backups, schedule daily or weekly backups, and choose where data and backup files are stored.
 - **Appearance and language:** Switch between German and English, light and dark themes, and several accent colors.
 
@@ -124,13 +124,11 @@ npm run dev:desktop
 
 This builds the application and opens Electron with its own backend on a free loopback port. Stop any development backend using the same data directory first.
 
-Pull requests to `main` and `dev` automatically run type checking, linting, tests, builds and formatting checks through GitHub Actions. Run the same checks locally from the repository root before pushing:
+Run the full quality check from the repository root:
 
 ```bash
 npm run check
 ```
-
-If formatting fails, run `npx prettier --write <file>` for each reported file, then repeat `npm run check`.
 
 See the [development guide](docs/development.md) for project structure, individual checks and desktop smoke tests, and the [backend README](backend/README.md) for migrations and API maintenance.
 

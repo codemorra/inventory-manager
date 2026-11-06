@@ -5,14 +5,11 @@ import type { AttachmentDraft } from "./attachmentDraft";
 import {
   attachmentDownloadUrl,
   downloadAttachment,
-  canPreviewAttachment,
 } from "../services/attachments";
 import {
   largeAttachmentWarningBytes,
   useAttachmentWarnings,
 } from "../hooks/useAttachmentWarnings";
-import type { InventoryAttachment } from "../types/inventoryItem";
-import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
 import { Modal } from "./Modal";
 
 // A missing draft makes standalone/read-only consumers safe without issuing network requests.
@@ -53,7 +50,6 @@ export function AttachmentFieldInput({
   );
   const [warning, setWarning] = useAttachmentWarnings();
   const [selection, setSelection] = useState<File[] | null>(null);
-  const [preview, setPreview] = useState<InventoryAttachment | null>(null);
   const [remember, setRemember] = useState(false);
   const busy = disabled || state.busy || !draft;
 
@@ -116,17 +112,13 @@ export function AttachmentFieldInput({
             >
               {file ? (
                 <a
-                  aria-haspopup={
-                    canPreviewAttachment(file) ? "dialog" : undefined
-                  }
                   href={attachmentDownloadUrl(file)}
                   download={name}
                   target="_self"
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    if (canPreviewAttachment(file)) setPreview(file);
-                    else downloadAttachment(file);
+                    downloadAttachment(file);
                   }}
                   title={name}
                   className="min-w-0 flex-1 truncate text-accent-text underline"
@@ -163,13 +155,6 @@ export function AttachmentFieldInput({
         <p role="alert" className="mt-1 text-xs text-danger">
           {t("attachments.uploadFailed")}
         </p>
-      )}
-      {preview && value.includes(preview.id) && state.files[preview.id] && (
-        <AttachmentPreviewModal
-          key={preview.id}
-          file={preview}
-          onClose={() => setPreview(null)}
-        />
       )}
       {selection && (
         <Modal

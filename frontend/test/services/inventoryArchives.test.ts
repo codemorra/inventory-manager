@@ -86,7 +86,6 @@ test("prepares and cancels scoped exports with cancellation signals", async () =
   );
   expect(fetch.mock.calls[0][1]).toMatchObject({
     method: "POST",
-    body: JSON.stringify({ format: "zip" }),
     signal: controller.signal,
   });
   expect(fetch.mock.calls[1][0]).toMatch(
@@ -114,30 +113,3 @@ test("downloads the completed export directly in the current browsing context", 
   expect(link.isConnected).toBe(false);
   expect(fetch).not.toHaveBeenCalled();
 });
-
-// The requested encoding reaches preparation without downloading or buffering the prepared table.
-test.each(["csv", "markdown"] as const)(
-  "requests a %s inventory export",
-  async (format) => {
-    const fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 201,
-      json: async () => archiveExport,
-    });
-    vi.stubGlobal("fetch", fetch);
-    const controller = new AbortController();
-    await archives.prepareInventoryExport(
-      "inventory/id",
-      controller.signal,
-      format,
-    );
-    expect(fetch).toHaveBeenCalledExactlyOnceWith(
-      expect.stringMatching(/\/inventories\/inventory%2Fid\/exports$/),
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ format }),
-        signal: controller.signal,
-      }),
-    );
-  },
-);

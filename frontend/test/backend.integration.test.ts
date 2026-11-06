@@ -724,8 +724,10 @@ test("frontend clients complete configuration and item CRUD against Express", as
     );
     const preview = await fetch(attachments.attachmentPreviewUrl(image));
     expect(preview.status).toBe(200);
-    expect(preview.headers.get("Content-Type")).toBe("image/png");
-    expect(new Uint8Array(await preview.arrayBuffer())).toEqual(imageBytes);
+    expect(preview.headers.get("Content-Type")).toBe("image/webp");
+    const previewBytes = Buffer.from(await preview.arrayBuffer());
+    expect(previewBytes.toString("ascii", 0, 4)).toBe("RIFF");
+    expect(previewBytes.toString("ascii", 8, 12)).toBe("WEBP");
     await attachments.discardAttachment(image);
     await expect(attachments.discardAttachment(staged)).rejects.toMatchObject({
       status: 409,

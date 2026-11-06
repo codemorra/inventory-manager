@@ -216,6 +216,7 @@ export function InventoryItemList({
     toggleSort,
     toggleField,
     setWrapText,
+    setAttachmentPreviews,
     setColumnWidth,
     setAutomaticColumnWidth,
   } = useInventoryView(inventoryId, fields);
@@ -794,9 +795,15 @@ export function InventoryItemList({
         }
         wrapText={wrapText}
         onWrapTextChange={setWrapText}
+        attachmentPreviews={view.attachmentPreviews}
+        onAttachmentPreviewsChange={
+          fields.some((field) => field.field_type === "attachment")
+            ? setAttachmentPreviews
+            : undefined
+        }
         disabled={controlsDisabled}
       />
-      {/* Keep the data and action tables aligned within their shared border. */}
+      {/* Cell borders repaint reliably when previews change the heights of the separate tables. */}
       <div
         hidden={fields.length === 0}
         className={`${fields.length > 0 ? "grid" : "hidden"} grid-cols-[minmax(0,1fr)_auto] items-start overflow-hidden rounded-b-md border border-shell bg-surface`}
@@ -1001,6 +1008,7 @@ export function InventoryItemList({
                             />
                           ) : field.field_type === "attachment" ? (
                             <AttachmentCell
+                              previews={view.attachmentPreviews}
                               ids={valuesByField.get(field.id)?.value}
                               files={item.attachments ?? []}
                             />
@@ -1013,9 +1021,7 @@ export function InventoryItemList({
                                   field: field.name,
                                 })}
                                 // The change handler rejects concurrent writes without changing native appearance.
-                                aria-disabled={
-                                  checkboxUpdate.isPending || undefined
-                                }
+                                aria-disabled={checkboxUpdate.isPending || undefined}
                                 aria-busy={
                                   (checkboxUpdate.isPending &&
                                     checkboxTarget?.itemId === item.id &&

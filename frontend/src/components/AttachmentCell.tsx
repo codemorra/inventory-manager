@@ -1,26 +1,31 @@
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { InventoryAttachment } from "../types/inventoryItem";
 import {
   attachmentDownloadUrl,
   downloadAttachment,
+  attachmentPreviewUrl,
   canPreviewAttachment,
 } from "../services/attachments";
-import { AttachmentDownloadIcon } from "./AttachmentDownloadIcon";
 import { ContextMenu } from "./ContextMenu";
-import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
 import { Modal } from "./Modal";
 
 /**
- * Identify image/document entries without loading image bytes.
- * @param props The file type hint.
+ * Identify image/document entries consistently when previews are disabled or unavailable.
+ * @param props The file type hint and optional larger tile presentation.
  * @returns A decorative icon; the adjacent filename supplies the accessible label.
  */
-function AttachmentIcon({ file }: { file: InventoryAttachment }) {
+function AttachmentIcon({
+  file,
+  tile = false,
+}: {
+  file: InventoryAttachment;
+  tile?: boolean;
+}) {
   return (
     <svg
       aria-hidden="true"
-      className="size-4 shrink-0 text-muted"
+      className={`${tile ? "size-7" : "size-4"} shrink-0 text-muted`}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.5"
@@ -40,26 +45,78 @@ function AttachmentIcon({ file }: { file: InventoryAttachment }) {
 }
 
 /**
- * Render compact filename links with explicit image previews and a bounded overflow list.
+ * Lazy-load generated thumbnails and retain a useful icon/name if a preview cannot be rendered.
+ * @param props The immutable managed file metadata.
+ * @returns A fixed-height image area that never crops the source or opens an image viewer.
+ */
+function AttachmentThumbnail({ file }: { file: InventoryAttachment }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className="flex h-16 w-full items-center justify-center rounded-sm bg-surface-muted">
+      {!failed && canPreviewAttachment(file) ? (
+        <img
+          src={attachmentPreviewUrl(file)}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          onError={() => setFailed(true)}
+          className="h-16 w-full object-contain"
+        />
+      ) : (
+        <AttachmentIcon file={file} tile />
+      )}
+    </span>
+  );
+}
+
+/**
+ * Render compact filename links that download directly, with a bounded overflow list.
  * @param props Stored IDs and their saved public metadata.
  * @returns Wrapped file entries, optional full list, and cursor-positioned download actions.
  */
 export function AttachmentCell({
   ids,
   files,
+  previews = false,
 }: {
   ids: unknown;
   files: InventoryAttachment[];
+  previews?: boolean;
 }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
   const moreTrigger = useRef<HTMLButtonElement>(null);
-  const [preview, setPreview] = useState<InventoryAttachment | null>(null);
+  const [columns, setColumns] = useState(1);
+  const hasFiles = Array.isArray(ids) && ids.length > 0;
   const [menu, setMenu] = useState<{
     file: InventoryAttachment;
     x: number;
     y: number;
   } | null>(null);
+  useLayoutEffect(() => {
+    if (!previews) return;
+    const element = root.current;
+    if (!element) return;
+    // Match 112 px tiles plus the 6 px flex gap; at most two rows remain in the table cell.
+    function measure(width = element!.getBoundingClientRect().width) {
+      setColumns(Math.max(1, Math.floor((width + 6) / 118)));
+    }
+    measure();
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries.find((entry) => entry.target === element);
+        if (entry) measure(entry.contentRect.width);
+      });
+      observer.observe(element);
+      return () => observer.disconnect();
+    }
+    const onResize = () => measure();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [previews, hasFiles]);
   if (!Array.isArray(ids) || !ids.length) return <>—</>;
   const ordered = ids.map((id) => files.find((file) => file.id === id));
 
@@ -75,9 +132,6 @@ export function AttachmentCell({
           <li key={file?.id ?? index} className="max-w-full min-w-0">
             {file ? (
               <a
-                aria-haspopup={
-                  canPreviewAttachment(file) ? "dialog" : undefined
-                }
                 href={attachmentDownloadUrl(file)}
                 download={file.filename}
                 target="_self"
@@ -85,10 +139,9 @@ export function AttachmentCell({
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  if (canPreviewAttachment(file)) setPreview(file);
-                  else downloadAttachment(file);
+                  downloadAttachment(file);
                 }}
-                className="inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-sm border border-shell bg-surface px-2 py-1 text-sm text-accent-text hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent"
+                className={`max-w-full cursor-pointer items-center rounded-sm border border-shell bg-surface text-accent-text hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent ${previews ? "flex w-28 flex-col gap-1 p-1.5 text-xs" : "inline-flex gap-1.5 px-2 py-1 text-sm"}`}
                 onContextMenu={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -105,7 +158,11 @@ export function AttachmentCell({
                   }
                 }}
               >
-                <AttachmentIcon file={file} />
+                {previews ? (
+                  <AttachmentThumbnail file={file} />
+                ) : (
+                  <AttachmentIcon file={file} />
+                )}
                 <span className="max-w-full truncate">{file.filename}</span>
               </a>
             ) : (
@@ -119,9 +176,9 @@ export function AttachmentCell({
     );
   }
   return (
-    <div className="min-w-0">
-      {links(3)}
-      {ordered.length > 3 && (
+    <div ref={root} className="min-w-0">
+      {links(previews ? columns * 2 : 3)}
+      {ordered.length > (previews ? columns * 2 : 3) && (
         <button
           ref={moreTrigger}
           type="button"
@@ -129,7 +186,7 @@ export function AttachmentCell({
           className="mt-1 text-xs text-accent-text underline"
         >
           {t("attachments.more", {
-            count: ordered.length - 3,
+            count: ordered.length - (previews ? columns * 2 : 3),
           })}
         </button>
       )}
@@ -147,13 +204,6 @@ export function AttachmentCell({
           </div>
         </Modal>
       )}
-      {preview && ordered.some((file) => file?.id === preview.id) && (
-        <AttachmentPreviewModal
-          key={preview.id}
-          file={preview}
-          onClose={() => setPreview(null)}
-        />
-      )}
       {menu && (
         <ContextMenu
           x={menu.x}
@@ -163,7 +213,6 @@ export function AttachmentCell({
           actions={[
             {
               label: t("attachments.saveAs"),
-              icon: <AttachmentDownloadIcon />,
               onSelect: () => {
                 downloadAttachment(menu.file);
                 setMenu(null);

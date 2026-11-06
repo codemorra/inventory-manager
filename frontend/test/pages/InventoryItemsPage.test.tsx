@@ -1,12 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  act,
-  cleanup,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useState } from "react";
@@ -241,15 +234,9 @@ describe("InventoryItemsPage", () => {
       name: "Inventory table controls",
     });
     expect(within(controls).getByRole("searchbox")).toBeDisabled();
-    expect(
-      within(controls).getByRole("button", { name: "Filters" }),
-    ).toBeDisabled();
-    expect(
-      within(controls).getByRole("button", { name: "View" }),
-    ).toBeDisabled();
-    expect(
-      within(controls).getByRole("button", { name: "Edit table" }),
-    ).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "Filters" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "View" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "Edit table" })).toBeDisabled();
     await user.click(settings);
     expect(
       screen.getByRole("dialog", { name: "Edit inventory" }),
@@ -294,15 +281,9 @@ describe("InventoryItemsPage", () => {
       name: "Inventory table controls",
     });
     expect(within(controls).getByRole("searchbox")).toBeDisabled();
-    expect(
-      within(controls).getByRole("button", { name: "Filters" }),
-    ).toBeDisabled();
-    expect(
-      within(controls).getByRole("button", { name: "View" }),
-    ).toBeDisabled();
-    expect(
-      within(controls).getByRole("button", { name: "Edit table" }),
-    ).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "Filters" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "View" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "Edit table" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "New item" })).toBeEnabled();
     expect(
       screen.getByRole("columnheader", { name: "Title" }),
@@ -360,18 +341,10 @@ describe("InventoryItemsPage", () => {
       name: "Inventory table controls",
     });
     expect(within(controls).getByRole("searchbox")).toBeDisabled();
-    expect(
-      within(controls).getByRole("button", { name: "Filters" }),
-    ).toBeDisabled();
-    expect(
-      within(controls).getByRole("button", { name: "View" }),
-    ).toBeDisabled();
-    expect(
-      within(controls).getByRole("button", { name: "Edit table" }),
-    ).toBeDisabled();
-    expect(
-      within(controls).getByRole("button", { name: "New item" }),
-    ).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "Filters" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "View" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "Edit table" })).toBeDisabled();
+    expect(within(controls).getByRole("button", { name: "New item" })).toBeDisabled();
     await user.click(
       screen.getByRole("button", { name: "Inventory settings" }),
     );
@@ -395,10 +368,7 @@ describe("InventoryItemsPage", () => {
 
     renderInventoryItemsPage();
 
-    expect(screen.getByText("Loading inventory…")).toHaveAttribute(
-      "role",
-      "status",
-    );
+    expect(screen.getByText("Loading inventory…")).toHaveAttribute("role", "status");
   });
 
   // Test that an API error message is displayed when the item request fails

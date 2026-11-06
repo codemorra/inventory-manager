@@ -59,7 +59,6 @@ function readView(
         : null,
     hiddenFieldIds,
     wrapText: typeof saved.wrapText === "boolean" ? saved.wrapText : true,
-    // Preserve the retired flag for stored view compatibility; it has no presentation effect.
     attachmentPreviews: saved.attachmentPreviews === true,
     columnWidths:
       saved.columnWidths &&
@@ -155,6 +154,14 @@ export function useInventoryView(
   }
 
   /**
+   * Store optional image previews separately for each inventory, defaulting to filenames only.
+   * @param attachmentPreviews Whether supported files show thumbnail tiles.
+   */
+  function setAttachmentPreviews(attachmentPreviews: boolean) {
+    updateView((current) => ({ ...current, attachmentPreviews }));
+  }
+
+  /**
    * Save only the manually edited column's base, never a runtime layout or other widths.
    * @param fieldId The field whose Auto mode is disabled by this manual edit.
    * @param width The requested base width, excluding temporary display surplus.
@@ -193,6 +200,7 @@ export function useInventoryView(
     toggleSort,
     toggleField,
     setWrapText,
+    setAttachmentPreviews,
     setColumnWidth,
     setAutomaticColumnWidth,
   };
