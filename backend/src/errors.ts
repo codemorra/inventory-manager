@@ -15,6 +15,7 @@ export class DomainError extends Error {
       | "inventory_view_conflict"
       | "inventory_import_not_found"
       | "inventory_import_conflict"
+      | "invalid_inventory_table_values"
       | "invalid_inventory_archive"
       | "unsupported_inventory_archive_version"
       | "inventory_export_not_found"

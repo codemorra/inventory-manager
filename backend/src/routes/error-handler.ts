@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
+import { TableParseError } from "../exchange/table-reader.js";
 import { DomainError } from "../errors.js";
 import type { Logger } from "../logging.js";
 
@@ -14,6 +15,16 @@ export function errorHandler(
   return (error: unknown, _request, response, next) => {
     if (response.headersSent) {
       next(error);
+      return;
+    }
+
+    if (error instanceof TableParseError) {
+      response.status(422).json({
+        detail: {
+          code: error.code,
+          message: "The file cannot be read as a supported table.",
+        },
+      });
       return;
     }
 
@@ -40,6 +51,7 @@ export function errorHandler(
               : error.code === "invalid_backup_archive" ||
                   error.code === "storage_location_invalid" ||
                   error.code === "invalid_inventory_archive" ||
+                  error.code === "invalid_inventory_table_values" ||
                   error.code === "unsupported_inventory_archive_version" ||
                   error.code === "inventory_export_unavailable" ||
                   error.code === "inventory_field_options_not_supported" ||
