@@ -21,6 +21,7 @@ import type { createAttachmentService } from "../attachments/service.js";
 import { DomainError } from "../errors.js";
 import { validateArchive, invalidArchive } from "./archive-reader.js";
 import { importSessionLifetime } from "./limits.js";
+import { createTableImportService } from "./table-import-service.js";
 import { materializeInventory } from "./materialize.js";
 
 type Validated = Awaited<ReturnType<typeof validateArchive>>;
@@ -57,6 +58,7 @@ export function createImportService(
   if (!isAbsolute(tempDirectory))
     throw new Error("Temporary directory must be absolute.");
   const root = tempDirectory;
+  const tables = createTableImportService(db);
   const sessions = new Map<string, ImportSession>();
   const active = new Set<string>();
   const missing = () =>
@@ -186,6 +188,7 @@ export function createImportService(
   }
 
   return {
+    tables,
     /**
      * Copy and validate one ZIP without creating an inventory, then return its bounded preview summary.
      * @param content The original HTTP or local archive stream.
@@ -293,6 +296,7 @@ export function createImportService(
      * @throws {Error} When temporary storage cleanup fails; tokens remain invalidated.
      */
     async reset() {
+      tables.reset();
       const entries = [...sessions.values()];
       sessions.clear();
       await Promise.all(entries.map((entry) => dispose(entry)));
@@ -302,6 +306,7 @@ export function createImportService(
      * @param now The cleanup time; tests use deterministic boundaries.
      */
     async cleanup(now = Date.now()) {
+      tables.cleanup(now);
       for (const [id, entry] of sessions) {
         if (entry.pending) continue;
         if (entry.expires <= now) {

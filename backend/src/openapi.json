@@ -4024,6 +4024,389 @@
           }
         }
       }
+    },
+    "/inventory-table-imports": {
+      "post": {
+        "tags": ["inventory exchange"],
+        "summary": "Prepare a foreign CSV or Markdown table for import",
+        "operationId": "prepare_inventory_table_import",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["csv", "markdown"]
+            }
+          },
+          {
+            "name": "delimiter",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [",", ";", "\t"],
+              "default": ","
+            },
+            "description": "CSV file delimiter; ignored for Markdown. This is independent of multiselect cell separators."
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ],
+        "description": "Reads at most 64 MiB of UTF-8 file data, with an optional BOM, and retains a bounded in-memory preview. At most 1,000 columns, 100,000 data rows and 1,000,000 cells including headers. CSV requires a header and rectangular records; blank physical records are ignored while quoted empty records are retained. Markdown requires exactly one rectangular pipe table without other document content; surrounding blank lines, basic text escapes/entities and explicit <br> breaks are supported. No field types are inferred and no database records or managed files are created. Disconnect cancels upload. Ready previews expire after 30 minutes. Backend restart or application restore invalidates tokens.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/csv": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "text/markdown": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Prepared table summary; fetch source rows separately.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryTableImportPreview"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Expected a supported binary/text file body."
+          },
+          "422": {
+            "description": "Structural file errors expose code table_too_large, invalid_table_encoding, empty_table, invalid_csv, invalid_markdown_table or inconsistent_table_columns. Invalid format/query settings use standard validation errors.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventory-table-imports/{import_id}": {
+      "get": {
+        "tags": ["inventory exchange"],
+        "summary": "Read table import or confirmation status",
+        "operationId": "read_inventory_table_import",
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Structural summary or completed receipt, without source data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryTableImportPreview"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "inventory_import_not_found: unknown or expired token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["inventory exchange"],
+        "summary": "Discard a table preview or completed receipt",
+        "operationId": "discard_inventory_table_import",
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ],
+        "description": "Does not delete an imported inventory. Pending confirmation cannot be discarded.",
+        "responses": {
+          "204": {
+            "description": "Preview data or receipt released."
+          },
+          "404": {
+            "description": "Unknown or expired token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "inventory_import_conflict: confirmation is in progress.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventory-table-imports/{import_id}/rows": {
+      "get": {
+        "tags": ["inventory exchange"],
+        "summary": "Page immutable source table cells",
+        "operationId": "read_inventory_table_rows",
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "description": "Rows and headers retain source column order, including columns later skipped by a mapping. Offset counts data rows excluding the header. Every source row can be fetched; offsets beyond the end return an empty page. Source data is released after successful confirmation.",
+        "responses": {
+          "200": {
+            "description": "Page of raw source strings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryTableRows"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or expired token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Confirmation is in progress or completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid page settings."
+          }
+        }
+      }
+    },
+    "/inventory-table-imports/{import_id}/validate": {
+      "post": {
+        "tags": ["inventory exchange"],
+        "summary": "Validate every source row against explicit field mappings",
+        "operationId": "validate_inventory_table_import",
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ],
+        "description": "Does not save data or persist the mapping. Reports all invalid cells, including rows outside the preview page. Text retains content up to 1,000 Unicode characters. Numbers use decimal points, booleans true/false, durations safe nonnegative integer seconds, and temporal values follow ordinary inventory validation. URLs accept bare HTTP(S) addresses, Markdown links or label (URL). Single-choice names are not split; multiselect uses the selected literal separator. Inferred choices follow ordinary option naming and 100-option limits. Fields are optional. IDs may be mapped to ordinary numbers; attachments and automatic ID fields are unsupported.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryTableMappingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validation result; invalid cell values are a successful check with valid=false, not an HTTP error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryTableValidation"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or expired token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Confirmation is in progress or completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid field mapping settings or source-column references."
+          }
+        }
+      }
+    },
+    "/inventory-table-imports/{import_id}/confirm": {
+      "post": {
+        "tags": ["inventory exchange"],
+        "summary": "Atomically create an inventory from the chosen table interpretation",
+        "operationId": "confirm_inventory_table_import",
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/InventoryGeneration"
+          }
+        ],
+        "description": "Revalidates the exact submitted mapping against all immutable staged rows; prior validation is optional and never trusted as client authorization to bypass checks. Creates a new inventory, fields, inferred options and items in one SQLite transaction. Retains source row order and allocates fresh technical identities. On failure all writes roll back and the preview can be retried. Identical concurrent/repeated confirmations return the same inventory; equivalent mapping order, default separators and optional null metadata are normalized. Different parameters for a pending/completed request return 409. Confirmation is not canceled by disconnect. Success releases raw source data and retains a receipt for 30 minutes. Deleted results are never recreated.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryTableImportConfirm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New or previously created inventory.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown/expired token, missing destination group or deleted successful result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "inventory_import_conflict: different confirmation parameters for a pending/completed import.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_inventory_table_values: mapped cells are invalid; call validate for coordinates. Invalid request settings use standard validation errors.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected publication error; no partial inventory is retained."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6037,6 +6420,234 @@
             }
           }
         ]
+      },
+      "InventoryTableImportPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "expires_at",
+          "format",
+          "column_count",
+          "row_count",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "format": {
+            "type": "string",
+            "enum": ["csv", "markdown"]
+          },
+          "column_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "row_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ready", "importing", "completed"]
+          },
+          "inventory_id": {
+            "type": "string"
+          }
+        }
+      },
+      "InventoryTableColumnMapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["column", "name", "field_type"],
+        "properties": {
+          "column": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 999,
+            "description": "Zero-based source column index. Omit unmapped columns from the request array."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "Destination field name, trimmed using ordinary inventory name validation."
+          },
+          "field_type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "number",
+              "boolean",
+              "checkbox",
+              "date",
+              "time",
+              "datetime",
+              "duration",
+              "url",
+              "select",
+              "multiselect"
+            ]
+          },
+          "separator": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16,
+            "default": ";",
+            "description": "Only for multiselect: literal cell separator, independent of the CSV file delimiter. Empty fragments and repeated choices are omitted; option names follow ordinary field rules."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "field_type": {
+                  "const": "multiselect"
+                }
+              }
+            },
+            "else": {
+              "not": {
+                "required": ["separator"]
+              }
+            }
+          }
+        ]
+      },
+      "InventoryTableMappingRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["columns"],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/InventoryTableColumnMapping"
+            },
+            "description": "Each source column can appear at most once. Destination fields follow source order."
+          }
+        }
+      },
+      "InventoryTableImportConfirm": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "columns"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "description": {
+            "type": ["string", "null"],
+            "default": null
+          },
+          "group_id": {
+            "type": ["string", "null"],
+            "minLength": 1
+          },
+          "columns": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/InventoryTableColumnMapping"
+            },
+            "description": "Each source column can appear at most once. Destination fields follow source order."
+          }
+        }
+      },
+      "InventoryTableValidationIssue": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["column", "code"],
+        "properties": {
+          "column": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 999
+          },
+          "row": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Zero-based source data row, excluding the header. Omitted for a column-wide missing-options error."
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_value",
+              "invalid_option_name",
+              "conflicting_option_name",
+              "too_many_options",
+              "missing_options"
+            ]
+          }
+        }
+      },
+      "InventoryTableValidation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["valid", "issues"],
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryTableValidationIssue"
+            }
+          }
+        }
+      },
+      "InventoryTableRows": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["offset", "limit", "total_rows", "headers", "rows"],
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "total_rows": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "headers": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1000,
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1000,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
       }
     },
     "parameters": {
