@@ -319,7 +319,7 @@ test("opens import from the creation menu and replaces mobile navigation", async
   expect(
     screen.getByRole("dialog", { name: "Import inventory" }),
   ).toBeInTheDocument();
-  expect(screen.getByLabelText("Archive file (.zip)")).toHaveFocus();
+  expect(screen.getByRole("button", { name: "Choose file…" })).toHaveFocus();
 });
 
 // Dirty inventory settings propagate a lock to sibling sidebar actions until dismissal.

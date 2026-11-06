@@ -946,6 +946,84 @@ test("frontend clients complete configuration and item CRUD against Express", as
     await inventories.deleteInventory(emptySource.id);
     await inventories.deleteInventory(imported.id);
     await inventories.deleteInventory(fileInventory.id);
+    const tableImports = await import("../src/services/tableImports");
+    for (const [format, source, delimiter, separator] of [
+      ["csv", "Code;Ports\n00123;USB | Power\n", ";", "|"],
+      [
+        "markdown",
+        "| Code | Ports |\n| --- | --- |\n| 00123 | USB; Power |\n",
+        ",",
+        ";",
+      ],
+    ] as const) {
+      const file = new File(
+        [source],
+        format === "csv" ? "foreign.csv" : "foreign.md",
+      );
+      const prepared = await tableImports.prepareTableImport(
+        file,
+        format,
+        delimiter,
+      );
+      expect(prepared).toMatchObject({
+        format,
+        column_count: 2,
+        row_count: 1,
+        status: "ready",
+      });
+      expect(
+        await tableImports.readTableImportRows(prepared.id, 0, 50),
+      ).toMatchObject({
+        headers: ["Code", "Ports"],
+        rows: [["00123", format === "csv" ? "USB | Power" : "USB; Power"]],
+      });
+      expect(
+        await tableImports.validateTableImport(prepared.id, [
+          { column: 1, name: "Ports", field_type: "number" },
+        ]),
+      ).toEqual({
+        valid: false,
+        issues: [{ row: 0, column: 1, code: "invalid_value" }],
+      });
+      const data = {
+        name: "Foreign table",
+        columns: [
+          { column: 0, name: "Code", field_type: "text" as const },
+          {
+            column: 1,
+            name: "Ports",
+            field_type: "multiselect" as const,
+            separator,
+          },
+        ],
+      };
+      expect(
+        await tableImports.validateTableImport(prepared.id, data.columns),
+      ).toEqual({ valid: true, issues: [] });
+      const importedTable = await tableImports.confirmTableImport(
+        prepared.id,
+        data,
+      );
+      expect(
+        (await tableImports.confirmTableImport(prepared.id, data)).id,
+      ).toBe(importedTable.id);
+      expect(await tableImports.readTableImport(prepared.id)).toMatchObject({
+        status: "completed",
+        inventory_id: importedTable.id,
+      });
+      const tableFields = await fields.getInventoryFields(importedTable.id);
+      expect(tableFields[1]!.options.map((option) => option.name)).toEqual([
+        "USB",
+        "Power",
+      ]);
+      expect(
+        (await items.getInventoryItems(importedTable.id))[0]!.values.find(
+          (value) => value.field_id === tableFields[0]!.id,
+        )!.value,
+      ).toBe("00123");
+      await tableImports.discardTableImport(prepared.id);
+      await inventories.deleteInventory(importedTable.id);
+    }
     expect(await inventories.getInventories()).toEqual([]);
   } finally {
     if (probe.listening) probe.close();
