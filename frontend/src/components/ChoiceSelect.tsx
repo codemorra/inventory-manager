@@ -18,6 +18,8 @@ export interface SelectOption {
 interface CommonChoiceProps {
   id: string;
   label: string;
+  // Keep repeated visible labels short while giving each control a distinct screen-reader name.
+  accessibleLabel?: string;
   describedBy?: string;
   options: SelectOption[];
   disabled?: boolean;
@@ -26,6 +28,8 @@ interface CommonChoiceProps {
   // Escape clipping ancestors only where the containing panel supports choice portals.
   portal?: boolean;
   compact?: boolean;
+  // Fit the heading and widest choice, while staying within the available parent width.
+  fitContent?: boolean;
 }
 
 // Keep single and multiple selection values type-safe for their change callbacks.
@@ -44,6 +48,7 @@ export function ChoiceSelect(props: ChoiceSelectProps) {
   const {
     id,
     label,
+    accessibleLabel,
     describedBy,
     options,
     value,
@@ -52,6 +57,7 @@ export function ChoiceSelect(props: ChoiceSelectProps) {
     emptyLabel = "",
     portal = false,
     compact = false,
+    fitContent = false,
   } = props;
   const [open, setOpen] = useState(false);
   const selectedValues = typeof value === "string" ? [value] : value;
@@ -234,7 +240,8 @@ export function ChoiceSelect(props: ChoiceSelectProps) {
       id={listId}
       role="listbox"
       aria-multiselectable={props.multiple || undefined}
-      aria-labelledby={`${id}-label`}
+      aria-label={accessibleLabel}
+      aria-labelledby={accessibleLabel ? undefined : `${id}-label`}
       className={`overflow-y-auto overscroll-contain rounded-md border border-shell bg-surface p-1 text-sm text-foreground shadow-raised ${portal ? "fixed z-60 w-max" : "absolute z-10 mt-1 max-h-48 w-full"}`}
     >
       {options.map((option, index) => (
@@ -279,7 +286,7 @@ export function ChoiceSelect(props: ChoiceSelectProps) {
 
   return (
     <div
-      className="relative min-w-0"
+      className={`relative min-w-0 ${fitContent ? "inline-grid w-max max-w-full" : ""}`}
       ref={root}
       onBlur={(event) => {
         if (!containsChoiceTarget(event.currentTarget, event.relatedTarget))
@@ -298,12 +305,32 @@ export function ChoiceSelect(props: ChoiceSelectProps) {
           </span>
         )}
       </label>
+      {fitContent && (
+        <span
+          aria-hidden="true"
+          className={`pointer-events-none invisible col-start-1 row-start-2 grid h-0 overflow-hidden border border-transparent text-sm ${compact ? "pl-2.5 pr-8.5" : "pl-3 pr-10"}`}
+        >
+          {[
+            emptyLabel,
+            selectedLabel,
+            ...options.map((option) => option.label),
+          ].map((text, index) => (
+            <span
+              key={index}
+              className="col-start-1 row-start-1 whitespace-nowrap"
+            >
+              {text}
+            </span>
+          ))}
+        </span>
+      )}
       <button
         ref={trigger}
         id={id}
         type="button"
         role="combobox"
-        aria-labelledby={`${id}-label`}
+        aria-label={accessibleLabel}
+        aria-labelledby={accessibleLabel ? undefined : `${id}-label`}
         aria-describedby={describedBy}
         aria-required={required || undefined}
         aria-expanded={expanded}
@@ -313,7 +340,7 @@ export function ChoiceSelect(props: ChoiceSelectProps) {
           expanded ? `${id}-option-${activeIndex}` : undefined
         }
         disabled={disabled || options.length === 0}
-        className={`mt-1.5 flex w-full items-center justify-between rounded-md border border-shell bg-surface text-left text-sm text-foreground outline-none transition enabled:hover:border-accent/50 enabled:hover:bg-control-hover focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50 ${compact ? "gap-2 px-2.5 py-1.5" : "gap-3 px-3 py-2.5"}`}
+        className={`mt-1.5 flex w-full items-center justify-between rounded-md border border-shell bg-surface text-left text-sm text-foreground outline-none transition enabled:hover:border-accent/50 enabled:hover:bg-control-hover focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-50 ${fitContent ? "col-start-1 row-start-2" : ""} ${compact ? "gap-2 px-2.5 py-1.5" : "gap-3 px-3 py-2.5"}`}
         onClick={(event) => {
           setKeyboardNavigation(event.detail === 0);
           if (expanded) setOpen(false);
