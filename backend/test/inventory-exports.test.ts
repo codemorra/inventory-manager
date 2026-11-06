@@ -10,7 +10,7 @@ import {
   utimes,
   symlink,
 } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { Readable } from "node:stream";
 import test, { type TestContext } from "node:test";
@@ -448,7 +448,7 @@ test("reconciles old scratch directories while preserving active artifacts and u
   await f.exports.cleanup(future);
   assert.deepEqual(
     (await readdir(root)).sort(),
-    [artifact.path.split("/").at(-2)!, "keep.txt"].sort(),
+    [basename(dirname(artifact.path)), "keep.txt"].sort(),
   );
   assert.ok((await readFile(artifact.path)).length);
   await artifact.dispose();
