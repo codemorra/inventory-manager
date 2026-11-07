@@ -388,6 +388,9 @@
       }
     },
     "edit": {
+      "addRow": "Zeile hinzufügen",
+      "newRow": "Neu",
+      "removeNewRow": "Neue Zeile entfernen",
       "start": "Tabelle bearbeiten",
       "reorder": "Zeile verschieben",
       "reorderHint": "Zum Verschieben ziehen oder die Pfeiltasten nach oben und unten verwenden.",

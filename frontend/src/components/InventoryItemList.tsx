@@ -42,7 +42,10 @@ import { filterInventoryItems, itemFilterError } from "./itemFilterLogic";
 import { InventoryItemFilters } from "./InventoryItemFilters";
 import { InventoryRowMoveHandle } from "./InventoryRowMoveHandle";
 import { InventoryTableCellInput } from "./InventoryTableCellInput";
-import { getTableCellValue } from "./inventoryTableDraft";
+import {
+  getTableCellValue,
+  presentTableDraftRows,
+} from "./inventoryTableDraft";
 import { useInventoryRowDrag } from "../hooks/useInventoryRowDrag";
 import { useInventoryTableEdit } from "../hooks/useInventoryTableEdit";
 import { TableEditSessionContext } from "./tableEditSession";
@@ -372,13 +375,37 @@ export function InventoryItemList({
     [matchingItems, sort, sortField, locale],
   );
   const rowDragContainer = useRef<HTMLDivElement>(null);
+  const draftDisplayedItems = useMemo(
+    () =>
+      tableEdit.draft
+        ? presentTableDraftRows(
+            tableEdit.draft.displayedItems,
+            tableEdit.draft.newItems,
+            tableEdit.draft.order,
+            !!sort,
+          )
+        : sortedItems,
+    [tableEdit.draft, sortedItems, sort],
+  );
   const rowDrag = useInventoryRowDrag(
-    tableEdit.draft?.displayedItems ?? sortedItems,
+    draftDisplayedItems,
     rowDragContainer,
     !!tableEdit.draft && !sort && !tableEdit.saving && !tableEdit.conflict,
     tableEdit.move,
   );
   const displayedItems = rowDrag.items;
+  const newItemIds = new Set(tableEdit.draft?.newItems.map((item) => item.id));
+  const pendingNewRowFocus = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const id = pendingNewRowFocus.current;
+    if (!id) return;
+    const row = document.getElementById(`${tableId}-${id}`);
+    const control = row?.querySelector<HTMLElement>(
+      "td:not(:first-child) input:not(:disabled), td:not(:first-child) textarea:not(:disabled), td:not(:first-child) select:not(:disabled), td:not(:first-child) button:not(:disabled)",
+    );
+    if (control) control.focus();
+    pendingNewRowFocus.current = null;
+  });
   function rowDragClasses(itemId: string) {
     return `group transition-opacity duration-150 motion-reduce:transition-none ${rowDrag.draggedId === itemId ? "opacity-50" : ""} ${rowDrag.target?.id === itemId && rowDrag.target.side === "before" ? "[&>td]:before:opacity-100 [&>td]:before:scale-x-100" : "[&>td]:before:opacity-0 [&>td]:before:scale-x-95"} ${rowDrag.target?.id === itemId && rowDrag.target.side === "after" ? "[&>td]:after:opacity-100 [&>td]:after:scale-x-100" : "[&>td]:after:opacity-0 [&>td]:after:scale-x-95"} [&>td]:relative [&>td]:before:pointer-events-none [&>td]:before:absolute [&>td]:before:inset-x-0 [&>td]:before:top-0 [&>td]:before:z-10 [&>td]:before:h-0.5 [&>td]:before:origin-left [&>td]:before:bg-accent [&>td]:before:transition-[opacity,transform] [&>td]:before:duration-150 [&>td]:after:pointer-events-none [&>td]:after:absolute [&>td]:after:inset-x-0 [&>td]:after:bottom-0 [&>td]:after:z-10 [&>td]:after:h-0.5 [&>td]:after:origin-left [&>td]:after:bg-accent [&>td]:after:transition-[opacity,transform] [&>td]:after:duration-150 motion-reduce:[&>td]:before:transition-none motion-reduce:[&>td]:after:transition-none`;
   }
@@ -716,7 +743,9 @@ export function InventoryItemList({
         allColumnsAutomatic={allVisibleColumnsAutomatic}
         itemCount={displayedItems.length}
         totalItemCount={
-          searchQuery.trim() || activeFilters.length ? items.length : undefined
+          searchQuery.trim() || activeFilters.length
+            ? items.length + (tableEdit.draft?.newItems.length ?? 0)
+            : undefined
         }
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
@@ -777,10 +806,12 @@ export function InventoryItemList({
                   tableEdit.loading ? "table.edit.loading" : "table.edit.start",
                 )}
                 disabled={
-                  controlsDisabled ||
-                  checkboxUpdate.isPending ||
-                  items.length === 0 ||
-                  !fields.some((field) => field.field_type !== "id")
+                  isMutating ||
+                  tableEdit.active ||
+                  editingItem !== null ||
+                  deletingTarget !== null ||
+                  resizing !== null ||
+                  fields.length === 0
                 }
                 className={`flex size-8 cursor-pointer items-center justify-center rounded-sm text-muted transition enabled:hover:bg-control-hover enabled:hover:text-accent-text focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
                 onClick={() => {
@@ -981,7 +1012,9 @@ export function InventoryItemList({
                     data-item-id={item.id}
                     data-drag-row-id={`data:${item.id}`}
                     draggable={false}
-                    onDragOver={(event) => rowDrag.over(item.id, event)}
+                    onDragOver={(event) => {
+                      rowDrag.over(item.id, event);
+                    }}
                     onDragEnd={rowDrag.cancel}
                     onPointerEnter={() => setHoveredItem(item.id)}
                     onPointerLeave={() => setHoveredItem(null)}
@@ -1030,10 +1063,12 @@ export function InventoryItemList({
                                   field.id,
                                 )
                                   ? tableEdit.draft.changes[item.id][field.id]
-                                  : getTableCellValue(
-                                      field,
-                                      valuesByField.get(field.id)?.value,
-                                    )
+                                  : newItemIds.has(item.id)
+                                    ? getInitialValue(field)
+                                    : getTableCellValue(
+                                        field,
+                                        valuesByField.get(field.id)?.value,
+                                      )
                               }
                               disabled={
                                 tableEdit.saving ||
@@ -1181,7 +1216,9 @@ export function InventoryItemList({
                   key={item.id}
                   className={rowDragClasses(item.id)}
                   data-drag-row-id={`actions:${item.id}`}
-                  onDragOver={(event) => rowDrag.over(item.id, event)}
+                  onDragOver={(event) => {
+                    rowDrag.over(item.id, event);
+                  }}
                   onDragEnd={rowDrag.cancel}
                   style={{ height: rowHeights.rows[item.id] }}
                   onPointerEnter={() => setHoveredItem(item.id)}
@@ -1192,55 +1229,85 @@ export function InventoryItemList({
                     className={`h-13 px-4 py-2 align-top transition-colors ${hoveredItem === item.id ? "bg-surface-hover" : ""}`}
                   >
                     <div className="flex justify-end gap-2 whitespace-nowrap">
-                      <button
-                        className={`flex size-8 cursor-pointer items-center justify-center rounded-sm border border-shell transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
-                        aria-label={t("common.actions.edit")}
-                        title={t("common.actions.edit")}
-                        aria-describedby={`${tableId}-${item.id}`}
-                        disabled={isMutating || tableEdit.active}
-                        onClick={() => startEditing(item)}
-                        type="button"
-                      >
-                        <svg
-                          aria-hidden="true"
-                          className="size-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15Z" />
-                        </svg>
-                      </button>
-                      <button
-                        className={`flex size-8 cursor-pointer items-center justify-center rounded-sm bg-danger-soft text-danger transition enabled:hover:bg-danger/25 focus-visible:outline-2 focus-visible:outline-danger disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
-                        aria-label={t(
-                          deleteItem.isPending
-                            ? "common.actions.deleting"
-                            : "common.actions.delete",
-                        )}
-                        title={t("common.actions.delete")}
-                        aria-busy={deleteItem.isPending || undefined}
-                        aria-describedby={`${tableId}-${item.id}`}
-                        disabled={isMutating || tableEdit.active}
-                        onClick={() => handleDelete(item)}
-                        type="button"
-                      >
-                        <svg
-                          aria-hidden="true"
-                          className="size-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" />
-                        </svg>
-                      </button>
+                      {newItemIds.has(item.id) ? (
+                        <>
+                          <span className="flex size-8 items-center justify-center text-xs font-semibold text-accent-text">
+                            {t("table.edit.newRow")}
+                          </span>
+                          <button
+                            type="button"
+                            aria-label={t("table.edit.removeNewRow")}
+                            title={t("table.edit.removeNewRow")}
+                            disabled={tableEdit.saving || tableEdit.conflict}
+                            onClick={() => tableEdit.removeRow(item.id)}
+                            className="flex size-8 cursor-pointer items-center justify-center rounded-sm bg-danger-soft text-danger transition enabled:hover:bg-danger/25 focus-visible:outline-2 focus-visible:outline-danger disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              className="size-4"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                            >
+                              <path d="m6 6 12 12M18 6 6 18" />
+                            </svg>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            className={`flex size-8 cursor-pointer items-center justify-center rounded-sm border border-shell transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
+                            aria-label={t("common.actions.edit")}
+                            title={t("common.actions.edit")}
+                            aria-describedby={`${tableId}-${item.id}`}
+                            disabled={isMutating || tableEdit.active}
+                            onClick={() => startEditing(item)}
+                            type="button"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              className="size-4"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15Z" />
+                            </svg>
+                          </button>
+                          <button
+                            className={`flex size-8 cursor-pointer items-center justify-center rounded-sm bg-danger-soft text-danger transition enabled:hover:bg-danger/25 focus-visible:outline-2 focus-visible:outline-danger disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
+                            aria-label={t(
+                              deleteItem.isPending
+                                ? "common.actions.deleting"
+                                : "common.actions.delete",
+                            )}
+                            title={t("common.actions.delete")}
+                            aria-busy={deleteItem.isPending || undefined}
+                            aria-describedby={`${tableId}-${item.id}`}
+                            disabled={isMutating || tableEdit.active}
+                            onClick={() => handleDelete(item)}
+                            type="button"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              className="size-4"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" />
+                            </svg>
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1248,6 +1315,30 @@ export function InventoryItemList({
             </tbody>
           </table>
         </div>
+        {tableEdit.draft && (
+          <div className="col-span-2 border-t border-shell bg-surface-muted p-2">
+            <button
+              type="button"
+              className="flex cursor-pointer items-center gap-2 rounded-sm px-2.5 py-1.5 text-sm font-medium text-accent-text transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={tableEdit.saving || tableEdit.conflict}
+              onClick={() => {
+                pendingNewRowFocus.current = tableEdit.addRow() ?? null;
+              }}
+            >
+              <svg
+                aria-hidden="true"
+                className="size-4"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M8 3v10M3 8h10" />
+              </svg>
+              {t("table.edit.addRow")}
+            </button>
+          </div>
+        )}
       </div>
 
       {columnMenu && menuField && (

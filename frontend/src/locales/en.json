@@ -388,6 +388,9 @@
       }
     },
     "edit": {
+      "addRow": "Add row",
+      "newRow": "New",
+      "removeNewRow": "Remove new row",
       "start": "Edit table",
       "reorder": "Move row",
       "reorderHint": "Drag to move the row, or use the Up and Down arrow keys.",

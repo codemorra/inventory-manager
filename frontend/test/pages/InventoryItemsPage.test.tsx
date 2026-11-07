@@ -249,7 +249,7 @@ describe("InventoryItemsPage", () => {
     ).toBeDisabled();
     expect(
       within(controls).getByRole("button", { name: "Edit table" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     await user.click(settings);
     expect(
       screen.getByRole("dialog", { name: "Edit inventory" }),
@@ -302,7 +302,7 @@ describe("InventoryItemsPage", () => {
     ).toBeDisabled();
     expect(
       within(controls).getByRole("button", { name: "Edit table" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     expect(screen.getByRole("button", { name: "New item" })).toBeEnabled();
     expect(
       screen.getByRole("columnheader", { name: "Title" }),

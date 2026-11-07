@@ -13,6 +13,7 @@ import type { InventoryItem } from "../types/inventoryItem";
 import type { InventoryItemFormValue } from "../components/inventoryItemForm";
 import {
   createTableReplacement,
+  presentTableDraftRows,
   unchangedTableCell,
   type TableCellChanges,
 } from "../components/inventoryTableDraft";
@@ -31,6 +32,7 @@ interface TableDraft {
   presentation: InventoryTablePresentation;
   displayedItems: InventoryItem[];
   order: string[];
+  newItems: InventoryItem[];
 }
 
 /**
@@ -58,6 +60,7 @@ export function useInventoryTableEdit(inventoryId: string) {
         configurationRevision: configuration.inventory.configuration_revision,
         items,
         changes: {},
+        newItems: [],
         order: items.map((item) => item.id),
         presentation,
         displayedItems: presentInventoryItems(
@@ -85,9 +88,17 @@ export function useInventoryTableEdit(inventoryId: string) {
               ? updated
               : item;
           });
+          const knownIds = new Set(rows.map((item) => item.id));
+          merged.push(...saved.filter((item) => !knownIds.has(item.id)));
           if (!orderChanged || !draft) return merged;
+          const created = saved.filter(
+            (item) => !draft.items.some((original) => original.id === item.id),
+          );
+          const newIds = new Map(
+            draft.newItems.map((item, index) => [item.id, created[index]!.id]),
+          );
           const positions = new Map(
-            draft.order.map((id, index) => [id, index]),
+            draft.order.map((id, index) => [newIds.get(id) ?? id, index]),
           );
           return merged.sort(
             (a, b) => (positions.get(a.id) ?? -1) - (positions.get(b.id) ?? -1),
@@ -109,18 +120,27 @@ export function useInventoryTableEdit(inventoryId: string) {
         draft.items,
         draft.changes,
         draft.configurationRevision,
+        draft.newItems,
       )
     : null;
   const orderChanged =
-    !!draft && draft.order.some((id, index) => id !== draft.items[index]?.id);
+    !!draft &&
+    draft.order.some(
+      (id, index) => id !== [...draft.items, ...draft.newItems][index]?.id,
+    );
   if (replacement && draft && orderChanged) {
     const revisions = new Map(
       draft.items.map((item) => [item.id, item.revision]),
     );
-    replacement.input.order = draft.order.map((item_id) => ({
-      item_id,
-      expected_revision: revisions.get(item_id)!,
-    }));
+    replacement.input.order = draft.order.map((item_id) =>
+      revisions.has(item_id)
+        ? { item_id, expected_revision: revisions.get(item_id)! }
+        : {
+            new_item_index: draft.newItems.findIndex(
+              (item) => item.id === item_id,
+            ),
+          },
+    );
   }
   const conflict =
     save.error instanceof ApiError &&
@@ -194,12 +214,17 @@ export function useInventoryTableEdit(inventoryId: string) {
     if (save.isPending || load.isPending || submitting.current || conflict)
       return;
     setDraft((current) => {
-      const item = current?.items.find((item) => item.id === itemId);
+      const item =
+        current &&
+        [...current.items, ...current.newItems].find(
+          (item) => item.id === itemId,
+        );
       const field = current?.fields.find((field) => field.id === fieldId);
       if (!current || !item || !field || field.field_type === "id")
         return current;
       const row = { ...current.changes[itemId] };
       if (
+        !current.newItems.some((item) => item.id === itemId) &&
         unchangedTableCell(
           field,
           item.values.find((entry) => entry.field_id === fieldId)?.value,
@@ -209,6 +234,55 @@ export function useInventoryTableEdit(inventoryId: string) {
         delete row[fieldId];
       else row[fieldId] = value;
       return { ...current, changes: { ...current.changes, [itemId]: row } };
+    });
+  }
+
+  /** Add a local row without allocating server-owned IDs or writing values. */
+  function addRow(): string | undefined {
+    if (
+      !draft ||
+      save.isPending ||
+      load.isPending ||
+      submitting.current ||
+      conflict
+    )
+      return;
+    const id = `draft-${crypto.randomUUID()}`;
+    const item: InventoryItem = {
+      id,
+      inventory_id: inventoryId,
+      revision: 0,
+      values: [],
+      created_at: "",
+      updated_at: "",
+    };
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            newItems: [...current.newItems, item],
+            order: [...current.order, id],
+          }
+        : current,
+    );
+    return id;
+  }
+
+  /** Remove only an unsaved row; its staged attachments are cleaned up when the session ends. */
+  function removeRow(itemId: string) {
+    if (save.isPending || load.isPending || submitting.current || conflict)
+      return;
+    setDraft((current) => {
+      if (!current || !current.newItems.some((item) => item.id === itemId))
+        return current;
+      const changes = { ...current.changes };
+      delete changes[itemId];
+      return {
+        ...current,
+        newItems: current.newItems.filter((item) => item.id !== itemId),
+        order: current.order.filter((id) => id !== itemId),
+        changes,
+      };
     });
   }
 
@@ -240,7 +314,7 @@ export function useInventoryTableEdit(inventoryId: string) {
         ...current,
         presentation,
         displayedItems: presentInventoryItems(
-          current.order.map((id) => byId.get(id)!),
+          current.order.filter((id) => byId.has(id)).map((id) => byId.get(id)!),
           current.fields,
           presentation,
         ),
@@ -255,7 +329,12 @@ export function useInventoryTableEdit(inventoryId: string) {
     setDraft((current) => {
       if (!current || current.presentation.view.sort || itemId === targetId)
         return current;
-      const visible = [...current.displayedItems];
+      const visible = presentTableDraftRows(
+        current.displayedItems,
+        current.newItems,
+        current.order,
+        false,
+      );
       const from = visible.findIndex((item) => item.id === itemId);
       const to = visible.findIndex((item) => item.id === targetId);
       if (from < 0 || to < 0) return current;
@@ -269,7 +348,9 @@ export function useInventoryTableEdit(inventoryId: string) {
       let index = 0;
       return {
         ...current,
-        displayedItems: visible,
+        displayedItems: visible.filter(
+          (item) => !current.newItems.some((added) => added.id === item.id),
+        ),
         order: current.order.map((id) =>
           visibleIds.has(id) ? visible[index++].id : id,
         ),
@@ -289,7 +370,11 @@ export function useInventoryTableEdit(inventoryId: string) {
       replacement.errors.length
     )
       return;
-    if (!replacement.input.items.length && !orderChanged) {
+    if (
+      !replacement.input.items.length &&
+      !orderChanged &&
+      !draft?.newItems.length
+    ) {
       attachments.controller.discard();
       setDraft(null);
       return;
@@ -313,6 +398,8 @@ export function useInventoryTableEdit(inventoryId: string) {
     uploading: attachments.busy,
     begin,
     change,
+    addRow,
+    removeRow,
     toggleSort,
     move,
     commit,
@@ -326,11 +413,16 @@ export function useInventoryTableEdit(inventoryId: string) {
     dirty:
       (replacement?.input.items.length ?? 0) > 0 ||
       orderChanged ||
+      (draft?.newItems.length ?? 0) > 0 ||
       attachments.busy,
     changedCount: draft
       ? new Set([
           ...(replacement?.input.items.map((item) => item.item_id) ?? []),
-          ...draft.order.filter((id, index) => id !== draft.items[index]?.id),
+          ...draft.newItems.map((item) => item.id),
+          ...draft.order.filter(
+            (id, index) =>
+              id !== [...draft.items, ...draft.newItems][index]?.id,
+          ),
         ]).size
       : 0,
     errors: replacement?.errors ?? [],
