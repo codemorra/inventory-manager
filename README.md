@@ -10,9 +10,9 @@ Run it in a desktop window on Linux or Windows, or in your browser with Docker. 
 
 - **Custom inventories:** Define the fields you need for each list, such as an item's name, quantity, purchase date or storage location. Choose from text, numbers, dates, times, durations, selections, checkboxes, links, files and automatic IDs.
 - **Organization and templates:** Arrange inventories in groups and reuse their field structures as templates for new lists.
-- **Search and editing:** Find items using text search and field-specific filters, sort by columns, and edit individual items or several table cells together.
+- **Search and editing:** Find items using text search and field-specific filters, sort by columns, and edit individual items or several table cells together. Add new rows directly in the table editor and arrange rows by drag and drop or keyboard.
 - **Table layouts:** Choose visible columns, adjust their widths, and wrap long text. Each inventory keeps its own view settings.
-- **Attachments and exchange:** Keep copies of documents and photos with your items, and click supported images to preview them in a modal. Export an inventory with its attached files as a ZIP archive and import it into another installation.
+- **Attachments and exchange:** Keep copies of documents and photos with your items, and click supported images to preview them in a modal. Exchange complete inventories with attachments as ZIP archives, or import and export CSV and Markdown tables with field mapping and validation on import.
 - **Backups and storage:** Create and restore data backups, schedule daily or weekly backups, and choose where data and backup files are stored.
 - **Appearance and language:** Switch between German and English, light and dark themes, and several accent colors.
 
@@ -20,11 +20,13 @@ Run it in a desktop window on Linux or Windows, or in your browser with Docker. 
 
 Create an inventory through **New > New inventory** in the sidebar. Each inventory has its own fields: a cable collection might use connector type, length, quantity and a photo, while a tool inventory might use model, purchase date and storage location. Open **Inventory settings** beside the title to add and arrange these fields, mark required values and define selection options.
 
-Add entries with **New item**. Use a row's edit action to change an item, or the table's pencil action to edit several cells and save the changes together. Search and filters narrow the list, column headings control sorting, and **View** lets you adjust which information the table shows.
+Add entries with **New item**. Use a row's edit action to change an item, or the table's pencil action to edit several cells, add rows and save the changes together. In the table editor, clear column sorting to move rows by dragging their handles or using the Up and Down arrow keys. Column headings also let you sort while editing; rows stay in place when cell values change. Search and filters narrow the list, and **View** lets you adjust which information the table shows outside editing mode.
 
 Drag inventories into sidebar groups to organize larger collections. If several lists need the same fields, save an inventory's structure as a template and select it when creating the next list. Templates provide a starting point; each inventory can then be edited independently.
 
-Attach files to keep managed copies with an item. Export an inventory from its sidebar context menu to share or move the list with its saved items and files. Choose **New > Import inventory** to select an archive, review its contents and create an independent copy. Use **Settings > Backups** to back up or restore data across all inventories.
+Attach files to keep managed copies with an item. Click a PNG, JPEG, GIF or WebP filename to open a preview, and use **Save as…** in its context menu to download the original. Export an inventory from its sidebar context menu as ZIP, CSV or Markdown. ZIP includes attached files and field types; table exports omit both and include all saved items regardless of active filters or view settings.
+
+Choose **New > Import inventory** to select a ZIP archive, CSV file or Markdown table and review it before creating an independent inventory. For table imports, choose field names and types, skip unwanted columns and resolve validation errors before confirming. Use **Settings > Backups** to back up or restore data across all inventories.
 
 See the [user guide](docs/usage.md) for field types, table controls, templates and backup instructions.
 
