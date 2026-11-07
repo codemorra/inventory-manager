@@ -433,7 +433,12 @@ test("saves changed cells atomically and preserves hidden values, original versi
   expect(
     screen.getByRole("button", { name: "Inventory settings" }),
   ).toBeDisabled();
-  expect(screen.getByRole("button", { name: "New item" })).toBeDisabled();
+  expect(
+    screen.queryByRole("button", { name: "New item" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "View" }),
+  ).not.toBeInTheDocument();
   expect(
     within(row()).queryByRole("textbox", { name: "ID" }),
   ).not.toBeInTheDocument();
@@ -445,6 +450,8 @@ test("saves changed cells atomically and preserves hidden values, original versi
   await waitFor(() =>
     expect(screen.getByRole("button", { name: "Edit table" })).toBeEnabled(),
   );
+  expect(screen.getByRole("button", { name: "New item" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "View" })).toBeEnabled();
   expect(updateInventoryItems).toHaveBeenCalledTimes(1);
   const payload = vi.mocked(updateInventoryItems).mock.calls[0][1];
   expect(payload.expected_configuration_revision).toBe(7);
@@ -1120,4 +1127,25 @@ test("moves new rows between existing entries and saves their chosen positions",
     expect(screen.getByRole("button", { name: "Edit table" })).toBeEnabled(),
   );
   expect(ids()).toEqual(["first", "created-0", "second"]);
+});
+
+test("hides header creation and view actions while editing and restores them after cancel", async () => {
+  const user = userEvent.setup();
+  renderTable();
+  expect(screen.getByRole("button", { name: "New item" })).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "View" }));
+  expect(screen.getByRole("menu", { name: "View" })).toBeVisible();
+  await start(user);
+  expect(
+    screen.queryByRole("button", { name: "New item" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "View" }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("menu", { name: "View" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Add row" })).toBeEnabled();
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(screen.getByRole("button", { name: "New item" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "View" })).toBeVisible();
+  expect(screen.queryByRole("menu", { name: "View" })).not.toBeInTheDocument();
 });
