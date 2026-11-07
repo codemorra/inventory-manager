@@ -1,5 +1,6 @@
 import { createReadStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
+import { z } from "zod";
 import { Router } from "express";
 import type { Services } from "../services.js";
 
@@ -13,6 +14,11 @@ export function exchangeRoutes({ exports }: Services) {
   if (!exports) return router;
   const path = "/:inventory_id/exports";
   router.post(path, async (request, response) => {
+    const { format } = z
+      .strictObject({
+        format: z.enum(["zip", "csv", "markdown"]).default("zip"),
+      })
+      .parse(request.body ?? {});
     const controller = new AbortController();
     const disconnect = () => controller.abort();
     response.once("close", disconnect);
@@ -21,6 +27,7 @@ export function exchangeRoutes({ exports }: Services) {
       prepared = await exports.prepare(
         request.params.inventory_id,
         controller.signal,
+        format,
       );
       controller.signal.throwIfAborted();
       response.status(201).json(prepared);
@@ -47,7 +54,7 @@ export function exchangeRoutes({ exports }: Services) {
     try {
       response
         .attachment(artifact.filename)
-        .type("application/zip")
+        .type(artifact.mediaType)
         .set({
           "Content-Length": String(artifact.byteSize),
           "Cache-Control": "no-store",

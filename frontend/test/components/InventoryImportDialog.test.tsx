@@ -74,6 +74,8 @@ async function upload(
   name = "inventory.zip",
 ) {
   const file = new File(["zip"], name, { type: "application/zip" });
+  if (!screen.queryByLabelText("Archive file (.zip)"))
+    await user.click(screen.getByRole("button", { name: "Change file" }));
   await user.upload(screen.getByLabelText("Archive file (.zip)"), file);
   await screen.findByLabelText("Name");
   return file;
@@ -171,7 +173,7 @@ test("blocks duplicate submit, file replacement and dismissal during confirmatio
   await upload(user);
   await user.dblClick(screen.getByRole("button", { name: "Import" }));
   expect(archives.confirmInventoryImport).toHaveBeenCalledOnce();
-  expect(screen.getByLabelText("Archive file (.zip)")).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Change file" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
   await user.keyboard("{Escape}");
   await user.click(screen.getByRole("button", { name: "Close dialog" }));
@@ -195,7 +197,7 @@ test("recovers a lost confirmation response without creating another inventory",
   await user.click(screen.getByRole("button", { name: "Import" }));
   await screen.findByRole("button", { name: "Check status" });
   expect(screen.getByLabelText("Name")).toBeDisabled();
-  expect(screen.getByLabelText("Archive file (.zip)")).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Change file" })).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Close" }));
   expect(archives.discardInventoryImport).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Open import" }));
@@ -272,7 +274,7 @@ test("handles missing recovery status without automatically reimporting", async 
     "Check your inventory list",
   );
   expect(screen.getByRole("button", { name: "Import" })).toBeDisabled();
-  expect(screen.getByLabelText("Archive file (.zip)")).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Change file" })).toBeEnabled();
   expect(refresh).toHaveBeenCalledWith({
     queryKey: ["inventories"],
     exact: true,
@@ -336,7 +338,7 @@ test("keeps an uncertain import frozen when status recovery is temporarily unava
     "status could not be checked",
   );
   expect(screen.getByLabelText("Name")).toBeDisabled();
-  expect(screen.getByLabelText("Archive file (.zip)")).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Change file" })).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Check status" }));
   await waitFor(() =>
     expect(screen.getByTestId("location")).toHaveTextContent(

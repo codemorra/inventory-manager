@@ -18,6 +18,7 @@ import { errorHandler } from "./routes/error-handler.js";
 import { docsRoutes } from "./routes/docs.js";
 import { groupRoutes } from "./routes/groups.js";
 import { templateRoutes } from "./routes/templates.js";
+import { tableImportRoutes } from "./routes/table-imports.js";
 import { importRoutes } from "./routes/imports.js";
 import { exchangeRoutes } from "./routes/exchange.js";
 import { attachmentRoutes } from "./routes/attachments.js";
@@ -109,6 +110,7 @@ export function createApp(
   api.use("/inventory-groups", groupRoutes(services));
   api.use("/inventory-templates", templateRoutes(services));
   api.use("/inventory-imports", importRoutes(services));
+  api.use("/inventory-table-imports", tableImportRoutes(services));
 
   // Inventory-related routes
   api.use(

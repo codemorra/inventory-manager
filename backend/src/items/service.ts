@@ -118,6 +118,31 @@ export function createItemService(
     };
   }
 
+  /** Create a row inside its caller's transaction, including attachments and automatic IDs. */
+  function create(
+    transaction: AppDatabase,
+    inventoryId: string,
+    values: ValueInput[],
+    append = false,
+  ) {
+    validate(transaction, inventoryId, values);
+    const items = createItemRepository(transaction);
+    const item = items.create(inventoryId, append);
+    replaceItemAttachments(transaction, inventoryId, item.id, values);
+    items.createValues(item.id, values);
+    for (const field of createFieldRepository(transaction).list(inventoryId))
+      if (field.fieldType === "id")
+        assignAutomaticId(transaction, field.id, item.id);
+    const attachments = attachmentsForItems(transaction, [item.id]).get(
+      item.id,
+    );
+    return {
+      ...item,
+      values: items.values(item.id),
+      ...(attachments?.length ? { attachments } : {}),
+    };
+  }
+
   return {
     get,
 
@@ -178,24 +203,7 @@ export function createItemService(
       const data = itemInputSchema.parse(input);
       return db.transaction((transaction) => {
         inventories.get(inventoryId);
-        validate(transaction, inventoryId, data.values);
-        const items = createItemRepository(transaction);
-        const item = items.create(inventoryId);
-        replaceItemAttachments(transaction, inventoryId, item.id, data.values);
-        items.createValues(item.id, data.values);
-        for (const field of createFieldRepository(transaction).list(
-          inventoryId,
-        ))
-          if (field.fieldType === "id")
-            assignAutomaticId(transaction, field.id, item.id);
-        const attachments = attachmentsForItems(transaction, [item.id]).get(
-          item.id,
-        );
-        return {
-          ...item,
-          values: items.values(item.id),
-          ...(attachments?.length ? { attachments } : {}),
-        };
+        return create(transaction, inventoryId, data.values);
       });
     },
 
@@ -218,8 +226,8 @@ export function createItemService(
     /**
      * Save a table draft as one transaction without consuming its configuration revision.
      * @param inventoryId The inventory containing all changed rows.
-     * @param input The captured configuration revision and complete replacements for changed items.
-     * @returns Saved items in request order, each with its incremented revision.
+     * @param input The captured configuration revision, changed values, new rows, and optional complete row order.
+     * @returns Replaced and reordered items with incremented revisions, followed by newly created rows.
      * @throws DomainError if any row is missing, stale, or invalid, or the configuration changed.
      */
     updateMany(inventoryId: string, input: unknown) {
@@ -234,7 +242,25 @@ export function createItemService(
             "inventory_configuration_conflict",
             "The inventory configuration has changed. Reload it before saving.",
           );
-        return data.items.map((change) => {
+        const items = createItemRepository(transaction);
+        if (data.order) {
+          const current = items.list(inventoryId);
+          const revisions = new Map(
+            current.map((item) => [item.id, item.revision]),
+          );
+          const existingOrder = data.order.filter((row) => "item_id" in row);
+          if (
+            current.length !== existingOrder.length ||
+            existingOrder.some(
+              (row) => revisions.get(row.item_id) !== row.expected_revision,
+            )
+          )
+            throw new DomainError(
+              "inventory_item_conflict",
+              "The inventory rows have changed. Reload before saving their order.",
+            );
+        }
+        const saved = data.items.map((change) => {
           try {
             return replace(transaction, inventoryId, change.item_id, change);
           } catch (error) {
@@ -244,6 +270,50 @@ export function createItemService(
             throw error;
           }
         });
+        const created = (data.new_items ?? []).map((row) =>
+          create(transaction, inventoryId, row.values, true),
+        );
+        if (data.order) {
+          for (const [position, row] of data.order.entries()) {
+            if ("new_item_index" in row) {
+              const item = created[row.new_item_index]!;
+              items.setPosition(inventoryId, item.id, position);
+              item.position = position;
+              continue;
+            }
+            if (!saved.some((item) => item.id === row.item_id)) {
+              if (
+                !items.claimRevision(
+                  inventoryId,
+                  row.item_id,
+                  row.expected_revision,
+                )
+              )
+                throw new DomainError(
+                  "inventory_item_conflict",
+                  "The inventory item has changed. Reload before saving.",
+                );
+              const item = items.find(inventoryId, row.item_id)!;
+              const attachments = attachmentsForItems(transaction, [
+                item.id,
+              ]).get(item.id);
+              saved.push({
+                ...item,
+                values: items.values(item.id),
+                ...(attachments?.length ? { attachments } : {}),
+              });
+            }
+            items.setPosition(inventoryId, row.item_id, position);
+            saved.find((item) => item.id === row.item_id)!.position = position;
+          }
+        }
+        if (data.order && !data.order.some((row) => "new_item_index" in row)) {
+          for (const [index, item] of created.entries()) {
+            item.position = data.order.length + index;
+            items.setPosition(inventoryId, item.id, item.position);
+          }
+        }
+        return [...saved, ...created];
       });
     },
 

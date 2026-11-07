@@ -9,7 +9,7 @@ import {
 import { filterInventoryItems, itemFilterError } from "./itemFilterLogic";
 import { sortInventoryItems } from "./inventoryItemSorting";
 
-// An edit session freezes presentation at entry without persisting search, filters or surplus widths.
+// An edit session owns presentation separately from saved preferences; explicit sorting stays local.
 export interface InventoryTablePresentation {
   view: InventoryViewPreferences;
   searchQuery: string;
@@ -52,7 +52,7 @@ export function captureTablePresentation(
 }
 
 /**
- * Select and order a session's rows once, before cell drafts can affect their membership or order.
+ * Select and order original snapshots at entry or after an explicit sorting action.
  * @param items The freshly loaded original item snapshots.
  * @param fields The session's field definitions.
  * @param presentation The captured view and language-dependent matching rules.

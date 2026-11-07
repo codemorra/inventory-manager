@@ -146,3 +146,43 @@ test("recognizes reverted cells without treating invalid edits as unchanged", ()
     tableCellError({ ...filterField("text"), max_length: 1 }, "😀", true),
   ).toBeNull();
 });
+
+test("validates untouched new rows and converts defaults without submitting automatic IDs", () => {
+  const title = { ...filterField("text"), is_required: true };
+  const flag = { ...filterField("boolean"), is_required: true };
+  const checkbox = filterField("checkbox");
+  const id = filterField("id");
+  const item = filterItem({}, "new-local");
+  const invalid = createTableReplacement(
+    [title, flag, checkbox, id],
+    [],
+    {},
+    7,
+    [item],
+  );
+  expect(invalid.errors).toEqual([
+    { itemId: item.id, fieldId: title.id, error: "required" },
+    { itemId: item.id, fieldId: flag.id, error: "required" },
+  ]);
+  const valid = createTableReplacement(
+    [title, flag, checkbox, id],
+    [],
+    { [item.id]: { [title.id]: "Inline", [flag.id]: false } },
+    7,
+    [item],
+  );
+  expect(valid.errors).toEqual([]);
+  expect(valid.input).toEqual({
+    expected_configuration_revision: 7,
+    items: [],
+    new_items: [
+      {
+        values: [
+          { field_id: title.id, value: "Inline" },
+          { field_id: flag.id, value: false },
+          { field_id: checkbox.id, value: false },
+        ],
+      },
+    ],
+  });
+});

@@ -28,9 +28,8 @@ interface InventoryTableControlsProps {
   actions?: ReactNode;
   wrapText?: boolean;
   onWrapTextChange?: (wrap: boolean) => void;
-  attachmentPreviews?: boolean;
-  onAttachmentPreviewsChange?: ((previews: boolean) => void) | undefined;
   disabled?: boolean;
+  showView?: boolean;
   columns?: TableColumn[];
   onToggleColumn?: (fieldId: string) => void;
   onAutomaticWidths?: () => void;
@@ -42,11 +41,7 @@ interface InventoryTableControlsProps {
  * @param kind The display option represented by the symbol.
  * @returns A decorative icon matching the sidebar menu style.
  */
-function ViewOptionIcon({
-  kind,
-}: {
-  kind: "wrap" | "previews" | "columns" | "widths";
-}) {
+function ViewOptionIcon({ kind }: { kind: "wrap" | "columns" | "widths" }) {
   return (
     <svg
       aria-hidden="true"
@@ -60,12 +55,6 @@ function ViewOptionIcon({
     >
       {kind === "wrap" ? (
         <path d="M4 6h16M4 10h12a4 4 0 0 1 0 8h-5m3-3-3 3 3 3M4 14h3" />
-      ) : kind === "previews" ? (
-        <>
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <circle cx="8" cy="8" r="1" />
-          <path d="m3 17 5-5 4 4 4-6 5 7" />
-        </>
       ) : kind === "columns" ? (
         <>
           <rect x="3" y="4" width="18" height="16" rx="1" />
@@ -92,9 +81,8 @@ export function InventoryTableControls({
   actions,
   wrapText = true,
   onWrapTextChange,
-  attachmentPreviews = false,
-  onAttachmentPreviewsChange,
   disabled = false,
+  showView = true,
   columns = [],
   onToggleColumn,
   onAutomaticWidths,
@@ -111,9 +99,9 @@ export function InventoryTableControls({
   const focusColumns = useRef(false);
   const focusLast = useRef(false);
   const available =
+    showView &&
     !disabled &&
     (!!onWrapTextChange ||
-      !!onAttachmentPreviewsChange ||
       !!onAutomaticWidths ||
       (!!onToggleColumn && columns.length > 0));
   const expanded = open && available;
@@ -342,25 +330,27 @@ export function InventoryTableControls({
                 })}
           </p>
         )}
-        <button
-          ref={trigger}
-          type="button"
-          aria-label={t("table.menu.view")}
-          title={t("table.menu.view")}
-          aria-haspopup="menu"
-          aria-expanded={expanded}
-          aria-controls={expanded ? `${id}-menu` : undefined}
-          disabled={!available}
-          className={`flex cursor-pointer items-center justify-center rounded-sm px-2.5 py-1.5 text-sm font-medium transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${expanded ? "bg-control-hover text-heading" : ""}`}
-          onKeyDown={handleKeyDown}
-          onClick={() => {
-            focusLast.current = false;
-            setOpen(!expanded);
-          }}
-        >
-          {t("table.menu.view")}
-        </button>
-        {actions && (
+        {showView && (
+          <button
+            ref={trigger}
+            type="button"
+            aria-label={t("table.menu.view")}
+            title={t("table.menu.view")}
+            aria-haspopup="menu"
+            aria-expanded={expanded}
+            aria-controls={expanded ? `${id}-menu` : undefined}
+            disabled={!available}
+            className={`flex cursor-pointer items-center justify-center rounded-sm px-2.5 py-1.5 text-sm font-medium transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${expanded ? "bg-control-hover text-heading" : ""}`}
+            onKeyDown={handleKeyDown}
+            onClick={() => {
+              focusLast.current = false;
+              setOpen(!expanded);
+            }}
+          >
+            {t("table.menu.view")}
+          </button>
+        )}
+        {actions && showView && (
           <span
             aria-hidden="true"
             className="h-5 shrink-0 border-l border-shell"
@@ -408,33 +398,6 @@ export function InventoryTableControls({
                   </span>
                 </button>
               )}
-              {onAttachmentPreviewsChange && (
-                <button
-                  type="button"
-                  role="menuitemcheckbox"
-                  aria-checked={attachmentPreviews}
-                  tabIndex={-1}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left outline-none enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:bg-surface-hover"
-                  onPointerEnter={(event) => {
-                    if (event.pointerType === "mouse") setColumnsOpen(false);
-                  }}
-                  onClick={() => {
-                    onAttachmentPreviewsChange(!attachmentPreviews);
-                    close();
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="w-4 shrink-0 text-accent-text"
-                  >
-                    {attachmentPreviews ? "✓" : ""}
-                  </span>
-                  <ViewOptionIcon kind="previews" />
-                  <span className="min-w-0 wrap-break-word">
-                    {t("attachments.showPreviews")}
-                  </span>
-                </button>
-              )}
               {onAutomaticWidths && (
                 <button
                   type="button"
@@ -464,9 +427,7 @@ export function InventoryTableControls({
               )}
               {hasColumns && (
                 <>
-                  {(onWrapTextChange ||
-                    onAttachmentPreviewsChange ||
-                    onAutomaticWidths) && (
+                  {(onWrapTextChange || onAutomaticWidths) && (
                     <div
                       role="separator"
                       className="my-1 border-t border-shell"

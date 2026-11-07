@@ -50,5 +50,9 @@ export interface UpdateInventoryItemInput extends InventoryItemInput {
 // Save all changed table rows together against their original configuration and item versions.
 export interface UpdateInventoryItemsInput {
   expected_configuration_revision: number;
+  new_items?: InventoryItemInput[];
+  order?: (
+    { item_id: string; expected_revision: number } | { new_item_index: number }
+  )[];
   items: (UpdateInventoryItemInput & { item_id: string })[];
 }

@@ -724,10 +724,8 @@ test("frontend clients complete configuration and item CRUD against Express", as
     );
     const preview = await fetch(attachments.attachmentPreviewUrl(image));
     expect(preview.status).toBe(200);
-    expect(preview.headers.get("Content-Type")).toBe("image/webp");
-    const previewBytes = Buffer.from(await preview.arrayBuffer());
-    expect(previewBytes.toString("ascii", 0, 4)).toBe("RIFF");
-    expect(previewBytes.toString("ascii", 8, 12)).toBe("WEBP");
+    expect(preview.headers.get("Content-Type")).toBe("image/png");
+    expect(new Uint8Array(await preview.arrayBuffer())).toEqual(imageBytes);
     await attachments.discardAttachment(image);
     await expect(attachments.discardAttachment(staged)).rejects.toMatchObject({
       status: 409,
@@ -948,6 +946,84 @@ test("frontend clients complete configuration and item CRUD against Express", as
     await inventories.deleteInventory(emptySource.id);
     await inventories.deleteInventory(imported.id);
     await inventories.deleteInventory(fileInventory.id);
+    const tableImports = await import("../src/services/tableImports");
+    for (const [format, source, delimiter, separator] of [
+      ["csv", "Code;Ports\n00123;USB | Power\n", ";", "|"],
+      [
+        "markdown",
+        "| Code | Ports |\n| --- | --- |\n| 00123 | USB; Power |\n",
+        ",",
+        ";",
+      ],
+    ] as const) {
+      const file = new File(
+        [source],
+        format === "csv" ? "foreign.csv" : "foreign.md",
+      );
+      const prepared = await tableImports.prepareTableImport(
+        file,
+        format,
+        delimiter,
+      );
+      expect(prepared).toMatchObject({
+        format,
+        column_count: 2,
+        row_count: 1,
+        status: "ready",
+      });
+      expect(
+        await tableImports.readTableImportRows(prepared.id, 0, 50),
+      ).toMatchObject({
+        headers: ["Code", "Ports"],
+        rows: [["00123", format === "csv" ? "USB | Power" : "USB; Power"]],
+      });
+      expect(
+        await tableImports.validateTableImport(prepared.id, [
+          { column: 1, name: "Ports", field_type: "number" },
+        ]),
+      ).toEqual({
+        valid: false,
+        issues: [{ row: 0, column: 1, code: "invalid_value" }],
+      });
+      const data = {
+        name: "Foreign table",
+        columns: [
+          { column: 0, name: "Code", field_type: "text" as const },
+          {
+            column: 1,
+            name: "Ports",
+            field_type: "multiselect" as const,
+            separator,
+          },
+        ],
+      };
+      expect(
+        await tableImports.validateTableImport(prepared.id, data.columns),
+      ).toEqual({ valid: true, issues: [] });
+      const importedTable = await tableImports.confirmTableImport(
+        prepared.id,
+        data,
+      );
+      expect(
+        (await tableImports.confirmTableImport(prepared.id, data)).id,
+      ).toBe(importedTable.id);
+      expect(await tableImports.readTableImport(prepared.id)).toMatchObject({
+        status: "completed",
+        inventory_id: importedTable.id,
+      });
+      const tableFields = await fields.getInventoryFields(importedTable.id);
+      expect(tableFields[1]!.options.map((option) => option.name)).toEqual([
+        "USB",
+        "Power",
+      ]);
+      expect(
+        (await items.getInventoryItems(importedTable.id))[0]!.values.find(
+          (value) => value.field_id === tableFields[0]!.id,
+        )!.value,
+      ).toBe("00123");
+      await tableImports.discardTableImport(prepared.id);
+      await inventories.deleteInventory(importedTable.id);
+    }
     expect(await inventories.getInventories()).toEqual([]);
   } finally {
     if (probe.listening) probe.close();
@@ -956,10 +1032,20 @@ test("frontend clients complete configuration and item CRUD against Express", as
     if (child && exited) {
       const forceStop = setTimeout(() => child?.kill("SIGKILL"), 3000);
       try {
-        if (child.exitCode === null && child.signalCode === null)
-          child.kill("SIGTERM");
-        const [code] = await exited;
-        expect(code).toBe(0);
+        const terminationRequested =
+          child.exitCode === null && child.signalCode === null
+            ? child.kill("SIGTERM")
+            : false;
+        const [code, signal] = await exited;
+        // Windows kill() terminates abruptly; it cannot deliver a catchable POSIX SIGTERM.
+        // Graceful Windows shutdown is exercised separately through the desktop IPC lifecycle.
+        if (process.platform === "win32" && terminationRequested) {
+          expect(code).toBeNull();
+          expect(signal).toBe("SIGTERM");
+        } else {
+          expect(code).toBe(0);
+          expect(signal).toBeNull();
+        }
       } finally {
         clearTimeout(forceStop);
       }

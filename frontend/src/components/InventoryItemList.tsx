@@ -40,8 +40,13 @@ import { sortInventoryItems } from "./inventoryItemSorting";
 import { searchInventoryItems } from "./inventoryItemSearch";
 import { filterInventoryItems, itemFilterError } from "./itemFilterLogic";
 import { InventoryItemFilters } from "./InventoryItemFilters";
+import { InventoryRowMoveHandle } from "./InventoryRowMoveHandle";
 import { InventoryTableCellInput } from "./InventoryTableCellInput";
-import { getTableCellValue } from "./inventoryTableDraft";
+import {
+  getTableCellValue,
+  presentTableDraftRows,
+} from "./inventoryTableDraft";
+import { useInventoryRowDrag } from "../hooks/useInventoryRowDrag";
 import { useInventoryTableEdit } from "../hooks/useInventoryTableEdit";
 import { TableEditSessionContext } from "./tableEditSession";
 import { UnsavedTableChanges } from "./UnsavedTableChanges";
@@ -216,7 +221,6 @@ export function InventoryItemList({
     toggleSort,
     toggleField,
     setWrapText,
-    setAttachmentPreviews,
     setColumnWidth,
     setAutomaticColumnWidth,
   } = useInventoryView(inventoryId, fields);
@@ -343,7 +347,7 @@ export function InventoryItemList({
   }));
   const displayWidths = distributeColumnWidths(
     baseColumns.map((column) => column.width),
-    availableWidth,
+    Math.max(0, availableWidth - (tableEdit.draft ? 40 : 0)),
     baseColumns.map(({ field }) => manualWidths[field.id] === undefined),
   );
   const visibleColumns = baseColumns.map(
@@ -353,7 +357,10 @@ export function InventoryItemList({
       width: displayWidths[index],
     }),
   );
-  const tableWidth = displayWidths.reduce((total, width) => total + width, 0);
+  const tableWidth = displayWidths.reduce(
+    (total, width) => total + width,
+    tableEdit.draft ? 40 : 0,
+  );
   const allVisibleColumnsAutomatic = visibleFields.every(
     (field) => view.columnWidths[field.id] === undefined,
   );
@@ -367,7 +374,41 @@ export function InventoryItemList({
         : matchingItems,
     [matchingItems, sort, sortField, locale],
   );
-  const displayedItems = tableEdit.draft?.displayedItems ?? sortedItems;
+  const rowDragContainer = useRef<HTMLDivElement>(null);
+  const draftDisplayedItems = useMemo(
+    () =>
+      tableEdit.draft
+        ? presentTableDraftRows(
+            tableEdit.draft.displayedItems,
+            tableEdit.draft.newItems,
+            tableEdit.draft.order,
+            !!sort,
+          )
+        : sortedItems,
+    [tableEdit.draft, sortedItems, sort],
+  );
+  const rowDrag = useInventoryRowDrag(
+    draftDisplayedItems,
+    rowDragContainer,
+    !!tableEdit.draft && !sort && !tableEdit.saving && !tableEdit.conflict,
+    tableEdit.move,
+  );
+  const displayedItems = rowDrag.items;
+  const newItemIds = new Set(tableEdit.draft?.newItems.map((item) => item.id));
+  const pendingNewRowFocus = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const id = pendingNewRowFocus.current;
+    if (!id) return;
+    const row = document.getElementById(`${tableId}-${id}`);
+    const control = row?.querySelector<HTMLElement>(
+      "td:not(:first-child) input:not(:disabled), td:not(:first-child) textarea:not(:disabled), td:not(:first-child) select:not(:disabled), td:not(:first-child) button:not(:disabled)",
+    );
+    if (control) control.focus();
+    pendingNewRowFocus.current = null;
+  });
+  function rowDragClasses(itemId: string) {
+    return `group transition-opacity duration-150 motion-reduce:transition-none ${rowDrag.draggedId === itemId ? "opacity-50" : ""} ${rowDrag.target?.id === itemId && rowDrag.target.side === "before" ? "[&>td]:before:opacity-100 [&>td]:before:scale-x-100" : "[&>td]:before:opacity-0 [&>td]:before:scale-x-95"} ${rowDrag.target?.id === itemId && rowDrag.target.side === "after" ? "[&>td]:after:opacity-100 [&>td]:after:scale-x-100" : "[&>td]:after:opacity-0 [&>td]:after:scale-x-95"} [&>td]:relative [&>td]:before:pointer-events-none [&>td]:before:absolute [&>td]:before:inset-x-0 [&>td]:before:top-0 [&>td]:before:z-10 [&>td]:before:h-0.5 [&>td]:before:origin-left [&>td]:before:bg-accent [&>td]:before:transition-[opacity,transform] [&>td]:before:duration-150 [&>td]:after:pointer-events-none [&>td]:after:absolute [&>td]:after:inset-x-0 [&>td]:after:bottom-0 [&>td]:after:z-10 [&>td]:after:h-0.5 [&>td]:after:origin-left [&>td]:after:bg-accent [&>td]:after:transition-[opacity,transform] [&>td]:after:duration-150 motion-reduce:[&>td]:before:transition-none motion-reduce:[&>td]:after:transition-none`;
+  }
   // Explicit reload starts a fresh session; deferred storage/language changes apply to that new baseline.
   function beginTableEditing() {
     tableEdit.begin({
@@ -692,6 +733,7 @@ export function InventoryItemList({
         </div>
       )}
       <InventoryTableControls
+        showView={!tableEdit.active}
         columns={fields.map((field) => ({
           id: field.id,
           name: field.name,
@@ -702,7 +744,9 @@ export function InventoryItemList({
         allColumnsAutomatic={allVisibleColumnsAutomatic}
         itemCount={displayedItems.length}
         totalItemCount={
-          searchQuery.trim() || activeFilters.length ? items.length : undefined
+          searchQuery.trim() || activeFilters.length
+            ? items.length + (tableEdit.draft?.newItems.length ?? 0)
+            : undefined
         }
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
@@ -763,10 +807,12 @@ export function InventoryItemList({
                   tableEdit.loading ? "table.edit.loading" : "table.edit.start",
                 )}
                 disabled={
-                  controlsDisabled ||
-                  checkboxUpdate.isPending ||
-                  items.length === 0 ||
-                  !fields.some((field) => field.field_type !== "id")
+                  isMutating ||
+                  tableEdit.active ||
+                  editingItem !== null ||
+                  deletingTarget !== null ||
+                  resizing !== null ||
+                  fields.length === 0
                 }
                 className={`flex size-8 cursor-pointer items-center justify-center rounded-sm text-muted transition enabled:hover:bg-control-hover enabled:hover:text-accent-text focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
                 onClick={() => {
@@ -788,23 +834,17 @@ export function InventoryItemList({
                 </svg>
               </button>
             )}
-            <fieldset disabled={tableEdit.active} className="contents">
-              {actions}
-            </fieldset>
+            {!tableEdit.active && actions}
           </>
         }
         wrapText={wrapText}
         onWrapTextChange={setWrapText}
-        attachmentPreviews={view.attachmentPreviews}
-        onAttachmentPreviewsChange={
-          fields.some((field) => field.field_type === "attachment")
-            ? setAttachmentPreviews
-            : undefined
-        }
         disabled={controlsDisabled}
       />
-      {/* Cell borders repaint reliably when previews change the heights of the separate tables. */}
+      {/* Keep the data and action tables aligned within their shared border. */}
       <div
+        ref={rowDragContainer}
+        onDrop={rowDrag.drop}
         hidden={fields.length === 0}
         className={`${fields.length > 0 ? "grid" : "hidden"} grid-cols-[minmax(0,1fr)_auto] items-start overflow-hidden rounded-b-md border border-shell bg-surface`}
       >
@@ -822,12 +862,18 @@ export function InventoryItemList({
           >
             <caption className="sr-only">{t("table.sortHint")}</caption>
             <colgroup>
+              {tableEdit.draft && <col style={{ width: 40 }} />}
               {visibleColumns.map(({ field, width }) => (
                 <col key={field.id} style={{ width }} />
               ))}
             </colgroup>
             <thead className="bg-surface-muted text-xs font-semibold uppercase tracking-wider text-muted">
               <tr>
+                {tableEdit.draft && (
+                  <th scope="col" className="border-b border-shell">
+                    <span className="sr-only">{t("table.edit.reorder")}</span>
+                  </th>
+                )}
                 {visibleColumns.map(({ field, baseWidth, width }) => (
                   <th
                     data-field-id={field.id}
@@ -870,8 +916,16 @@ export function InventoryItemList({
                     {field.is_sortable ? (
                       <button
                         className={`relative block w-full cursor-pointer py-3 pr-7 pl-3 text-left font-semibold transition-colors enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sortField?.id === field.id ? "bg-accent-soft text-accent-text" : ""}`}
-                        onClick={() => toggleSort(field.id)}
-                        disabled={tableEdit.active}
+                        onClick={() =>
+                          tableEdit.draft
+                            ? tableEdit.toggleSort(field.id)
+                            : toggleSort(field.id)
+                        }
+                        disabled={
+                          tableEdit.loading ||
+                          tableEdit.saving ||
+                          tableEdit.conflict
+                        }
                         type="button"
                       >
                         <span
@@ -951,13 +1005,36 @@ export function InventoryItemList({
 
                 return (
                   <tr
-                    className="group"
+                    className={rowDragClasses(item.id)}
                     key={item.id}
                     id={`${tableId}-${item.id}`}
                     data-item-id={item.id}
+                    data-drag-row-id={`data:${item.id}`}
+                    draggable={false}
+                    onDragOver={(event) => {
+                      rowDrag.over(item.id, event);
+                    }}
+                    onDragEnd={rowDrag.cancel}
                     onPointerEnter={() => setHoveredItem(item.id)}
                     onPointerLeave={() => setHoveredItem(null)}
                   >
+                    {tableEdit.draft && (
+                      <td className="h-13 border-r border-shell/60 px-1.5 py-2.5 align-middle">
+                        <InventoryRowMoveHandle
+                          sorted={!!sort}
+                          disabled={tableEdit.saving || tableEdit.conflict}
+                          onDragStart={(event) => rowDrag.begin(item.id, event)}
+                          onDragEnd={rowDrag.cancel}
+                          onMove={(direction) => {
+                            const index = displayedItems.findIndex(
+                              (row) => row.id === item.id,
+                            );
+                            const target = displayedItems[index + direction];
+                            if (target) tableEdit.move(item.id, target.id);
+                          }}
+                        />
+                      </td>
+                    )}
                     {visibleFields.map((field) => {
                       const content = formatValue(
                         field,
@@ -985,10 +1062,12 @@ export function InventoryItemList({
                                   field.id,
                                 )
                                   ? tableEdit.draft.changes[item.id][field.id]
-                                  : getTableCellValue(
-                                      field,
-                                      valuesByField.get(field.id)?.value,
-                                    )
+                                  : newItemIds.has(item.id)
+                                    ? getInitialValue(field)
+                                    : getTableCellValue(
+                                        field,
+                                        valuesByField.get(field.id)?.value,
+                                      )
                               }
                               disabled={
                                 tableEdit.saving ||
@@ -1008,7 +1087,6 @@ export function InventoryItemList({
                             />
                           ) : field.field_type === "attachment" ? (
                             <AttachmentCell
-                              previews={view.attachmentPreviews}
                               ids={valuesByField.get(field.id)?.value}
                               files={item.attachments ?? []}
                             />
@@ -1021,7 +1099,9 @@ export function InventoryItemList({
                                   field: field.name,
                                 })}
                                 // The change handler rejects concurrent writes without changing native appearance.
-                                aria-disabled={checkboxUpdate.isPending || undefined}
+                                aria-disabled={
+                                  checkboxUpdate.isPending || undefined
+                                }
                                 aria-busy={
                                   (checkboxUpdate.isPending &&
                                     checkboxTarget?.itemId === item.id &&
@@ -1092,7 +1172,7 @@ export function InventoryItemList({
                 <tr>
                   <td
                     className="px-6 py-12 text-center"
-                    colSpan={visibleFields.length}
+                    colSpan={visibleFields.length + (tableEdit.draft ? 1 : 0)}
                   >
                     <p className="font-semibold text-heading">
                       {t(
@@ -1133,6 +1213,12 @@ export function InventoryItemList({
               {displayedItems.map((item) => (
                 <tr
                   key={item.id}
+                  className={rowDragClasses(item.id)}
+                  data-drag-row-id={`actions:${item.id}`}
+                  onDragOver={(event) => {
+                    rowDrag.over(item.id, event);
+                  }}
+                  onDragEnd={rowDrag.cancel}
                   style={{ height: rowHeights.rows[item.id] }}
                   onPointerEnter={() => setHoveredItem(item.id)}
                   onPointerLeave={() => setHoveredItem(null)}
@@ -1142,55 +1228,85 @@ export function InventoryItemList({
                     className={`h-13 px-4 py-2 align-top transition-colors ${hoveredItem === item.id ? "bg-surface-hover" : ""}`}
                   >
                     <div className="flex justify-end gap-2 whitespace-nowrap">
-                      <button
-                        className={`flex size-8 cursor-pointer items-center justify-center rounded-sm border border-shell transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
-                        aria-label={t("common.actions.edit")}
-                        title={t("common.actions.edit")}
-                        aria-describedby={`${tableId}-${item.id}`}
-                        disabled={isMutating || tableEdit.active}
-                        onClick={() => startEditing(item)}
-                        type="button"
-                      >
-                        <svg
-                          aria-hidden="true"
-                          className="size-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15Z" />
-                        </svg>
-                      </button>
-                      <button
-                        className={`flex size-8 cursor-pointer items-center justify-center rounded-sm bg-danger-soft text-danger transition enabled:hover:bg-danger/25 focus-visible:outline-2 focus-visible:outline-danger disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
-                        aria-label={t(
-                          deleteItem.isPending
-                            ? "common.actions.deleting"
-                            : "common.actions.delete",
-                        )}
-                        title={t("common.actions.delete")}
-                        aria-busy={deleteItem.isPending || undefined}
-                        aria-describedby={`${tableId}-${item.id}`}
-                        disabled={isMutating || tableEdit.active}
-                        onClick={() => handleDelete(item)}
-                        type="button"
-                      >
-                        <svg
-                          aria-hidden="true"
-                          className="size-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" />
-                        </svg>
-                      </button>
+                      {newItemIds.has(item.id) ? (
+                        <>
+                          <span className="flex size-8 items-center justify-center text-xs font-semibold text-accent-text">
+                            {t("table.edit.newRow")}
+                          </span>
+                          <button
+                            type="button"
+                            aria-label={t("table.edit.removeNewRow")}
+                            title={t("table.edit.removeNewRow")}
+                            disabled={tableEdit.saving || tableEdit.conflict}
+                            onClick={() => tableEdit.removeRow(item.id)}
+                            className="flex size-8 cursor-pointer items-center justify-center rounded-sm bg-danger-soft text-danger transition enabled:hover:bg-danger/25 focus-visible:outline-2 focus-visible:outline-danger disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              className="size-4"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                            >
+                              <path d="m6 6 12 12M18 6 6 18" />
+                            </svg>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            className={`flex size-8 cursor-pointer items-center justify-center rounded-sm border border-shell transition enabled:hover:bg-control-hover enabled:hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
+                            aria-label={t("common.actions.edit")}
+                            title={t("common.actions.edit")}
+                            aria-describedby={`${tableId}-${item.id}`}
+                            disabled={isMutating || tableEdit.active}
+                            onClick={() => startEditing(item)}
+                            type="button"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              className="size-4"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15Z" />
+                            </svg>
+                          </button>
+                          <button
+                            className={`flex size-8 cursor-pointer items-center justify-center rounded-sm bg-danger-soft text-danger transition enabled:hover:bg-danger/25 focus-visible:outline-2 focus-visible:outline-danger disabled:cursor-not-allowed ${checkboxUpdate.isPending ? "" : "disabled:opacity-50"}`}
+                            aria-label={t(
+                              deleteItem.isPending
+                                ? "common.actions.deleting"
+                                : "common.actions.delete",
+                            )}
+                            title={t("common.actions.delete")}
+                            aria-busy={deleteItem.isPending || undefined}
+                            aria-describedby={`${tableId}-${item.id}`}
+                            disabled={isMutating || tableEdit.active}
+                            onClick={() => handleDelete(item)}
+                            type="button"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              className="size-4"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" />
+                            </svg>
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1198,6 +1314,30 @@ export function InventoryItemList({
             </tbody>
           </table>
         </div>
+        {tableEdit.draft && (
+          <div className="col-span-2 border-t border-shell bg-surface-muted p-2">
+            <button
+              type="button"
+              className="flex cursor-pointer items-center gap-2 rounded-sm px-2.5 py-1.5 text-sm font-medium text-accent-text transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={tableEdit.saving || tableEdit.conflict}
+              onClick={() => {
+                pendingNewRowFocus.current = tableEdit.addRow() ?? null;
+              }}
+            >
+              <svg
+                aria-hidden="true"
+                className="size-4"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M8 3v10M3 8h10" />
+              </svg>
+              {t("table.edit.addRow")}
+            </button>
+          </div>
+        )}
       </div>
 
       {columnMenu && menuField && (

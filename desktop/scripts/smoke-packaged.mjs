@@ -1,7 +1,11 @@
+import {
+  exerciseImagePreview,
+  exerciseImagePreviewFailure,
+} from "./image-preview-smoke.mjs";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -57,7 +61,7 @@ async function command(socket, id, method, params = {}) {
 }
 
 /**
- * Stop a failed test application and, on Windows, its portable launcher children.
+ * Stop a failed test application and, on Windows, its child processes.
  * @param {import("node:child_process").ChildProcess} child Test process.
  * @param {() => boolean} hasExited Whether the process has already exited.
  * @returns {Promise<void>} Resolves after the process has exited.
@@ -86,7 +90,7 @@ async function stopFailedApplication(child, hasExited) {
  * Start one packaged application with isolated storage, then close it cleanly.
  * @param {string} executable Application artifact.
  * @param {string} directory Temporary application root.
- * @param {(origin: string) => Promise<void>} exercise Checks to run against its backend.
+ * @param {(origin: string, renderer: object) => Promise<void>} exercise Backend and renderer checks.
  * @returns {Promise<void>} Resolves after a clean application shutdown.
  */
 async function runApplication(executable, directory, exercise) {
@@ -115,7 +119,7 @@ async function runApplication(executable, directory, exercise) {
   try {
     let page;
     console.log(
-      "Starting packaged application; extraction may take several minutes.",
+      "Starting packaged application with isolated temporary storage.",
     );
     while (Date.now() < startupDeadline) {
       if (exit)
@@ -164,8 +168,45 @@ async function runApplication(executable, directory, exercise) {
       await delay(200);
     }
     if (!ready) throw new Error(`Packaged application did not load: ${output}`);
-    await exercise(new URL(page.url).origin);
-    socket.send(JSON.stringify({ id: 1000, method: "Page.close" }));
+    const previewRequests = [];
+    socket.addEventListener("message", (event) => {
+      const message = JSON.parse(String(event.data));
+      if (
+        message.method === "Network.requestWillBeSent" &&
+        /\/attachments\/[^/]+\/preview$/.test(message.params.request.url)
+      )
+        previewRequests.push(message.params.request.url);
+    });
+    await command(socket, ++commandId, "Network.enable");
+    // Headless Ozone can expose a 1 × 1 display; use a real viewport for layout assertions.
+    await command(socket, ++commandId, "Emulation.setDeviceMetricsOverride", {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await exercise(new URL(page.url).origin, {
+      async evaluate(expression) {
+        const result = await command(socket, ++commandId, "Runtime.evaluate", {
+          expression,
+          awaitPromise: true,
+          returnByValue: true,
+        });
+        if (result.exceptionDetails)
+          throw new Error(JSON.stringify(result.exceptionDetails));
+        return result.result?.value;
+      },
+      navigate: (url) => command(socket, ++commandId, "Page.navigate", { url }),
+      previewRequests: () => previewRequests.length,
+      resize: (width, height) =>
+        command(socket, ++commandId, "Emulation.setDeviceMetricsOverride", {
+          width,
+          height,
+          deviceScaleFactor: 1,
+          mobile: false,
+        }),
+    });
+    socket.send(JSON.stringify({ id: ++commandId, method: "Page.close" }));
     for (let attempt = 0; attempt < 150 && !exit; attempt++) await delay(200);
     if (!exit || exit.code !== 0)
       throw new Error(
@@ -201,7 +242,7 @@ try {
     "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAIAAABChommAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEUlEQVQYlWNg6EgjjBhGvCIAduVZQWDem3YAAAAASUVORK5CYII=",
     "base64",
   );
-  await runApplication(first, directory, async (origin) => {
+  await runApplication(first, directory, async (origin, renderer) => {
     const inventory = await api(origin, "/inventories", {
       method: "POST",
       status: 201,
@@ -222,16 +263,79 @@ try {
         "X-File-Name": "test.png",
       },
     });
+    const largeFiles = [];
+    for (const name of ["landscape", "portrait"]) {
+      largeFiles.push(
+        await api(origin, path, {
+          method: "POST",
+          status: 201,
+          body: await readFile(
+            new URL(`../test/fixtures/preview-${name}.png`, import.meta.url),
+          ),
+          headers: {
+            "Content-Type": "application/octet-stream",
+            "X-File-Name": `${name}.png`,
+          },
+        }),
+      );
+    }
     await api(origin, `/inventories/${inventory.id}/items`, {
       method: "POST",
       status: 201,
       body: JSON.stringify({
-        values: [{ field_id: field.id, value: [file.id] }],
+        values: [
+          {
+            field_id: field.id,
+            value: [file.id, ...largeFiles.map((entry) => entry.id)],
+          },
+        ],
       }),
     });
-    const preview = await fetch(`${origin}/api${path}/${file.id}/preview`);
-    assert.equal(preview.status, 200);
-    assert.equal(preview.headers.get("content-type"), "image/webp");
+    const corrupt = await api(origin, path, {
+      method: "POST",
+      status: 201,
+      body: image.subarray(0, 33),
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "X-File-Name": "corrupt.png",
+      },
+    });
+    await api(origin, `/inventories/${inventory.id}/items`, {
+      method: "POST",
+      status: 201,
+      body: JSON.stringify({
+        values: [{ field_id: field.id, value: [corrupt.id] }],
+      }),
+    });
+    await renderer.navigate(`${origin}/inventories/${inventory.id}/items`);
+    await exerciseImagePreview(
+      renderer.evaluate,
+      { filename: "test.png", width: 12, height: 8 },
+      renderer.previewRequests,
+    );
+    await renderer.resize(800, 1200);
+    await exerciseImagePreview(
+      renderer.evaluate,
+      {
+        filename: "landscape.png",
+        width: 6000,
+        height: 4000,
+        requestOffset: 2,
+      },
+      renderer.previewRequests,
+    );
+    await exerciseImagePreview(
+      renderer.evaluate,
+      { filename: "portrait.png", width: 1200, height: 2400, requestOffset: 4 },
+      renderer.previewRequests,
+    );
+    await exerciseImagePreviewFailure(renderer.evaluate, "corrupt.png");
+    assert.equal(renderer.previewRequests(), 7);
+    const download = await fetch(`${origin}/api${path}/${file.id}/download`, {
+      signal: AbortSignal.timeout(15000),
+    });
+    assert.equal(download.status, 200);
+    assert.deepEqual(Buffer.from(await download.arrayBuffer()), image);
     const backup = await api(origin, "/backups", {
       method: "POST",
       status: 201,
@@ -251,7 +355,7 @@ try {
     );
   });
   console.log(
-    "PASS: packaged startup, native image preview, attachment, backup, clean shutdown and restart.",
+    "PASS: packaged startup, decoded image modal, context menu, blob cleanup, attachment, backup, clean shutdown and restart.",
   );
   if (second !== first)
     console.log(

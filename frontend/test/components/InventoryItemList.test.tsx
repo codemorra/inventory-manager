@@ -294,7 +294,7 @@ test("finds selection labels in hidden columns", async () => {
 });
 
 // Test no matches differs from a genuinely empty inventory and clears both table panes.
-test("keeps controls active for no search results and disables them in empty inventories", async () => {
+test("keeps editing available in empty inventories while disabling search and view controls", async () => {
   const user = userEvent.setup();
   const view = renderInventoryItemList();
   await user.type(screen.getByRole("searchbox"), "missing");
@@ -310,7 +310,7 @@ test("keeps controls active for no search results and disables them in empty inv
   expect(screen.getByRole("searchbox")).toBeDisabled();
   expect(screen.getByRole("button", { name: "Filters" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "View" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Edit table" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Edit table" })).toBeEnabled();
 });
 
 // Test background refreshes cannot replace an open draft's concurrency precondition.
@@ -566,7 +566,9 @@ test("locks table actions while a checkbox update is pending", async () => {
     ],
     [{ ...fields[2], name: "Checked", field_type: "checkbox" }],
   );
-  const [input, other] = screen.getAllByRole("checkbox", { name: "Toggle Checked" });
+  const [input, other] = screen.getAllByRole("checkbox", {
+    name: "Toggle Checked",
+  });
   await user.click(input);
   await waitFor(() => expect(input).toHaveAttribute("aria-disabled", "true"));
   expect(input).toBeEnabled();
@@ -574,7 +576,9 @@ test("locks table actions while a checkbox update is pending", async () => {
   expect(other).toHaveAttribute("aria-disabled", "true");
   expect(input).toBeChecked();
   expect(input).toHaveAttribute("aria-busy", "true");
-  for (const button of screen.getAllByRole("button", { name: /^(Edit|Delete)$/ }))
+  for (const button of screen.getAllByRole("button", {
+    name: /^(Edit|Delete)$/,
+  }))
     expect(button).toBeDisabled();
   expect(screen.getByRole("button", { name: "Edit table" })).toBeDisabled();
   expect(screen.getByRole("searchbox")).toBeEnabled();

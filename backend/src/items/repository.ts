@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, notInArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, notInArray, sql } from "drizzle-orm";
 import { inventoryItems, inventoryItemValues } from "../db/schema.js";
 import type { AppDatabase } from "../db/types.js";
 import type { ValueInput } from "./validation.js";
@@ -30,7 +30,11 @@ export function createItemRepository(db: AppDatabase) {
         .select()
         .from(inventoryItems)
         .where(activeInventory(inventoryId))
-        .orderBy(desc(inventoryItems.createdAt))
+        .orderBy(
+          asc(inventoryItems.position),
+          desc(inventoryItems.createdAt),
+          asc(inventoryItems.id),
+        )
         .all(),
 
     /**
@@ -51,8 +55,25 @@ export function createItemRepository(db: AppDatabase) {
      * @param inventoryId The ID of the inventory.
      * @returns The created inventory item.
      */
-    create: (inventoryId: string) =>
-      db.insert(inventoryItems).values({ inventoryId }).returning().get(),
+    create: (inventoryId: string, append = false) =>
+      db
+        .insert(inventoryItems)
+        .values({
+          inventoryId,
+          position: append
+            ? sql`(SELECT COALESCE(MAX(position), -1) + 1 FROM inventory_items WHERE inventory_id = ${inventoryId} AND deleted_at IS NULL)`
+            : sql`(SELECT COALESCE(MIN(position), 1) - 1 FROM inventory_items WHERE inventory_id = ${inventoryId} AND deleted_at IS NULL)`,
+        })
+        .returning()
+        .get(),
+
+    /** Set a position within the caller's atomic table save. */
+    setPosition: (inventoryId: string, itemId: string, position: number) =>
+      db
+        .update(inventoryItems)
+        .set({ position })
+        .where(and(activeInventory(inventoryId), eq(inventoryItems.id, itemId)))
+        .run(),
 
     /**
      * Claim the next revision before modifying values inside the caller's transaction.

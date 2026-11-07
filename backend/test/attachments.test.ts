@@ -545,10 +545,12 @@ test("rejects missing, substituted, or corrupt file content without exposing fil
   const f = await fixture(context);
   const file = await stage(f);
   const path = join(f.directory, `${file.id}.blob`);
+  const original = await readFile(path);
   await rm(path);
   await f.api.get(`${f.base}/${file.id}/download`).expect(404);
   const outside = join(f.directory, "unmanaged.txt");
-  await writeFile(outside, "private");
+  // Use identical bytes so size validation alone cannot accidentally pass the symlink test.
+  await writeFile(outside, original);
   await symlink(outside, path);
   await f.api
     .get(`${f.base}/${file.id}/download`)
@@ -691,4 +693,32 @@ test("accepts streamed files larger than the removed 50 MiB application limit", 
     values: [{ field_id: f.field.id, value: [file.id] }],
   });
   assert.equal(item.attachments?.[0]?.byteSize, file.byteSize);
+});
+
+test("binds staged files to inline rows and rolls back ownership when a later inline row fails", async (context) => {
+  const f = await fixture(context);
+  const staged = await stage(f, "inline.txt");
+  const row = { values: [{ field_id: f.field.id, value: [staged.id] }] };
+  const input = {
+    expected_configuration_revision: f.services.inventories.get(f.inventory.id)
+      .configurationRevision,
+    items: [],
+    new_items: [row],
+  };
+  const before = snapshot(f);
+  assert.throws(() =>
+    f.services.items.updateMany(f.inventory.id, {
+      ...input,
+      new_items: [row, row],
+    }),
+  );
+  assert.deepEqual(snapshot(f), before);
+  assert.equal(f.files.get(f.inventory.id, f.field.id, staged.id).itemId, null);
+  const saved = f.services.items.updateMany(f.inventory.id, input);
+  assert.equal(saved.length, 1);
+  assert.equal(saved[0]!.attachments?.[0]?.id, staged.id);
+  assert.equal(
+    f.files.get(f.inventory.id, f.field.id, staged.id).itemId,
+    saved[0]!.id,
+  );
 });

@@ -51,7 +51,7 @@ npm run check
 
 This runs type checking, linting, tests, builds and `prettier --check .` across the project. Individual stages are available as `npm run typecheck`, `npm run lint`, `npm test`, `npm run build` and `npm run format:check`. Package-specific scripts can be run with `npm --prefix frontend`, `npm --prefix backend` or `npm --prefix desktop`.
 
-Frontend tests use Vitest and Testing Library; backend and desktop unit tests use `node:test`. Tests use synthetic data and temporary storage. HTTP integration tests need local socket access. Do not point tests or experimental migrations at a real installation.
+Frontend tests use Vitest and Testing Library; backend and desktop unit tests use `node:test`. Tests use synthetic data and temporary storage. HTTP integration tests need local socket access. On Windows, tests that create real file symlinks require a terminal with the appropriate symlink privilege, such as an elevated PowerShell; an ordinary VS Code terminal may fail during fixture creation with `EPERM`. Keep these security checks enabled. Normal application use does not require elevated rights for these test fixtures. Do not point tests or experimental migrations at a real installation.
 
 ## Desktop smoke tests
 
@@ -69,6 +69,8 @@ To test a local build:
 ```bash
 npm --prefix desktop run smoke:package -- path/to/application
 ```
+
+The packaged smoke test uses the built application's frontend, backend and embedded Node runtime with isolated temporary data.
 
 Pass two application paths to check data preservation when replacing one build with another. These tests use temporary data and remove it afterward.
 
