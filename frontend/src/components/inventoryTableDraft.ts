@@ -7,6 +7,7 @@ import type {
 import {
   createValueInput,
   getEditableValue,
+  getInitialValue,
   type InventoryItemFormValue,
 } from "./inventoryItemForm";
 import { durationSeconds, isDurationInput } from "./duration";
@@ -196,6 +197,7 @@ export function tableCellError(
  * @param items The original item snapshots with their original revisions.
  * @param changes The deliberately edited cells.
  * @param configurationRevision The version captured with the field snapshot.
+ * @param newItems Locally created rows that must be validated even before any cell is edited.
  * @returns Atomic replacement input and field-level validation errors.
  */
 export function createTableReplacement(
@@ -203,6 +205,7 @@ export function createTableReplacement(
   items: InventoryItem[],
   changes: TableCellChanges,
   configurationRevision: number,
+  newItems: InventoryItem[] = [],
 ): { input: UpdateInventoryItemsInput; errors: TableCellError[] } {
   const errors: TableCellError[] = [];
   const replacements = items
@@ -228,11 +231,37 @@ export function createTableReplacement(
       }
       return { item_id: item.id, expected_revision: item.revision, values };
     });
+  const additions = newItems.map((item) => {
+    const values: InventoryItemValueInput[] = [];
+    for (const field of fields) {
+      if (field.field_type === "id") continue;
+      const value = changes[item.id]?.[field.id] ?? getInitialValue(field);
+      const error = tableCellError(field, value, true);
+      if (error) errors.push({ itemId: item.id, fieldId: field.id, error });
+      const converted = createValueInput(field, value);
+      if (converted) values.push(converted);
+    }
+    return { values };
+  });
   return {
     input: {
+      ...(additions.length ? { new_items: additions } : {}),
       expected_configuration_revision: configurationRevision,
       items: replacements,
     },
     errors,
   };
+}
+
+/** Keep new rows visible and merge them into the manual order when column sorting is inactive. */
+export function presentTableDraftRows(
+  items: InventoryItem[],
+  newItems: InventoryItem[],
+  order: string[],
+  sorted: boolean,
+): InventoryItem[] {
+  const visible = [...items, ...newItems];
+  if (sorted) return visible;
+  const positions = new Map(order.map((id, index) => [id, index]));
+  return visible.sort((a, b) => positions.get(a.id)! - positions.get(b.id)!);
 }

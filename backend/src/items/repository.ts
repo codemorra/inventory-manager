@@ -55,12 +55,14 @@ export function createItemRepository(db: AppDatabase) {
      * @param inventoryId The ID of the inventory.
      * @returns The created inventory item.
      */
-    create: (inventoryId: string) =>
+    create: (inventoryId: string, append = false) =>
       db
         .insert(inventoryItems)
         .values({
           inventoryId,
-          position: sql`(SELECT COALESCE(MIN(position), 1) - 1 FROM inventory_items WHERE inventory_id = ${inventoryId} AND deleted_at IS NULL)`,
+          position: append
+            ? sql`(SELECT COALESCE(MAX(position), -1) + 1 FROM inventory_items WHERE inventory_id = ${inventoryId} AND deleted_at IS NULL)`
+            : sql`(SELECT COALESCE(MIN(position), 1) - 1 FROM inventory_items WHERE inventory_id = ${inventoryId} AND deleted_at IS NULL)`,
         })
         .returning()
         .get(),

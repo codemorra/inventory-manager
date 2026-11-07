@@ -111,6 +111,7 @@ beforeEach(() => {
     }));
     if (input.order) {
       for (const row of input.order) {
+        if (!("item_id" in row)) continue;
         if (!saved.some((item) => item.id === row.item_id))
           saved.push({
             ...serverItems.find((item) => item.id === row.item_id)!,
@@ -121,13 +122,31 @@ beforeEach(() => {
     serverItems = serverItems.map(
       (item) => saved.find((row) => row.id === item.id) ?? item,
     );
+    const added = (input.new_items ?? []).map((row, index) => ({
+      ...structuredClone(original),
+      id: `created-${index}`,
+      revision: 1,
+      values: row.values.map((value, i) => ({
+        ...value,
+        id: `created-value-${index}-${i}`,
+        created_at: "",
+        updated_at: "",
+      })),
+    }));
+    serverItems.push(...added);
     if (input.order) {
       const positions = new Map(
-        input.order.map((row, index) => [row.item_id, index]),
+        input.order.map((row, index) => [
+          "item_id" in row ? row.item_id : added[row.new_item_index].id,
+          index,
+        ]),
       );
-      serverItems.sort((a, b) => positions.get(a.id)! - positions.get(b.id)!);
+      serverItems.sort(
+        (a, b) =>
+          (positions.get(a.id) ?? Infinity) - (positions.get(b.id) ?? Infinity),
+      );
     }
-    return saved;
+    return [...saved, ...added];
   });
 });
 afterEach(() => {
@@ -937,3 +956,168 @@ test.each([false, true])(
     }
   },
 );
+
+/** Find unsaved data rows independently of their mirrored action rows. */
+function newRows() {
+  return Array.from(
+    document.querySelectorAll<HTMLTableRowElement>(
+      'tr[data-item-id^="draft-"]',
+    ),
+  );
+}
+
+test("adds and validates multiple inline rows in an empty inventory and saves only retained rows", async () => {
+  serverItems = [];
+  const user = userEvent.setup();
+  renderTable([fields[0], fields.at(-1)!]);
+  await user.click(screen.getByRole("button", { name: "Edit table" }));
+  await user.click(await screen.findByRole("button", { name: "Add row" }));
+  expect(newRows()).toHaveLength(1);
+  const title = within(newRows()[0]).getByRole("textbox", { name: "Title" });
+  expect(title).toHaveFocus();
+  expect(screen.getByText("New")).toBeVisible();
+  expect(within(newRows()[0]).queryByText("New")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  expect(updateInventoryItems).not.toHaveBeenCalled();
+  await user.type(title, "Inline retained");
+  await user.click(screen.getByRole("button", { name: "Add row" }));
+  expect(newRows()).toHaveLength(2);
+  expect(
+    within(newRows()[1]).getByRole("textbox", { name: "Title" }),
+  ).toHaveFocus();
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  await user.click(
+    screen.getAllByRole("button", { name: "Remove new row" })[1],
+  );
+  expect(newRows()).toHaveLength(1);
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(updateInventoryItems).toHaveBeenCalledWith("inventory", {
+      expected_configuration_revision: 7,
+      items: [],
+      new_items: [
+        { values: [{ field_id: "text-field", value: "Inline retained" }] },
+      ],
+    }),
+  );
+  await waitFor(() => expect(newRows()).toHaveLength(0));
+  expect(screen.getByText("Inline retained")).toBeVisible();
+});
+
+test("keeps new rows below filtered and sorted rows, and cancels their inputs together with cell changes", async () => {
+  const user = userEvent.setup();
+  renderTable();
+  await user.type(screen.getByRole("searchbox"), "First");
+  await start(user);
+  const heading = screen.getByRole("button", { name: "Title" });
+  await user.click(heading);
+  await user.click(screen.getByRole("button", { name: "Add row" }));
+  await user.type(
+    within(newRows()[0]).getByRole("textbox", { name: "Title" }),
+    "Does not match search",
+  );
+  await user.click(heading);
+  const ids = () =>
+    Array.from(document.querySelectorAll<HTMLElement>("tr[data-item-id]")).map(
+      (row) => row.dataset.itemId,
+    );
+  expect(ids()).toEqual(["first", newRows()[0].dataset.itemId]);
+  expect(
+    within(newRows()[0]).getByRole("button", { name: "Move row" }),
+  ).toHaveAttribute("aria-disabled", "true");
+  await user.type(
+    within(row()).getByRole("textbox", { name: "Title" }),
+    " edited",
+  );
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(newRows()).toHaveLength(0);
+  expect(screen.getByText("First")).toBeVisible();
+  expect(screen.queryByText("Does not match search")).not.toBeInTheDocument();
+  expect(updateInventoryItems).not.toHaveBeenCalled();
+});
+
+test("preserves inline inputs after a failed save and retries only on explicit request", async () => {
+  const user = userEvent.setup();
+  renderTable([fields[0]]);
+  await start(user);
+  await user.click(screen.getByRole("button", { name: "Add row" }));
+  await user.type(
+    within(newRows()[0]).getByRole("textbox", { name: "Title" }),
+    "Retry row",
+  );
+  vi.mocked(updateInventoryItems).mockRejectedValueOnce(
+    new Error("Storage failure"),
+  );
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(
+      screen.getByText(
+        "No changes were saved. Your draft is preserved; try saving again.",
+      ),
+    ).toBeVisible(),
+  );
+  expect(
+    within(newRows()[0]).getByRole("textbox", { name: "Title" }),
+  ).toHaveValue("Retry row");
+  expect(updateInventoryItems).toHaveBeenCalledTimes(1);
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(newRows()).toHaveLength(0));
+  expect(updateInventoryItems).toHaveBeenCalledTimes(2);
+  expect(screen.getByText("Retry row")).toBeVisible();
+});
+
+test("moves new rows between existing entries and saves their chosen positions", async () => {
+  const user = userEvent.setup();
+  renderTable([fields[0]]);
+  await start(user);
+  await user.click(screen.getByRole("button", { name: "Add row" }));
+  const addedRow = newRows()[0];
+  const addedId = addedRow.dataset.itemId!;
+  expect(within(addedRow).queryByText("New")).not.toBeInTheDocument();
+  const actions = document.querySelector<HTMLElement>(
+    `[data-drag-row-id="actions:${addedId}"]`,
+  )!;
+  expect(within(actions).getByText("New")).toBeVisible();
+  expect(
+    within(actions).getByRole("button", { name: "Remove new row" }),
+  ).toBeEnabled();
+  const handle = within(addedRow).getByRole("button", { name: "Move row" });
+  expect(handle).toHaveAttribute("aria-disabled", "false");
+  await user.type(
+    within(addedRow).getByRole("textbox", { name: "Title" }),
+    "Inserted",
+  );
+  const transfer = rowTransfer();
+  fireEvent.dragStart(handle, { dataTransfer: transfer });
+  hoverRow("first", transfer, "before");
+  fireEvent.drop(row("first"), { dataTransfer: transfer });
+  const ids = () =>
+    Array.from(document.querySelectorAll<HTMLElement>("tr[data-item-id]")).map(
+      (row) => row.dataset.itemId,
+    );
+  expect(ids()).toEqual([addedId, "first", "second"]);
+  await user.click(screen.getByRole("button", { name: "Title" }));
+  expect(handle).toHaveAttribute("aria-disabled", "true");
+  await user.click(screen.getByRole("button", { name: "Title" }));
+  await user.click(screen.getByRole("button", { name: "Title" }));
+  expect(ids()).toEqual([addedId, "first", "second"]);
+  fireEvent.keyDown(handle, { key: "ArrowDown" });
+  expect(ids()).toEqual(["first", addedId, "second"]);
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(updateInventoryItems).toHaveBeenCalledWith("inventory", {
+      expected_configuration_revision: 7,
+      items: [],
+      new_items: [{ values: [{ field_id: "text-field", value: "Inserted" }] }],
+      order: [
+        { item_id: "first", expected_revision: 1 },
+        { new_item_index: 0 },
+        { item_id: "second", expected_revision: 3 },
+      ],
+    }),
+  );
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Edit table" })).toBeEnabled(),
+  );
+  expect(ids()).toEqual(["first", "created-0", "second"]);
+});

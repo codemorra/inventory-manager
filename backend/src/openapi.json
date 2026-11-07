@@ -466,7 +466,7 @@
       "patch": {
         "tags": ["inventory items"],
         "summary": "Update Multiple Items Atomically",
-        "description": "Replace all editable values of the submitted existing items in one transaction. Send only changed rows, each once, with its original expected_revision and an explicit values array. The expected_configuration_revision must match the field configuration used for the draft. Configuration, missing-item, ownership, value-validation, revision, or storage failures roll back the complete batch, including revisions, timestamps and value tombstones. Automatic IDs remain unchanged and omitted editable values are tombstoned. Successful replacements advance each submitted item revision once, including no-op replacements, without changing the inventory configuration revision. The response contains saved items in request order. Preserve failed drafts and explicitly discard/reload after conflicts; never automatically retry stale revisions. An optional complete order saves the default row order atomically with value replacements. Ordering checks all active row IDs and revisions, advances each row revision once, and returns replaced rows followed by the remaining reordered rows. Without order, items must not be empty.",
+        "description": "Replace all editable values of the submitted existing items in one transaction. Send only changed rows, each once, with its original expected_revision and an explicit values array. The expected_configuration_revision must match the field configuration used for the draft. Configuration, missing-item, ownership, value-validation, revision, or storage failures roll back the complete batch, including revisions, timestamps and value tombstones. Automatic IDs remain unchanged and omitted editable values are tombstoned. Successful replacements advance each submitted item revision once, including no-op replacements, without changing the inventory configuration revision. The response contains saved items in request order. Preserve failed drafts and explicitly discard/reload after conflicts; never automatically retry stale revisions. An optional complete order saves the default row order atomically with value replacements. Ordering checks all active row IDs and revisions, advances each row revision once, and returns replaced rows followed by the remaining reordered rows. When new_items is supplied, rows are created in the same transaction and appended to the response in request order. By default they are appended to the default row order; order entries with new_item_index can instead place them among existing rows. If any new-row reference is supplied, all new rows must be referenced exactly once. Creation failures also roll back replacements, ordering, attachments and automatic ID counters. At least one changed item, new row or complete row order is required.",
         "operationId": "update_items_inventories__inventory_id__items_patch",
         "parameters": [
           {
@@ -5442,28 +5442,62 @@
           "order": {
             "type": "array",
             "minItems": 1,
-            "description": "Optional complete default order of all active inventory rows. Each row must occur exactly once with its captured revision. Membership and revisions are checked atomically; reordering increments each row revision once, including rows whose values are replaced in the same save.",
+            "description": "Optional complete default order. Include all existing active rows exactly once with their captured revisions. To position new rows, reference each new_items entry exactly once by its zero-based new_item_index. If no new-row references are supplied, new rows are appended. Reordering increments existing row revisions once; newly created rows start at revision 1.",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "item_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "expected_revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["item_id", "expected_revision"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "new_item_index": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["new_item_index"],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "new_items": {
+            "type": "array",
+            "minItems": 1,
+            "description": "New rows to append to the default order, in request order. IDs and automatic field values are assigned by the server. Created atomically with replacements and any order change.",
             "items": {
               "type": "object",
               "properties": {
-                "item_id": {
-                  "type": "string",
-                  "minLength": 1
-                },
-                "expected_revision": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 9007199254740991
+                "values": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryItemValueInput"
+                  }
                 }
               },
-              "required": ["item_id", "expected_revision"],
+              "required": ["values"],
               "additionalProperties": false
             }
           }
         },
         "required": ["expected_configuration_revision", "items"],
         "additionalProperties": false,
-        "description": "At least one changed item or a complete row order is required."
+        "description": "At least one changed item, new row, or complete row order is required."
       },
       "InventoryTemplateField": {
         "type": "object",

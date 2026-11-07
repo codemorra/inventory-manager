@@ -42,31 +42,65 @@ export const itemBatchUpdateSchema = z
         values: z.array(valueInputSchema.strict()),
       }),
     ),
+    new_items: z
+      .array(z.strictObject({ values: z.array(valueInputSchema.strict()) }))
+      .min(1)
+      .optional(),
     order: z
       .array(
-        z.strictObject({
-          item_id: z.string().min(1),
-          expected_revision: itemRevisionSchema.shape.expected_revision,
-        }),
+        z.union([
+          z.strictObject({
+            item_id: z.string().min(1),
+            expected_revision: itemRevisionSchema.shape.expected_revision,
+          }),
+          z.strictObject({
+            new_item_index: z
+              .number()
+              .int()
+              .min(0)
+              .max(Number.MAX_SAFE_INTEGER),
+          }),
+        ]),
       )
       .min(1)
       .optional(),
   })
   .superRefine((data, context) => {
-    if (!data.items.length && !data.order)
+    if (!data.items.length && !data.order && !data.new_items?.length)
       context.addIssue({
         code: "custom",
         path: ["items"],
-        message: "Provide changed items or a complete row order.",
+        message: "Provide changed items, new rows, or a complete row order.",
       });
     if (
       data.order &&
-      new Set(data.order.map((item) => item.item_id)).size !== data.order.length
+      new Set(
+        data.order.map((item) =>
+          "item_id" in item
+            ? `item:${item.item_id}`
+            : `new:${item.new_item_index}`,
+        ),
+      ).size !== data.order.length
     )
       context.addIssue({
         code: "custom",
         path: ["order"],
         message: "Row order must contain unique item IDs.",
+      });
+    const newReferences =
+      data.order?.filter((row) => "new_item_index" in row) ?? [];
+    if (
+      newReferences.length &&
+      (newReferences.length !== (data.new_items?.length ?? 0) ||
+        newReferences.some(
+          (row) => row.new_item_index >= (data.new_items?.length ?? 0),
+        ))
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["order"],
+        message:
+          "Include every new row exactly once using its new_items index.",
       });
     const seen = new Set<string>();
     for (const [index, item] of data.items.entries()) {
