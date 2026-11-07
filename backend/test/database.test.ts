@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { getTableColumns } from "drizzle-orm";
 import {
   mkdtempSync,
   rmSync,
@@ -102,11 +103,12 @@ test("adds independent templates to an existing database and preserves them acro
     field_type: "text",
   });
   // Legacy setup predates attachment tables; create its item through that schema's raw records.
-  const legacyItem = original.db
-    .insert(inventoryItems)
-    .values({ inventoryId: inventory.id })
-    .returning()
-    .get();
+  const legacyItem = { id: "legacy-item" };
+  original.sqlite
+    .prepare(
+      "INSERT INTO inventory_items (id, inventory_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
+    )
+    .run(legacyItem.id, inventory.id, "2026-01-01", "2026-01-01");
   original.db
     .insert(inventoryItemValues)
     .values({
@@ -123,7 +125,18 @@ test("adds independent templates to an existing database and preserves them acro
     inventoryItemValues,
     inventoryGroups,
   ];
-  const before = tables.map((table) => original.db.select().from(table).all());
+  const { position: omittedPosition, ...legacyColumns } =
+    getTableColumns(inventoryItems);
+  assert.equal(omittedPosition.name, "position");
+  const before = tables.map((table) =>
+    table === inventoryItems
+      ? original.db
+          .select(legacyColumns)
+          .from(inventoryItems)
+          .all()
+          .map((item) => ({ ...item, position: 0 }))
+      : original.db.select().from(table).all(),
+  );
   original.close();
   const upgraded = openDatabase(path);
   connections.push(upgraded);
@@ -235,8 +248,9 @@ test("adds field settings with compatible defaults without rewriting legacy rows
       return existing;
     });
     after[2] = (after[2] as Record<string, unknown>[]).map(
-      ({ revision, ...row }) => {
+      ({ revision, position, ...row }) => {
         assert.equal(revision, 1);
+        assert.equal(position, 0);
         return row;
       },
     );
@@ -290,7 +304,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     assert.deepEqual(db.select().from(table).all(), []);
   assert.deepEqual(
     sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get(),
-    { count: 9 },
+    { count: 10 },
   );
 
   const inventory = db
@@ -351,7 +365,7 @@ test("creates a fresh schema and preserves JSON values and tombstones across rep
     reopened.sqlite
       .prepare("SELECT count(*) AS count FROM __drizzle_migrations")
       .get(),
-    { count: 9 },
+    { count: 10 },
   );
 });
 
@@ -421,4 +435,67 @@ test("fails startup on a missing migration directory and allows a corrected retr
   const connection = openDatabase(path);
   connections.push(connection);
   assert.deepEqual(connection.db.select().from(inventories).all(), []);
+});
+
+test("migrates legacy item order and persists manual positions across reopen", () => {
+  const directory = mkdtempSync(join(tmpdir(), "inventory-order-migration-"));
+  directories.push(directory);
+  const legacy = join(directory, "legacy");
+  mkdirSync(join(legacy, "meta"), { recursive: true });
+  const journal = JSON.parse(
+    readFileSync(
+      new URL("../drizzle/meta/_journal.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  journal.entries = journal.entries.filter(
+    (entry: { idx: number }) => entry.idx < 9,
+  );
+  for (const entry of journal.entries)
+    copyFileSync(
+      new URL(`../drizzle/${entry.tag}.sql`, import.meta.url),
+      join(legacy, `${entry.tag}.sql`),
+    );
+  writeFileSync(join(legacy, "meta", "_journal.json"), JSON.stringify(journal));
+  const path = join(directory, "existing.db");
+  const original = openDatabase(path, legacy);
+  connections.push(original);
+  const inventory = createServices(original.db).inventories.create({
+    name: "Legacy order",
+  });
+  for (const [id, timestamp] of [
+    ["old", "2026-01-01"],
+    ["new", "2026-01-03"],
+    ["middle", "2026-01-02"],
+  ])
+    original.sqlite
+      .prepare(
+        "INSERT INTO inventory_items (id, inventory_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
+      )
+      .run(id, inventory.id, timestamp, timestamp);
+  original.close();
+  const upgraded = openDatabase(path);
+  connections.push(upgraded);
+  const services = createServices(upgraded.db);
+  assert.deepEqual(
+    services.items.list(inventory.id).map((item) => item.id),
+    ["new", "middle", "old"],
+  );
+  services.items.updateMany(inventory.id, {
+    expected_configuration_revision: inventory.configurationRevision,
+    items: [],
+    order: ["old", "new", "middle"].map((item_id) => ({
+      item_id,
+      expected_revision: 1,
+    })),
+  });
+  upgraded.close();
+  const reopened = openDatabase(path);
+  connections.push(reopened);
+  assert.deepEqual(
+    createServices(reopened.db)
+      .items.list(inventory.id)
+      .map((item) => item.id),
+    ["old", "new", "middle"],
+  );
 });

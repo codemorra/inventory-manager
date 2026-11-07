@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
   cleanup,
+  createEvent,
   fireEvent,
   render,
   screen,
@@ -108,9 +109,24 @@ beforeEach(() => {
         original.values.find((value) => value.field_id === "id-field")!,
       ],
     }));
+    if (input.order) {
+      for (const row of input.order) {
+        if (!saved.some((item) => item.id === row.item_id))
+          saved.push({
+            ...serverItems.find((item) => item.id === row.item_id)!,
+            revision: row.expected_revision + 1,
+          });
+      }
+    }
     serverItems = serverItems.map(
       (item) => saved.find((row) => row.id === item.id) ?? item,
     );
+    if (input.order) {
+      const positions = new Map(
+        input.order.map((row, index) => [row.item_id, index]),
+      );
+      serverItems.sort((a, b) => positions.get(a.id)! - positions.get(b.id)!);
+    }
     return saved;
   });
 });
@@ -692,3 +708,232 @@ test("recovers from a failed edit-session load", async () => {
   ).toBeEnabled();
   await start(user);
 });
+
+test("cycles column sorting in the editor and disables row movement until sorting is cleared", async () => {
+  const user = userEvent.setup();
+  renderTable();
+  await start(user);
+  const ids = () =>
+    Array.from(document.querySelectorAll<HTMLElement>("tr[data-item-id]")).map(
+      (row) => row.dataset.itemId,
+    );
+  const handle = within(row()).getByRole("button", { name: "Move row" });
+  await act(async () => handle.focus());
+  expect(screen.getByRole("tooltip")).toHaveTextContent("Drag to move");
+  fireEvent.keyDown(handle, { key: "ArrowDown" });
+  expect(ids()).toEqual(["second", "first"]);
+  const heading = screen.getByRole("button", { name: "Title" });
+  await user.click(heading);
+  expect(ids()).toEqual(["first", "second"]);
+  expect(handle).toHaveAttribute("aria-disabled", "true");
+  await act(async () => handle.focus());
+  expect(
+    document.getElementById(handle.getAttribute("aria-describedby")!)!,
+  ).toHaveTextContent(
+    "Moving rows is only possible without active column sorting.",
+  );
+  fireEvent.keyDown(handle, { key: "ArrowDown" });
+  await user.click(heading);
+  await user.click(heading);
+  expect(ids()).toEqual(["second", "first"]);
+  expect(handle).toHaveAttribute("aria-disabled", "false");
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(updateInventoryItems).toHaveBeenCalledWith("inventory", {
+      expected_configuration_revision: 7,
+      items: [],
+      order: [
+        { item_id: "second", expected_revision: 3 },
+        { item_id: "first", expected_revision: 1 },
+      ],
+    }),
+  );
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Edit table" })).toBeEnabled(),
+  );
+  expect(ids()).toEqual(["second", "first"]);
+});
+
+test("dragging changes only the local order and cancel restores the baseline", async () => {
+  const user = userEvent.setup();
+  renderTable();
+  await start(user);
+  const transfer = rowTransfer();
+  fireEvent.dragStart(within(row()).getByRole("button", { name: "Move row" }), {
+    dataTransfer: transfer,
+  });
+  hoverRow("second", transfer);
+  fireEvent.drop(row("second"), { dataTransfer: transfer });
+  expect(
+    Array.from(document.querySelectorAll<HTMLElement>("tr[data-item-id]")).map(
+      (row) => row.dataset.itemId,
+    ),
+  ).toEqual(["second", "first"]);
+  expect(updateInventoryItems).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(
+    Array.from(document.querySelectorAll<HTMLElement>("tr[data-item-id]")).map(
+      (row) => row.dataset.itemId,
+    ),
+  ).toEqual(["first", "second"]);
+  expect(updateInventoryItems).not.toHaveBeenCalled();
+});
+
+test("reorders visible slots without moving rows excluded by search", async () => {
+  serverItems.push({ ...structuredClone(original), id: "third" });
+  const user = userEvent.setup();
+  renderTable();
+  await user.type(screen.getByRole("searchbox"), "First");
+  await start(user);
+  fireEvent.keyDown(within(row()).getByRole("button", { name: "Move row" }), {
+    key: "ArrowDown",
+  });
+  expect(
+    Array.from(document.querySelectorAll<HTMLElement>("tr[data-item-id]")).map(
+      (row) => row.dataset.itemId,
+    ),
+  ).toEqual(["third", "first"]);
+  await user.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(updateInventoryItems).toHaveBeenCalledWith("inventory", {
+      expected_configuration_revision: 7,
+      items: [],
+      order: [
+        { item_id: "third", expected_revision: 1 },
+        { item_id: "second", expected_revision: 3 },
+        { item_id: "first", expected_revision: 1 },
+      ],
+    }),
+  );
+});
+
+/** Model a native drag payload owned by this table editor. */
+function rowTransfer() {
+  const data = new Map<string, string>();
+  return {
+    types: [] as string[],
+    setData(type: string, value: string) {
+      this.types.push(type);
+      data.set(type, value);
+    },
+    getData: (type: string) => data.get(type) ?? "",
+    setDragImage: vi.fn(),
+    effectAllowed: "",
+    dropEffect: "",
+  };
+}
+
+test("previews row movement with the field editor's opacity, insertion marker and whole-row drag image", async () => {
+  const user = userEvent.setup();
+  renderTable();
+  await start(user);
+  const transfer = rowTransfer();
+  const ids = () =>
+    Array.from(document.querySelectorAll<HTMLElement>("tr[data-item-id]")).map(
+      (row) => row.dataset.itemId,
+    );
+  const startEvent = createEvent.dragStart(
+    within(row()).getByRole("button", { name: "Move row" }),
+    { dataTransfer: transfer },
+  );
+  Object.defineProperties(startEvent, {
+    clientX: { value: 8 },
+    clientY: { value: 12 },
+  });
+  fireEvent(
+    within(row()).getByRole("button", { name: "Move row" }),
+    startEvent,
+  );
+  expect(transfer.setDragImage).toHaveBeenCalledWith(row(), 8, 12);
+  expect(row()).toHaveClass("opacity-50");
+  hoverRow("second", transfer);
+  expect(ids()).toEqual(["second", "first"]);
+  expect(row("second")).toHaveClass("[&>td]:after:opacity-100");
+  expect(updateInventoryItems).not.toHaveBeenCalled();
+  fireEvent.keyDown(window, { key: "Escape" });
+  expect(ids()).toEqual(["first", "second"]);
+  expect(row()).not.toHaveClass("opacity-50");
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  // A canceled drag end has the same effect; dropping onto the moved source keeps the preview slot.
+  fireEvent.dragStart(within(row()).getByRole("button", { name: "Move row" }), {
+    dataTransfer: transfer,
+  });
+  hoverRow("second", transfer);
+  fireEvent.drop(row(), { dataTransfer: transfer });
+  fireEvent.dragEnd(row());
+  expect(ids()).toEqual(["second", "first"]);
+  expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
+});
+
+/** Supply explicit insertion coordinates when jsdom lacks native DragEvent support. */
+function hoverRow(
+  id: string,
+  transfer: ReturnType<typeof rowTransfer>,
+  side: "before" | "after" = "after",
+) {
+  const target = row(id);
+  const bounds = target.getBoundingClientRect();
+  const event = createEvent.dragOver(target, { dataTransfer: transfer });
+  Object.defineProperty(event, "clientY", {
+    value: bounds.top + bounds.height / 2 + (side === "after" ? 1 : -1),
+  });
+  fireEvent(target, event);
+}
+
+test.each([false, true])(
+  "animates data and action rows while respecting reduced motion (%s)",
+  async (reduced) => {
+    const nativeAnimate = Object.getOwnPropertyDescriptor(
+      Element.prototype,
+      "animate",
+    );
+    const cancel = vi.fn();
+    const animate = vi.fn(() => ({ cancel, onfinish: null }));
+    Object.defineProperty(Element.prototype, "animate", {
+      configurable: true,
+      value: animate,
+    });
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({ matches: reduced })),
+    );
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: HTMLElement) {
+        if (this.matches("[data-drag-row-id]")) {
+          const index = Array.from(this.parentElement!.children).indexOf(this);
+          return new DOMRect(0, index * 52, 500, 52);
+        }
+        return new DOMRect(0, 0, 500, 200);
+      },
+    );
+    try {
+      const user = userEvent.setup();
+      renderTable();
+      await start(user);
+      const transfer = rowTransfer();
+      fireEvent.dragStart(
+        within(row()).getByRole("button", { name: "Move row" }),
+        { dataTransfer: transfer },
+      );
+      hoverRow("second", transfer);
+      expect(animate).toHaveBeenCalledTimes(reduced ? 0 : 4);
+      if (!reduced)
+        expect(animate).toHaveBeenCalledWith(expect.any(Array), {
+          duration: 220,
+          easing: "cubic-bezier(0.2, 0, 0, 1)",
+        });
+      fireEvent.dragEnd(row());
+      if (!reduced) expect(cancel).toHaveBeenCalled();
+      expect(
+        Array.from(
+          document.querySelectorAll<HTMLElement>("tr[data-item-id]"),
+        ).map((row) => row.dataset.itemId),
+      ).toEqual(["first", "second"]);
+    } finally {
+      cleanup();
+      if (nativeAnimate)
+        Object.defineProperty(Element.prototype, "animate", nativeAnimate);
+      else Reflect.deleteProperty(Element.prototype, "animate");
+    }
+  },
+);

@@ -35,17 +35,39 @@ export type ItemUpdateInput = z.infer<typeof itemUpdateSchema>;
 export const itemBatchUpdateSchema = z
   .strictObject({
     expected_configuration_revision: itemRevisionSchema.shape.expected_revision,
-    items: z
+    items: z.array(
+      z.strictObject({
+        item_id: z.string().min(1),
+        expected_revision: itemRevisionSchema.shape.expected_revision,
+        values: z.array(valueInputSchema.strict()),
+      }),
+    ),
+    order: z
       .array(
         z.strictObject({
           item_id: z.string().min(1),
           expected_revision: itemRevisionSchema.shape.expected_revision,
-          values: z.array(valueInputSchema.strict()),
         }),
       )
-      .min(1),
+      .min(1)
+      .optional(),
   })
   .superRefine((data, context) => {
+    if (!data.items.length && !data.order)
+      context.addIssue({
+        code: "custom",
+        path: ["items"],
+        message: "Provide changed items or a complete row order.",
+      });
+    if (
+      data.order &&
+      new Set(data.order.map((item) => item.item_id)).size !== data.order.length
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["order"],
+        message: "Row order must contain unique item IDs.",
+      });
     const seen = new Set<string>();
     for (const [index, item] of data.items.entries()) {
       if (seen.has(item.item_id))
