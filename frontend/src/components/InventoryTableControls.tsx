@@ -29,6 +29,7 @@ interface InventoryTableControlsProps {
   wrapText?: boolean;
   onWrapTextChange?: (wrap: boolean) => void;
   disabled?: boolean;
+  showView?: boolean;
   columns?: TableColumn[];
   onToggleColumn?: (fieldId: string) => void;
   onAutomaticWidths?: () => void;
@@ -81,6 +82,7 @@ export function InventoryTableControls({
   wrapText = true,
   onWrapTextChange,
   disabled = false,
+  showView = true,
   columns = [],
   onToggleColumn,
   onAutomaticWidths,
@@ -97,6 +99,7 @@ export function InventoryTableControls({
   const focusColumns = useRef(false);
   const focusLast = useRef(false);
   const available =
+    showView &&
     !disabled &&
     (!!onWrapTextChange ||
       !!onAutomaticWidths ||
@@ -327,25 +330,27 @@ export function InventoryTableControls({
                 })}
           </p>
         )}
-        <button
-          ref={trigger}
-          type="button"
-          aria-label={t("table.menu.view")}
-          title={t("table.menu.view")}
-          aria-haspopup="menu"
-          aria-expanded={expanded}
-          aria-controls={expanded ? `${id}-menu` : undefined}
-          disabled={!available}
-          className={`flex cursor-pointer items-center justify-center rounded-sm px-2.5 py-1.5 text-sm font-medium transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${expanded ? "bg-control-hover text-heading" : ""}`}
-          onKeyDown={handleKeyDown}
-          onClick={() => {
-            focusLast.current = false;
-            setOpen(!expanded);
-          }}
-        >
-          {t("table.menu.view")}
-        </button>
-        {actions && (
+        {showView && (
+          <button
+            ref={trigger}
+            type="button"
+            aria-label={t("table.menu.view")}
+            title={t("table.menu.view")}
+            aria-haspopup="menu"
+            aria-expanded={expanded}
+            aria-controls={expanded ? `${id}-menu` : undefined}
+            disabled={!available}
+            className={`flex cursor-pointer items-center justify-center rounded-sm px-2.5 py-1.5 text-sm font-medium transition enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${expanded ? "bg-control-hover text-heading" : ""}`}
+            onKeyDown={handleKeyDown}
+            onClick={() => {
+              focusLast.current = false;
+              setOpen(!expanded);
+            }}
+          >
+            {t("table.menu.view")}
+          </button>
+        )}
+        {actions && showView && (
           <span
             aria-hidden="true"
             className="h-5 shrink-0 border-l border-shell"

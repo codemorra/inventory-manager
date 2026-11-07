@@ -733,6 +733,7 @@ export function InventoryItemList({
         </div>
       )}
       <InventoryTableControls
+        showView={!tableEdit.active}
         columns={fields.map((field) => ({
           id: field.id,
           name: field.name,
@@ -833,9 +834,7 @@ export function InventoryItemList({
                 </svg>
               </button>
             )}
-            <fieldset disabled={tableEdit.active} className="contents">
-              {actions}
-            </fieldset>
+            {!tableEdit.active && actions}
           </>
         }
         wrapText={wrapText}

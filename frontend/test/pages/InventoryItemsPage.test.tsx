@@ -204,7 +204,12 @@ describe("InventoryItemsPage", () => {
     expect(
       screen.getByRole("button", { name: "Inventory settings" }),
     ).toBeDisabled();
-    expect(screen.getByRole("button", { name: "New item" })).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "New item" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "View" }),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(
       screen.getByRole("button", { name: "Inventory settings" }),
