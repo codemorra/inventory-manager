@@ -383,3 +383,109 @@ test("rejects missing or deleted inventories and preserves successful no-op sema
   assert.equal(deleted.body.detail.code, "inventory_not_found");
   assert.deepEqual(snapshot(f), deletedBefore);
 });
+
+test("saves default order and cell replacements atomically with one revision per row", (context) => {
+  const f = fixture(context);
+  const ordered = [f.first, f.untouched, f.second];
+  const order = ordered.map((item) => ({
+    item_id: item.id,
+    expected_revision: item.revision,
+  }));
+  const saved = f.services.items.updateMany(f.inventory.id, {
+    ...f.draft,
+    order,
+  });
+  assert.deepEqual(
+    f.services.items.list(f.inventory.id).map((item) => item.id),
+    ordered.map((item) => item.id),
+  );
+  for (const item of saved) assert.equal(item.revision, 2);
+  assert.equal(
+    f.services.items
+      .read(f.inventory.id, f.first.id)
+      .values.find((value) => value.fieldId === f.title.id)?.value,
+    `Changed ${f.first.id}`,
+  );
+  assert.equal(
+    f.services.items
+      .read(f.inventory.id, f.untouched.id)
+      .values.find((value) => value.fieldId === f.title.id)?.value,
+    "Untouched",
+  );
+  // Further value edits preserve ordering; a newly created item retains the existing newest-first convention.
+  f.services.items.update(f.inventory.id, f.first.id, {
+    expected_revision: 2,
+    values: [{ field_id: f.title.id, value: "Edited again" }],
+  });
+  assert.deepEqual(
+    f.services.items.list(f.inventory.id).map((item) => item.id),
+    ordered.map((item) => item.id),
+  );
+  const added = f.services.items.create(f.inventory.id, {
+    values: [{ field_id: f.title.id, value: "New" }],
+  });
+  assert.equal(f.services.items.list(f.inventory.id)[0]!.id, added.id);
+});
+
+test("supports order-only saves and rejects stale membership, revisions and malformed orders", (context) => {
+  const f = fixture(context);
+  const order = [f.first, f.second, f.untouched].map((item) => ({
+    item_id: item.id,
+    expected_revision: item.revision,
+  }));
+  const input = {
+    expected_configuration_revision: f.configurationRevision,
+    items: [],
+    order,
+  };
+  const before = snapshot(f);
+  for (const invalidOrder of [
+    order.slice(1),
+    [...order, { item_id: f.foreign.id, expected_revision: 1 }],
+    order.map((row, index) =>
+      index === 1 ? { ...row, expected_revision: 2 } : row,
+    ),
+  ]) {
+    assert.throws(
+      () =>
+        f.services.items.updateMany(f.inventory.id, {
+          ...input,
+          order: invalidOrder,
+        }),
+      (error: unknown) =>
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "inventory_item_conflict",
+    );
+    assert.deepEqual(snapshot(f), before);
+  }
+  for (const invalidOrder of [
+    [],
+    [order[0], order[0]],
+    order.map((row) => ({ ...row, expected_revision: "1" })),
+  ]) {
+    assert.throws(() =>
+      f.services.items.updateMany(f.inventory.id, {
+        ...input,
+        order: invalidOrder,
+      }),
+    );
+    assert.deepEqual(snapshot(f), before);
+  }
+  const saved = f.services.items.updateMany(f.inventory.id, input);
+  assert.equal(saved.length, 3);
+  assert.deepEqual(
+    f.services.items.list(f.inventory.id).map((item) => item.id),
+    order.map((row) => row.item_id),
+  );
+  assert.throws(() => f.services.items.updateMany(f.inventory.id, input));
+  const snapshotAfterSave = snapshot(f);
+  assert.throws(() =>
+    f.services.items.updateMany(f.inventory.id, {
+      ...input,
+      order: order.map((row) => ({ ...row, expected_revision: 2 })),
+      items: [{ item_id: f.first.id, expected_revision: 2, values: [] }],
+    }),
+  );
+  assert.deepEqual(snapshot(f), snapshotAfterSave);
+});

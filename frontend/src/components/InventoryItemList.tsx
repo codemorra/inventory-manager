@@ -40,8 +40,10 @@ import { sortInventoryItems } from "./inventoryItemSorting";
 import { searchInventoryItems } from "./inventoryItemSearch";
 import { filterInventoryItems, itemFilterError } from "./itemFilterLogic";
 import { InventoryItemFilters } from "./InventoryItemFilters";
+import { InventoryRowMoveHandle } from "./InventoryRowMoveHandle";
 import { InventoryTableCellInput } from "./InventoryTableCellInput";
 import { getTableCellValue } from "./inventoryTableDraft";
+import { useInventoryRowDrag } from "../hooks/useInventoryRowDrag";
 import { useInventoryTableEdit } from "../hooks/useInventoryTableEdit";
 import { TableEditSessionContext } from "./tableEditSession";
 import { UnsavedTableChanges } from "./UnsavedTableChanges";
@@ -342,7 +344,7 @@ export function InventoryItemList({
   }));
   const displayWidths = distributeColumnWidths(
     baseColumns.map((column) => column.width),
-    availableWidth,
+    Math.max(0, availableWidth - (tableEdit.draft ? 40 : 0)),
     baseColumns.map(({ field }) => manualWidths[field.id] === undefined),
   );
   const visibleColumns = baseColumns.map(
@@ -352,7 +354,10 @@ export function InventoryItemList({
       width: displayWidths[index],
     }),
   );
-  const tableWidth = displayWidths.reduce((total, width) => total + width, 0);
+  const tableWidth = displayWidths.reduce(
+    (total, width) => total + width,
+    tableEdit.draft ? 40 : 0,
+  );
   const allVisibleColumnsAutomatic = visibleFields.every(
     (field) => view.columnWidths[field.id] === undefined,
   );
@@ -366,7 +371,17 @@ export function InventoryItemList({
         : matchingItems,
     [matchingItems, sort, sortField, locale],
   );
-  const displayedItems = tableEdit.draft?.displayedItems ?? sortedItems;
+  const rowDragContainer = useRef<HTMLDivElement>(null);
+  const rowDrag = useInventoryRowDrag(
+    tableEdit.draft?.displayedItems ?? sortedItems,
+    rowDragContainer,
+    !!tableEdit.draft && !sort && !tableEdit.saving && !tableEdit.conflict,
+    tableEdit.move,
+  );
+  const displayedItems = rowDrag.items;
+  function rowDragClasses(itemId: string) {
+    return `group transition-opacity duration-150 motion-reduce:transition-none ${rowDrag.draggedId === itemId ? "opacity-50" : ""} ${rowDrag.target?.id === itemId && rowDrag.target.side === "before" ? "[&>td]:before:opacity-100 [&>td]:before:scale-x-100" : "[&>td]:before:opacity-0 [&>td]:before:scale-x-95"} ${rowDrag.target?.id === itemId && rowDrag.target.side === "after" ? "[&>td]:after:opacity-100 [&>td]:after:scale-x-100" : "[&>td]:after:opacity-0 [&>td]:after:scale-x-95"} [&>td]:relative [&>td]:before:pointer-events-none [&>td]:before:absolute [&>td]:before:inset-x-0 [&>td]:before:top-0 [&>td]:before:z-10 [&>td]:before:h-0.5 [&>td]:before:origin-left [&>td]:before:bg-accent [&>td]:before:transition-[opacity,transform] [&>td]:before:duration-150 [&>td]:after:pointer-events-none [&>td]:after:absolute [&>td]:after:inset-x-0 [&>td]:after:bottom-0 [&>td]:after:z-10 [&>td]:after:h-0.5 [&>td]:after:origin-left [&>td]:after:bg-accent [&>td]:after:transition-[opacity,transform] [&>td]:after:duration-150 motion-reduce:[&>td]:before:transition-none motion-reduce:[&>td]:after:transition-none`;
+  }
   // Explicit reload starts a fresh session; deferred storage/language changes apply to that new baseline.
   function beginTableEditing() {
     tableEdit.begin({
@@ -798,6 +813,8 @@ export function InventoryItemList({
       />
       {/* Keep the data and action tables aligned within their shared border. */}
       <div
+        ref={rowDragContainer}
+        onDrop={rowDrag.drop}
         hidden={fields.length === 0}
         className={`${fields.length > 0 ? "grid" : "hidden"} grid-cols-[minmax(0,1fr)_auto] items-start overflow-hidden rounded-b-md border border-shell bg-surface`}
       >
@@ -815,12 +832,18 @@ export function InventoryItemList({
           >
             <caption className="sr-only">{t("table.sortHint")}</caption>
             <colgroup>
+              {tableEdit.draft && <col style={{ width: 40 }} />}
               {visibleColumns.map(({ field, width }) => (
                 <col key={field.id} style={{ width }} />
               ))}
             </colgroup>
             <thead className="bg-surface-muted text-xs font-semibold uppercase tracking-wider text-muted">
               <tr>
+                {tableEdit.draft && (
+                  <th scope="col" className="border-b border-shell">
+                    <span className="sr-only">{t("table.edit.reorder")}</span>
+                  </th>
+                )}
                 {visibleColumns.map(({ field, baseWidth, width }) => (
                   <th
                     data-field-id={field.id}
@@ -863,8 +886,16 @@ export function InventoryItemList({
                     {field.is_sortable ? (
                       <button
                         className={`relative block w-full cursor-pointer py-3 pr-7 pl-3 text-left font-semibold transition-colors enabled:hover:bg-control-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${sortField?.id === field.id ? "bg-accent-soft text-accent-text" : ""}`}
-                        onClick={() => toggleSort(field.id)}
-                        disabled={tableEdit.active}
+                        onClick={() =>
+                          tableEdit.draft
+                            ? tableEdit.toggleSort(field.id)
+                            : toggleSort(field.id)
+                        }
+                        disabled={
+                          tableEdit.loading ||
+                          tableEdit.saving ||
+                          tableEdit.conflict
+                        }
                         type="button"
                       >
                         <span
@@ -944,13 +975,34 @@ export function InventoryItemList({
 
                 return (
                   <tr
-                    className="group"
+                    className={rowDragClasses(item.id)}
                     key={item.id}
                     id={`${tableId}-${item.id}`}
                     data-item-id={item.id}
+                    data-drag-row-id={`data:${item.id}`}
+                    draggable={false}
+                    onDragOver={(event) => rowDrag.over(item.id, event)}
+                    onDragEnd={rowDrag.cancel}
                     onPointerEnter={() => setHoveredItem(item.id)}
                     onPointerLeave={() => setHoveredItem(null)}
                   >
+                    {tableEdit.draft && (
+                      <td className="h-13 border-r border-shell/60 px-1.5 py-2.5 align-middle">
+                        <InventoryRowMoveHandle
+                          sorted={!!sort}
+                          disabled={tableEdit.saving || tableEdit.conflict}
+                          onDragStart={(event) => rowDrag.begin(item.id, event)}
+                          onDragEnd={rowDrag.cancel}
+                          onMove={(direction) => {
+                            const index = displayedItems.findIndex(
+                              (row) => row.id === item.id,
+                            );
+                            const target = displayedItems[index + direction];
+                            if (target) tableEdit.move(item.id, target.id);
+                          }}
+                        />
+                      </td>
+                    )}
                     {visibleFields.map((field) => {
                       const content = formatValue(
                         field,
@@ -1086,7 +1138,7 @@ export function InventoryItemList({
                 <tr>
                   <td
                     className="px-6 py-12 text-center"
-                    colSpan={visibleFields.length}
+                    colSpan={visibleFields.length + (tableEdit.draft ? 1 : 0)}
                   >
                     <p className="font-semibold text-heading">
                       {t(
@@ -1127,6 +1179,10 @@ export function InventoryItemList({
               {displayedItems.map((item) => (
                 <tr
                   key={item.id}
+                  className={rowDragClasses(item.id)}
+                  data-drag-row-id={`actions:${item.id}`}
+                  onDragOver={(event) => rowDrag.over(item.id, event)}
+                  onDragEnd={rowDrag.cancel}
                   style={{ height: rowHeights.rows[item.id] }}
                   onPointerEnter={() => setHoveredItem(item.id)}
                   onPointerLeave={() => setHoveredItem(null)}

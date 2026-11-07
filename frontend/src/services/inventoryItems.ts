@@ -57,8 +57,8 @@ export function updateInventoryItem(
 /**
  * Save changed table rows in one atomic request without retrying stale snapshots.
  * @param inventoryId The inventory containing every submitted row.
- * @param data Complete changed-row replacements and their original versions.
- * @returns Saved items in request order with new revisions.
+ * @param data Changed-row replacements, optional complete default order, and original versions.
+ * @returns Replaced items followed by other reordered rows with new revisions.
  */
 export function updateInventoryItems(
   inventoryId: string,

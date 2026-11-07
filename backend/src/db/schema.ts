@@ -131,6 +131,7 @@ export const inventoryItems = sqliteTable(
   {
     ...lifecycleColumns(),
     revision: integer("revision").notNull().default(1),
+    position: integer("position").notNull().default(0),
     inventoryId: text("inventory_id")
       .notNull()
       .references(() => inventories.id),

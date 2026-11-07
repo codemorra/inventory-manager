@@ -389,7 +389,10 @@
     },
     "edit": {
       "start": "Edit table",
-      "stableView": "Rows stay in place while editing. Sorting and filtering resume after saving or canceling.",
+      "reorder": "Move row",
+      "reorderHint": "Drag to move the row, or use the Up and Down arrow keys.",
+      "reorderSortedHint": "Moving rows is only possible without active column sorting.",
+      "stableView": "Rows keep their place as values change. Use column headings to sort; filters remain fixed until editing ends.",
       "loading": "Loading table editor…",
       "changedCount_one": "{{count}} changed row",
       "changedCount_other": "{{count}} changed rows",
